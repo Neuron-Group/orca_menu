@@ -17,6 +17,9 @@ function M.component_at(index)
     label = string.format("%s(%s)", label, key_hint)
   end
   local spacing = state.config.lualine.spacing or " "
+  if state.config.enable_mouse == false then
+    return string.format("%s%s%s", spacing, label, spacing)
+  end
   return string.format("%s%%@v:lua.orca_menu_click_menu_%d@%s%%X%s", spacing, index, label, spacing)
 end
 

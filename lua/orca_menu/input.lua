@@ -81,7 +81,10 @@ end
 
 function M.enable_keys()
   if state.config and state.config.keys.mode_backend == "hydra" then
-    return
+    local hydra_mode = require("orca_menu.hydra_mode")
+    if hydra_mode.is_active() then
+      return
+    end
   end
   if state.keymaps_installed then
     return
@@ -115,10 +118,6 @@ function M.enable_keys()
 end
 
 function M.disable_keys()
-  if state.config and state.config.keys.mode_backend == "hydra" then
-    state.keymaps_installed = false
-    return
-  end
   if not state.keymaps_installed then
     return
   end
@@ -130,6 +129,9 @@ end
 
 function M.install_mouse()
   if state.global_mouse_installed then
+    return
+  end
+  if state.config and state.config.enable_mouse == false then
     return
   end
 

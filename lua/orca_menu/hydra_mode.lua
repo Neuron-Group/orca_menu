@@ -7,6 +7,7 @@ local M = {
 }
 
 local hydra_exit_pending = false
+local hydra_active = false
 
 local function close_hydra_mode()
   popup.close_all()
@@ -130,12 +131,14 @@ function M.setup()
       invoke_on_body = true,
       hint = false,
       on_enter = function()
+        hydra_active = true
         popup.enter_menu_mode(state.active_top)
       end,
       on_exit = function()
         local pending_action = state.pending_action
         state.pending_action = nil
         hydra_exit_pending = false
+        hydra_active = false
         if popup.is_open() or #state.menu_stack > 0 or state.menu_mode then
           popup.close_all()
         else
@@ -167,6 +170,10 @@ function M.exit()
       end
     end)
   end
+end
+
+function M.is_active()
+  return hydra_active
 end
 
 return M

@@ -21,6 +21,8 @@ local defaults = {
   submenu = {
     border = "rounded",
     min_width = 18,
+    scroll_indicator_up = "↑",
+    scroll_indicator_down = "↓",
   },
   highlights = {
     menu = "NormalFloat",

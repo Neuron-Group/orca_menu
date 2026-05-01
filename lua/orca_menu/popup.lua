@@ -4,6 +4,17 @@ local actions = require("orca_menu.actions")
 
 local M = {}
 
+local function sync_hydra_exit_if_needed()
+  if state.config and state.config.keys.mode_backend == "hydra" then
+    local hydra_mode = require("orca_menu.hydra_mode")
+    if hydra_mode.is_active() then
+      hydra_mode.exit()
+      return true
+    end
+  end
+  return false
+end
+
 local function available_content_height()
   local border_rows = state.config.submenu.border and 2 or 0
   return math.max(vim.o.lines - vim.o.cmdheight - border_rows - 2, 1)
@@ -155,6 +166,8 @@ end
 
 local function border_with_scroll_indicators(entry)
   local border = state.config.submenu.border
+  local indicator_up = state.config.submenu.scroll_indicator_up
+  local indicator_down = state.config.submenu.scroll_indicator_down
   local chars = resolve_border_chars(border)
   if not chars then
     return border
@@ -163,13 +176,23 @@ local function border_with_scroll_indicators(entry)
   local max_scroll_top = math.max(#(entry.items or {}) - (entry.visible_height or #(entry.items or {})) + 1, 1)
   local has_up = (entry.scroll_top or 1) > 1
   local has_down = (entry.scroll_top or 1) < max_scroll_top
+  local resolved_up = (type(indicator_up) == "string" and indicator_up ~= "") and indicator_up or "↑"
+  local resolved_down = (type(indicator_down) == "string" and indicator_down ~= "") and indicator_down or "↓"
+
+  if vim.fn.strdisplaywidth(resolved_up) ~= 1 then
+    resolved_up = "↑"
+  end
+
+  if vim.fn.strdisplaywidth(resolved_down) ~= 1 then
+    resolved_down = "↓"
+  end
 
   if has_up then
-    chars[3] = "↑"
+    chars[3] = resolved_up
   end
 
   if has_down then
-    chars[5] = "↓"
+    chars[5] = resolved_down
   end
 
   return chars
@@ -195,6 +218,7 @@ function M.close_all()
   state.menu_stack = {}
   state.menu_mode = false
   require("orca_menu.input").disable_keys()
+  sync_hydra_exit_if_needed()
 end
 
 function M.is_open()

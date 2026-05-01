@@ -18,6 +18,7 @@ configurable in Lua.
 - wheel scrolling moves by nearly a full visible page
 - popup borders show `↑`/`↓` when more items are hidden above or below
 - configurable menu labels, accelerators, commands, and Lua callbacks
+- `enable_mouse = false` disables menu click and wheel bindings
 - Nix flake packaging included in this repository
 
 ## Requirements
@@ -124,6 +125,7 @@ Call:
 
 ```lua
 require("orca_menu").setup({
+  enable_mouse = true,
   keys = {
     open = "<M-m>",
     mode_backend = "hydra",
@@ -135,6 +137,8 @@ require("orca_menu").setup({
   submenu = {
     border = "rounded",
     min_width = 18,
+    scroll_indicator_up = "↑",
+    scroll_indicator_down = "↓",
   },
   highlights = {
     menu = "NormalFloat",
@@ -169,6 +173,7 @@ Default keys:
 - after executing an action, all popups close and menu mode exits before the action runs
 - when a popup is taller than the screen, selection keeps the visible window scrolled
 - child submenus open beside the visible parent row and flip left if needed
+- `submenu.scroll_indicator_up` and `submenu.scroll_indicator_down` customize the border scroll markers
 
 ### Top Menu Keys
 
