@@ -59,6 +59,46 @@ require('orca_menu').setup({
 })
 <
 
+LSP OVERRIDES ~
+
+Orca Menu can apply config overrides when exact LSP client names are active.
+
+>lua
+require('orca_menu').setup({
+  menus = {
+    { label = '&File', key = 'f', items = {} },
+  },
+
+  lsp_overrides = {
+    rust_analyzer = {
+      menus = {
+        {
+          label = '&Rust',
+          key = 'r',
+          items = {
+            { label = '&Run', command = 'RustLsp runnables' },
+          },
+        },
+      },
+    },
+
+    lua_ls = {
+      topbar = {
+        hint_format = '{hint} -> {label}',
+      },
+    },
+  },
+})
+<
+
+Behavior:
+
+    exact client.name matching
+    later attached matching LSP overrides win
+    menus replace base menus completely
+    other fields are deep-merged
+    LSP changes close popups and exit menu mode before refresh
+
 DEFAULT KEYS ~
 
     <M-m>       Enter menu mode

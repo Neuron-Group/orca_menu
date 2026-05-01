@@ -54,6 +54,20 @@ local function deep_extend(...)
   return vim.tbl_deep_extend("force", ...)
 end
 
+local function merge_with_menu_replace(base, override)
+  local merged = deep_extend({}, base or {})
+  for key, value in pairs(override or {}) do
+    if key == "menus" then
+      merged.menus = vim.deepcopy(value)
+    elseif type(value) == "table" and type(merged[key]) == "table" then
+      merged[key] = merge_with_menu_replace(merged[key], value)
+    else
+      merged[key] = vim.deepcopy(value)
+    end
+  end
+  return merged
+end
+
 local function parse_label(text)
   local accelerator_index
   local clean = {}
@@ -101,6 +115,21 @@ function M.normalize(user_config)
     return normalized
   end, merged.menus or {})
   return merged
+end
+
+function M.resolve(user_config, client_names)
+  local base = vim.deepcopy(user_config or {})
+  local overrides = base.lsp_overrides or {}
+  base.lsp_overrides = nil
+
+  local merged = vim.deepcopy(base)
+  for _, client_name in ipairs(client_names or {}) do
+    if type(overrides[client_name]) == "table" then
+      merged = merge_with_menu_replace(merged, overrides[client_name])
+    end
+  end
+
+  return M.normalize(merged)
 end
 
 return M

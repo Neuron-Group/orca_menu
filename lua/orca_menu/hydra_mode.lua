@@ -176,4 +176,13 @@ function M.is_active()
   return hydra_active
 end
 
+function M.reset()
+  if hydra_active then
+    M.exit()
+  end
+  M.hydra = nil
+  hydra_exit_pending = false
+  hydra_active = false
+end
+
 return M

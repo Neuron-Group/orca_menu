@@ -3,6 +3,14 @@ local layout = require("orca_menu.layout")
 
 local M = {}
 
+local function make_component(fn)
+  return {
+    fn,
+    padding = { left = 0, right = 0 },
+    orca_menu_component = true,
+  }
+end
+
 function M.component_at(index)
   if not state.config then
     return ""
@@ -31,22 +39,25 @@ function M.register()
   local config = lualine.get_config()
   config.sections = config.sections or {}
   local section_name = "lualine_" .. (state.config.lualine.section or "y")
-  config.sections[section_name] = config.sections[section_name] or {}
+  local section = config.sections[section_name] or {}
+  local preserved = {}
 
-  table.insert(config.sections[section_name], {
-    function()
-      return require("orca_menu.lualine").anchor_component()
-    end,
-    padding = { left = 0, right = 0 },
-  })
+  for _, component in ipairs(section) do
+    if type(component) ~= "table" or component.orca_menu_component ~= true then
+      table.insert(preserved, component)
+    end
+  end
+
+  config.sections[section_name] = preserved
+
+  table.insert(config.sections[section_name], make_component(function()
+    return require("orca_menu.lualine").anchor_component()
+  end))
 
   for index, _ in ipairs(state.config.menus) do
-    table.insert(config.sections[section_name], {
-      function()
-        return require("orca_menu").lualine_component_at(index)
-      end,
-      padding = { left = 0, right = 0 },
-    })
+    table.insert(config.sections[section_name], make_component(function()
+      return require("orca_menu").lualine_component_at(index)
+    end))
   end
 
   lualine.setup(config)

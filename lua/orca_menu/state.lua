@@ -1,5 +1,6 @@
 local M = {
   config = nil,
+  base_config = nil,
   active_top = 1,
   windows = {},
   buffers = {},
@@ -10,6 +11,9 @@ local M = {
   menu_mode = false,
   global_mouse_installed = false,
   keymaps_installed = false,
+  lsp_client_ids = {},
+  current_open_key = nil,
+  current_open_backend = nil,
   namespace = vim.api.nvim_create_namespace("orca_menu"),
 }
 
