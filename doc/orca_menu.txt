@@ -1,60 +1,84 @@
-*orca_menu.txt*    Configurable top menu bar for Neovim
+*orca_menu.txt*    Bottom menu plugin for Neovim
 
 INTRODUCTION ~
 
-Orca Menu provides a VSCode-style top menu bar built with Neovim floating
-windows. It supports keyboard navigation, mouse selection, nested submenus,
-user-defined theme highlights, and configurable menu content.
+Orca Menu provides a bottom menu bar for Neovim using floating popup windows.
+It supports keyboard navigation, nested submenus, mouse interaction, lualine
+integration, custom key hints, and Lua callbacks.
+
+REQUIREMENTS ~
+
+    Neovim 0.9+
+    lualine.nvim
+    hydra.nvim        For the default Hydra-backed menu mode.
 
 COMMANDS ~
 
-    :OrcaMenu           Toggle the menu bar
-    :OrcaMenu {index}   Open the menu bar and focus top-level menu {index}
+    :OrcaMenu           Toggle menu mode
+    :OrcaMenu {index}   Open top-level menu {index}
 
-CONFIGURATION ~
-
-Example:
+SETUP ~
 
 >lua
 require('orca_menu').setup({
   keys = {
     open = '<M-m>',
+    mode_backend = 'hydra',
+  },
+  lualine = {
+    section = 'y',
+    spacing = ' ',
+  },
+  submenu = {
+    border = 'rounded',
+    min_width = 18,
   },
   highlights = {
-    menubar = 'NormalFloat',
-    menubar_sel = 'PmenuSel',
     menu = 'NormalFloat',
-    menu_sel = 'PmenuSel',
-    accelerator = 'Special',
+    menu_sel = 'OrcaMenuSelected',
+    accelerator = 'OrcaMenuHint',
   },
   menus = {
     {
       label = '&File',
+      key = 'f',
       items = {
-        { label = '&Find Files', command = 'Telescope find_files' },
-        { label = '&Save', command = 'write' },
-      },
-    },
-    {
-      label = '&Tools',
-      items = {
-        {
-          label = '&Terminal',
-          items = {
-            { label = '&Toggle', command = 'ToggleTerm' },
-          },
-        },
+        { label = '&Write', key = 'w', command = 'write' },
+        { label = 'Write &Quit', key = 'q', command = 'wq' },
       },
     },
   },
 })
 <
 
-MENU ITEM FIELDS ~
+DEFAULT KEYS ~
 
-Each menu item can use one of these fields:
+    <M-m>       Enter menu mode
+    h / <Left>  Previous top menu
+    l / <Right> Next top menu
+    j / <Down>  Next popup row
+    k / <Up>    Previous popup row
+    <CR>        Select current item
+    <BS>        Go back
+    <Esc>       Go back or close top-level popup
+    q           Close menu mode
+
+ESC BEHAVIOR ~
+
+    child submenu       Close only that child and return to parent.
+    first-level popup   Close the popup and leave menu mode.
+    after action        Close all popups and leave menu mode first.
+
+TOP MENU FIELDS ~
 
     label       Visible text. Prefix a letter with '&' for accelerator.
+    key         Optional direct key for the visible top menu.
+    items       Top-level popup entries.
+
+POPUP ITEM FIELDS ~
+
+    label       Visible text. Prefix a letter with '&' for accelerator.
+    key         Optional direct key for the visible popup item.
     command     Ex command to run.
     keys        Normal-mode keys to feed.
     action      Lua function callback.
@@ -63,34 +87,50 @@ Each menu item can use one of these fields:
 
 Use { label = '-' } to insert a separator.
 
-DEFAULT KEYS ~
+KEY HINTS ~
 
-    <M-m>       Toggle menu
-    h/l         Previous/next top menu
-    j/k         Next/previous menu item
-    <CR>        Select item
-    <Esc>       Close menu
-    <Tab>       Read one accelerator character
+Popup items can display a right-aligned key hint column.
 
-MOUSE ~
+Examples:
 
-Left click works on the top bar and the visible submenu when mouse support is
-enabled in Neovim.
-
-    top bar, same item      Close the open popup tree.
-    top bar, other item     Switch to that top popup immediately.
-    outside all popups      Close the whole popup tree.
-    popup item, no child    Run the item and close all popups.
-    popup item, has child   Open its child popup.
-    parent item with child  If its child popup tree is open, close that tree.
-    sibling popup item      Close child popups, then run or open sibling.
+    1
+    Tab
+    Space
+    Ctrl+x
 
 HIGHLIGHTS ~
 
-    menubar         Base top-bar highlight
-    menubar_sel     Active top-menu highlight
-    menu            Base submenu highlight
-    menu_sel        Active submenu row highlight
-    accelerator     Highlight for accelerator characters
+    menu            Base popup highlight
+    menu_sel        Selected popup row highlight
+    accelerator     Popup key-hint highlight
+
+Default internal groups:
+
+    OrcaMenuSelected
+    OrcaMenuHint
+
+MOUSE ~
+
+Left click works on the top bar and on visible popup entries.
+
+    top bar, same item      Close the open popup tree.
+    top bar, other item     Switch to that popup.
+    outside all popups      Close the whole popup tree.
+    popup item, no child    Run the item and close all popups.
+    popup item, has child   Open its child popup.
+
+LUALINE ~
+
+The menu bar is rendered by registering components into the configured lualine
+section.
+
+FILES ~
+
+    plugin/orca_menu.lua
+    lua/orca_menu/init.lua
+    lua/orca_menu/hydra_mode.lua
+    lua/orca_menu/popup.lua
+    lua/orca_menu/layout.lua
+    lua/orca_menu/lualine.lua
 
 vim:tw=78:ts=8:noet:ft=help:norl:

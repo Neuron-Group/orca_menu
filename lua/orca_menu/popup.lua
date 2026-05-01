@@ -25,18 +25,6 @@ local function ensure_highlights()
   })
 end
 
-local function debug_log(lines)
-  local logfile = "/tmp/orca_menu_mouse.log"
-  local fd = io.open(logfile, "a")
-  if not fd then
-    return
-  end
-  fd:write(os.date("[%Y-%m-%d %H:%M:%S] "))
-  fd:write(table.concat(lines, " | "))
-  fd:write("\n")
-  fd:close()
-end
-
 local function destroy_windows_only()
   for _, win in ipairs(vim.deepcopy(state.windows)) do
     if vim.api.nvim_win_is_valid(win) then
@@ -118,10 +106,6 @@ local function draw_level(level)
   if level == 1 then
     row = state.anchor.row
     col = state.anchor.col
-    debug_log({
-      "orca_menu_version=child-align-v2",
-      string.format("draw_level=%d kind=top anchor_row=%s anchor_col=%s", level, tostring(row), tostring(col)),
-    })
   else
     local prev = state.menu_stack[level - 1]
     local target_content_row = (prev.content_row or prev.row) + math.max((prev.selected or 1) - 1, 0)
@@ -129,10 +113,6 @@ local function draw_level(level)
     col = (prev.content_col or prev.col) + (prev.content_width or prev.width)
     local max_row = math.max(0, vim.o.lines - vim.o.cmdheight - #lines - 3)
     row = math.min(row, max_row)
-    debug_log({
-      "orca_menu_version=child-align-v2",
-      string.format("draw_level=%d kind=child prev_selected=%s prev_content_row=%s target_content_row=%s border_size=%s requested_row=%s requested_col=%s", level, tostring(prev.selected), tostring(prev.content_row or prev.row), tostring(target_content_row), tostring(border_size), tostring(row), tostring(col)),
-    })
   end
 
   local win = vim.api.nvim_open_win(buf, false, {
@@ -188,11 +168,6 @@ local function draw_level(level)
   entry.frame_height = frame_height
   entry.rendered_lines = rendered_lines
   highlight_entry(buf, entry)
-
-  debug_log({
-    "orca_menu_version=child-align-v2",
-    string.format("drawn level=%d frame_row=%s frame_col=%s content_row=%s content_col=%s width=%s height=%s", level, tostring(entry.frame_row), tostring(entry.frame_col), tostring(entry.content_row), tostring(entry.content_col), tostring(entry.content_width), tostring(entry.content_height)),
-  })
 end
 
 function M.redraw_all()

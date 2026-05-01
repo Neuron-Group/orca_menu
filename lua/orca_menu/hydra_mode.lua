@@ -8,38 +8,12 @@ local M = {
 
 local hydra_exit_pending = false
 
-local function debug_log(lines)
-  local logfile = "/tmp/orca_menu_hydra.log"
-  local fd = io.open(logfile, "a")
-  if not fd then
-    return
-  end
-  fd:write(os.date("[%Y-%m-%d %H:%M:%S] "))
-  fd:write(table.concat(lines, " | "))
-  fd:write("\n")
-  fd:close()
-end
-
 local function close_hydra_mode()
-  debug_log({
-    "hydra=close_hydra_mode",
-    string.format("menu_mode=%s stack=%d open=%s", tostring(state.menu_mode), #state.menu_stack, tostring(popup.is_open())),
-  })
   popup.close_all()
   if M.hydra and not hydra_exit_pending then
     hydra_exit_pending = true
     vim.schedule(function()
       if M.hydra then
-        debug_log({
-          "hydra=scheduled_exit",
-          string.format(
-            "menu_mode=%s stack=%d open=%s layer=%s",
-            tostring(state.menu_mode),
-            #state.menu_stack,
-            tostring(popup.is_open()),
-            tostring(M.hydra.layer ~= nil)
-          ),
-        })
         if M.hydra.layer then
           M.hydra.layer:exit()
         else
@@ -51,10 +25,6 @@ local function close_hydra_mode()
 end
 
 local function hydra_go_back()
-  debug_log({
-    "hydra=go_back",
-    string.format("stack=%d open=%s", #state.menu_stack, tostring(popup.is_open())),
-  })
   if #state.menu_stack > 1 then
     popup.go_back()
   else
@@ -64,15 +34,7 @@ end
 
 local function hydra_activate_selected()
   local had_popup = popup.is_open()
-  debug_log({
-    "hydra=activate_selected_before",
-    string.format("had_popup=%s stack=%d", tostring(had_popup), #state.menu_stack),
-  })
   popup.activate_selected()
-  debug_log({
-    "hydra=activate_selected_after",
-    string.format("open=%s stack=%d menu_mode=%s", tostring(popup.is_open()), #state.menu_stack, tostring(state.menu_mode)),
-  })
   if had_popup and not popup.is_open() then
     close_hydra_mode()
   end
@@ -80,15 +42,7 @@ end
 
 local function hydra_activate_item_key(key)
   local had_popup = popup.is_open()
-  debug_log({
-    "hydra=activate_item_key_before",
-    string.format("key=%s had_popup=%s stack=%d", tostring(key), tostring(had_popup), #state.menu_stack),
-  })
   local activated = popup.activate_item_key(key)
-  debug_log({
-    "hydra=activate_item_key_after",
-    string.format("key=%s activated=%s open=%s stack=%d menu_mode=%s", tostring(key), tostring(activated), tostring(popup.is_open()), #state.menu_stack, tostring(state.menu_mode)),
-  })
   if had_popup and activated and not popup.is_open() then
     close_hydra_mode()
   end
@@ -176,7 +130,6 @@ function M.setup()
       invoke_on_body = true,
       hint = false,
       on_enter = function()
-        debug_log({ "hydra=on_enter", string.format("active_top=%s", tostring(state.active_top)) })
         popup.enter_menu_mode(state.active_top)
       end,
       on_exit = function()
@@ -189,10 +142,6 @@ function M.setup()
           state.menu_mode = false
           state.menu_stack = {}
         end
-        debug_log({
-          "hydra=on_exit",
-          string.format("menu_mode=%s stack=%d open=%s", tostring(state.menu_mode), #state.menu_stack, tostring(popup.is_open())),
-        })
         if pending_action then
           vim.schedule(function()
             actions.execute_item(pending_action)

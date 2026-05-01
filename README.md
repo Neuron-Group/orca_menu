@@ -1,95 +1,196 @@
 # orca_menu
 
-Neovim top menu plugin with floating popups, mouse support, submenu hotkeys, and Home Manager sync helpers.
+`orca_menu` is a Neovim top menu plugin with floating popups, nested submenus,
+keyboard navigation, mouse support, and lualine integration.
 
-## Repo Workflow
+It is designed to provide a VSCode-style menu bar while staying fully
+configurable in Lua.
 
-This project is edited in:
+## Features
 
-- repo source: `/home/neuron/Projects/orca_menu`
-- Home Manager mirror: `/home/neuron/.config/home-manager/pkgs/orca-menu`
+- top menu bar rendered through `lualine`
+- floating popup menus and nested submenus
+- `h/j/k/l`, arrows, `Enter`, `Esc`, and custom key navigation
+- right-aligned popup key hints
+- mouse support for menu bar and popup items
+- configurable menu labels, accelerators, commands, and Lua callbacks
+- Nix flake packaging included in this repository
 
-Use the helper scripts so you do not need to edit both places manually.
+## Requirements
 
-## Helper Scripts
+- Neovim `>= 0.9`
+- `nvim-lualine/lualine.nvim`
+- `anuvyklack/hydra.nvim` when using the default Hydra backend
 
-- `./scripts/sync_hm_mirror.sh status`
-  - show whether tracked files are the same or different
+## Installation
 
-- `./scripts/sync_hm_mirror.sh diff`
-  - show diffs between this repo and the Home Manager mirror
-
-- `./scripts/sync_hm_mirror.sh copy`
-  - copy tracked files from this repo into the Home Manager mirror
-
-- `./scripts/sync_and_switch.sh`
-  - sync files into the Home Manager mirror, then run:
-  - `home-manager switch --flake /home/neuron/.config/home-manager#neuron`
-
-- `./scripts/sync_and_switch.sh --no-switch`
-  - sync only
-
-## Current Home Manager Hook
-
-The Home Manager NVF config currently prepends this repo to Neovim runtimepath:
-
-- `vim.opt.runtimepath:prepend('/home/neuron/Projects/orca_menu')`
-
-That means your live repo version is preferred while the plugin is still under development.
-
-## Menu Key Options
-
-### Global menu-mode keys
-
-Configured under `keys`:
-
-- `open`
-  - enter menu mode, currently `<M-m>`
-- `next` / `prev`
-  - switch visible top bar menus
-- `down` / `up`
-  - move inside current popup
-- `select`
-  - activate selected item
-- `back`
-  - close child popup or leave menu mode
-- `close`
-  - close the menu
-
-These keys are active only while menu mode is open.
-
-### Top bar custom keys
-
-Each top menu can define:
+### `lazy.nvim`
 
 ```lua
-{ label = '&File', key = 'f', items = { ... } }
+{
+  "your-name/orca_menu",
+  dependencies = {
+    "nvim-lualine/lualine.nvim",
+    "anuvyklack/hydra.nvim",
+  },
+  config = function()
+    require("orca_menu").setup({
+      menus = {
+        {
+          label = "&File",
+          key = "f",
+          items = {
+            { label = "&Write", key = "w", command = "write" },
+            { label = "Write &Quit", key = "q", command = "wq" },
+          },
+        },
+        {
+          label = "&Tools",
+          key = "t",
+          items = {
+            {
+              label = "&Terminal",
+              key = "t",
+              items = {
+                { label = "&Toggle", key = "g", command = "ToggleTerm" },
+              },
+            },
+          },
+        },
+      },
+    })
+  end,
+}
 ```
 
-Behavior:
+### `packer.nvim`
 
-- custom `key` opens that top bar menu while menu mode is active
-- if `key` is absent, `&` accelerator still works as fallback
-- hidden/truncated lualine menu labels are not triggerable
+```lua
+use {
+  "your-name/orca_menu",
+  requires = {
+    "nvim-lualine/lualine.nvim",
+    "anuvyklack/hydra.nvim",
+  },
+  config = function()
+    require("orca_menu").setup({})
+  end,
+}
+```
 
-Bar labels render like:
+## Nix Flake Package
+
+This repository includes two Nix-oriented packaging entrypoints:
+
+- `flake.nix`
+  - exposes `packages.default` as a Vim plugin package
+- `nix/overlay.nix`
+  - exposes `vimPlugins.orca-menu`
+- `nix/home-manager-module.nix`
+  - small Home Manager helper module
+
+Example flake input:
+
+```nix
+inputs.orca-menu.url = "github:your-name/orca_menu";
+```
+
+Example plugin use with overlay output:
+
+```nix
+{
+  inputs.orca-menu.url = "github:your-name/orca_menu";
+
+  outputs = { self, nixpkgs, orca-menu, ... }:
+    let
+      system = "x86_64-linux";
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ orca-menu.overlays.default ];
+      };
+    in {
+      packages.${system}.default = pkgs.neovim;
+    };
+}
+```
+
+## Setup
+
+Call:
+
+```lua
+require("orca_menu").setup({
+  keys = {
+    open = "<M-m>",
+    mode_backend = "hydra",
+  },
+  lualine = {
+    section = "y",
+    spacing = " ",
+  },
+  submenu = {
+    border = "rounded",
+    min_width = 18,
+  },
+  highlights = {
+    menu = "NormalFloat",
+    menu_sel = "OrcaMenuSelected",
+    accelerator = "OrcaMenuHint",
+  },
+  menus = {
+    { label = "&File", key = "f", items = {} },
+  },
+})
+```
+
+## Menu Behavior
+
+### Mode Keys
+
+Default keys:
+
+- open: `<M-m>`
+- next top menu: `l` / `<Right>`
+- previous top menu: `h` / `<Left>`
+- next row: `j` / `<Down>`
+- previous row: `k` / `<Up>`
+- select: `<CR>`
+- back: `<BS>` / `<Esc>`
+- close: `q`
+
+### `Esc` Behavior
+
+- in a child submenu, `Esc` closes only that child and returns to its parent
+- in a first-level popup, `Esc` closes the popup and leaves menu mode
+- after executing an action, all popups close and menu mode exits before the action runs
+
+### Top Menu Keys
+
+Each top-level menu can define:
+
+```lua
+{ label = "&File", key = "f", items = { ... } }
+```
+
+- explicit `key` opens that visible top menu
+- if `key` is absent, the `&` accelerator is used as a fallback
+
+Rendered labels look like:
 
 - `File(f)`
 - `Tools(t)`
 
-### Popup item custom keys
+### Popup Item Keys
 
 Each popup item can define:
 
 ```lua
-{ label = '&Save', key = 's', command = 'write' }
-{ label = '&Terminal', key = 't', items = { ... } }
+{ label = "&Save", key = "s", command = "write" }
+{ label = "&Terminal", key = "t", items = { ... } }
 ```
 
-Behavior while popup is open:
-
 - explicit `key` activates the visible item
-- if `key` is absent, `&` accelerator works as fallback
+- if `key` is absent, the `&` accelerator is used as a fallback
 - right-side key hints are rendered in the popup
 
 Examples:
@@ -99,29 +200,47 @@ Examples:
 - `Space`
 - `Ctrl+x`
 
-Submenu rows render a separate arrow column on the far right.
+## Menu Item Fields
 
-## Layout Notes
+Each item may use:
 
-- popup rows are forced to one line
-- long labels are truncated with `...`
-- key hints are right-aligned in a dedicated column
-- submenu arrows are rendered in a separate rightmost column
-- top popup anchor uses visible rendered lualine labels, so hidden/truncated labels should not be opened
+- `label`
+- `key`
+- `command`
+- `keys`
+- `action`
+- `lua`
+- `items`
+
+Use `{ label = "-" }` for a separator.
+
+## Highlights
+
+Default popup highlights:
+
+- `menu`
+  - base popup row highlight
+- `menu_sel`
+  - selected popup row highlight
+- `accelerator`
+  - popup key-hint highlight
+
+By default:
+
+- right-side key hints use `OrcaMenuHint`
+- the selected row uses `OrcaMenuSelected`
 
 ## Main Files
 
+- `lua/orca_menu/init.lua`
+- `lua/orca_menu/hydra_mode.lua`
 - `lua/orca_menu/input.lua`
-  - menu-mode keymaps and item/top key activation bindings
-
 - `lua/orca_menu/popup.lua`
-  - popup drawing, mouse handling, submenu open/close logic
-
 - `lua/orca_menu/layout.lua`
-  - popup widths, row formatting, statusline label position lookup
-
 - `lua/orca_menu/lualine.lua`
-  - top bar label rendering such as `File(f)`
+- `flake.nix`
+- `nix/overlay.nix`
 
-- `../../.config/home-manager/programs/nvf/default.nix`
-  - active Home Manager config that wires this plugin into Neovim
+## License
+
+MIT
