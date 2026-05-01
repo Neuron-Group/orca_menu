@@ -80,6 +80,9 @@ local function refresh_dynamic_top_keys()
 end
 
 function M.enable_keys()
+  if state.config and state.config.keys.mode_backend == "hydra" then
+    return
+  end
   if state.keymaps_installed then
     return
   end
@@ -112,6 +115,10 @@ function M.enable_keys()
 end
 
 function M.disable_keys()
+  if state.config and state.config.keys.mode_backend == "hydra" then
+    state.keymaps_installed = false
+    return
+  end
   if not state.keymaps_installed then
     return
   end

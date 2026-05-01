@@ -4,6 +4,7 @@ local M = {
   windows = {},
   buffers = {},
   menu_stack = {},
+  pending_action = nil,
   anchor = { row = nil, col = nil },
   label_positions = {},
   menu_mode = false,

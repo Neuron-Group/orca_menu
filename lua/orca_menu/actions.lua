@@ -2,8 +2,7 @@ local state = require("orca_menu.state")
 
 local M = {}
 
-function M.run(item)
-  require("orca_menu.popup").close_all()
+function M.execute_item(item)
   if type(item.action) == "function" then
     item.action()
     return
@@ -28,6 +27,17 @@ function M.run(item)
   if item.keys then
     vim.api.nvim_feedkeys(vim.keycode(item.keys), "n", false)
   end
+end
+
+function M.run(item)
+  require("orca_menu.popup").close_all()
+  if state.config and state.config.keys.mode_backend == "hydra" then
+    state.pending_action = item
+    return
+  end
+  vim.schedule(function()
+    M.execute_item(item)
+  end)
 end
 
 function M.current_items()

@@ -9,6 +9,7 @@ FILES=(
   "plugin/orca_menu.lua"
   "lua/orca_menu/actions.lua"
   "lua/orca_menu/config.lua"
+  "lua/orca_menu/hydra_mode.lua"
   "lua/orca_menu/init.lua"
   "lua/orca_menu/input.lua"
   "lua/orca_menu/layout.lua"
