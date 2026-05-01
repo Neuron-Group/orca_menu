@@ -56,9 +56,13 @@ function M.setup(user_config)
   end, { nargs = "?" })
 
   if state.config.keys.open and state.config.keys.open ~= "" then
-    vim.keymap.set("n", state.config.keys.open, function()
-      require("orca_menu").toggle()
-    end, { desc = "Toggle Orca menu", silent = true })
+    if state.config.keys.mode_backend == "hydra" then
+      require("orca_menu.hydra_mode").setup()
+    else
+      vim.keymap.set("n", state.config.keys.open, function()
+        require("orca_menu").toggle()
+      end, { desc = "Toggle Orca menu", silent = true })
+    end
   end
 
   input.install_mouse()

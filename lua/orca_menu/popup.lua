@@ -263,27 +263,35 @@ function M.activate_item_key(key)
     return false
   end
 
-  local entry = state.menu_stack[#state.menu_stack]
-  if not entry then
+  if #state.menu_stack == 0 then
     return false
   end
 
   local lowered_key = key:lower()
-  for idx, item in ipairs(entry.items or {}) do
-    if item.kind ~= "separator" and type(item.key) == "string" and item.key:lower() == lowered_key then
-      entry.selected = idx
-      M.redraw_all()
-      M.activate_selected()
-      return true
+  for level = #state.menu_stack, 1, -1 do
+    local entry = state.menu_stack[level]
+    for idx, item in ipairs(entry.items or {}) do
+      if item.kind ~= "separator" and type(item.key) == "string" and item.key:lower() == lowered_key then
+        entry.selected = idx
+        while #state.menu_stack > level do
+          table.remove(state.menu_stack)
+        end
+        M.redraw_all()
+        M.activate_selected()
+        return true
+      end
     end
-  end
 
-  for idx, item in ipairs(entry.items or {}) do
-    if item.kind ~= "separator" and item.accelerator == lowered_key then
-      entry.selected = idx
-      M.redraw_all()
-      M.activate_selected()
-      return true
+    for idx, item in ipairs(entry.items or {}) do
+      if item.kind ~= "separator" and item.accelerator == lowered_key then
+        entry.selected = idx
+        while #state.menu_stack > level do
+          table.remove(state.menu_stack)
+        end
+        M.redraw_all()
+        M.activate_selected()
+        return true
+      end
     end
   end
 

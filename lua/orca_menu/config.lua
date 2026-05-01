@@ -9,6 +9,7 @@ local defaults = {
   },
   keys = {
     open = "<M-m>",
+    mode_backend = "hydra",
     next = { "l", "<Right>" },
     prev = { "h", "<Left>" },
     down = { "j", "<Down>" },
@@ -29,6 +30,19 @@ local defaults = {
   menus = {
     { label = "&File", items = {} },
   },
+}
+
+local reserved_custom_keys = {
+  h = true,
+  j = true,
+  k = true,
+  l = true,
+  ["<Left>"] = true,
+  ["<Right>"] = true,
+  ["<Up>"] = true,
+  ["<Down>"] = true,
+  ["<CR>"] = true,
+  ["<Esc>"] = true,
 }
 
 local function deep_extend(...)
@@ -68,7 +82,7 @@ local function normalize_item(item)
   normalized.label = label
   normalized.accelerator_index = accel
   normalized.accelerator = accel and label:sub(accel, accel):lower() or nil
-  normalized.key = type(item.key) == "string" and item.key or nil
+  normalized.key = type(item.key) == "string" and not reserved_custom_keys[item.key] and item.key or nil
   normalized.items = item.items and vim.tbl_map(normalize_item, item.items) or nil
   return normalized
 end
@@ -78,6 +92,7 @@ function M.normalize(user_config)
   merged.menus = vim.tbl_map(function(menu)
     local normalized = normalize_item(menu)
     normalized.kind = "top"
+    normalized.key = type(menu.key) == "string" and not reserved_custom_keys[menu.key] and menu.key or nil
     return normalized
   end, merged.menus or {})
   return merged
