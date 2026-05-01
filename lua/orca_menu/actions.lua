@@ -1,0 +1,38 @@
+local state = require("orca_menu.state")
+
+local M = {}
+
+function M.run(item)
+  require("orca_menu.popup").close_all()
+  if type(item.action) == "function" then
+    item.action()
+    return
+  end
+  if type(item.lua) == "function" then
+    item.lua()
+    return
+  end
+  if type(item.lua) == "string" then
+    local chunk, err = loadstring(item.lua)
+    if not chunk then
+      vim.notify(err, vim.log.levels.ERROR)
+      return
+    end
+    chunk()
+    return
+  end
+  if item.command then
+    vim.cmd(item.command)
+    return
+  end
+  if item.keys then
+    vim.api.nvim_feedkeys(vim.keycode(item.keys), "n", false)
+  end
+end
+
+function M.current_items()
+  local menu = state.config.menus[state.active_top]
+  return menu.items or {}
+end
+
+return M

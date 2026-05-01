@@ -1,0 +1,96 @@
+*orca_menu.txt*    Configurable top menu bar for Neovim
+
+INTRODUCTION ~
+
+Orca Menu provides a VSCode-style top menu bar built with Neovim floating
+windows. It supports keyboard navigation, mouse selection, nested submenus,
+user-defined theme highlights, and configurable menu content.
+
+COMMANDS ~
+
+    :OrcaMenu           Toggle the menu bar
+    :OrcaMenu {index}   Open the menu bar and focus top-level menu {index}
+
+CONFIGURATION ~
+
+Example:
+
+>lua
+require('orca_menu').setup({
+  keys = {
+    open = '<M-m>',
+  },
+  highlights = {
+    menubar = 'NormalFloat',
+    menubar_sel = 'PmenuSel',
+    menu = 'NormalFloat',
+    menu_sel = 'PmenuSel',
+    accelerator = 'Special',
+  },
+  menus = {
+    {
+      label = '&File',
+      items = {
+        { label = '&Find Files', command = 'Telescope find_files' },
+        { label = '&Save', command = 'write' },
+      },
+    },
+    {
+      label = '&Tools',
+      items = {
+        {
+          label = '&Terminal',
+          items = {
+            { label = '&Toggle', command = 'ToggleTerm' },
+          },
+        },
+      },
+    },
+  },
+})
+<
+
+MENU ITEM FIELDS ~
+
+Each menu item can use one of these fields:
+
+    label       Visible text. Prefix a letter with '&' for accelerator.
+    command     Ex command to run.
+    keys        Normal-mode keys to feed.
+    action      Lua function callback.
+    lua         Lua function or Lua string.
+    items       Nested submenu items.
+
+Use { label = '-' } to insert a separator.
+
+DEFAULT KEYS ~
+
+    <M-m>       Toggle menu
+    h/l         Previous/next top menu
+    j/k         Next/previous menu item
+    <CR>        Select item
+    <Esc>       Close menu
+    <Tab>       Read one accelerator character
+
+MOUSE ~
+
+Left click works on the top bar and the visible submenu when mouse support is
+enabled in Neovim.
+
+    top bar, same item      Close the open popup tree.
+    top bar, other item     Switch to that top popup immediately.
+    outside all popups      Close the whole popup tree.
+    popup item, no child    Run the item and close all popups.
+    popup item, has child   Open its child popup.
+    parent item with child  If its child popup tree is open, close that tree.
+    sibling popup item      Close child popups, then run or open sibling.
+
+HIGHLIGHTS ~
+
+    menubar         Base top-bar highlight
+    menubar_sel     Active top-menu highlight
+    menu            Base submenu highlight
+    menu_sel        Active submenu row highlight
+    accelerator     Highlight for accelerator characters
+
+vim:tw=78:ts=8:noet:ft=help:norl:
