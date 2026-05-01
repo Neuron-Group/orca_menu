@@ -24,8 +24,8 @@ local defaults = {
   },
   highlights = {
     menu = "NormalFloat",
-    menu_sel = "PmenuSel",
-    accelerator = "Special",
+    menu_sel = "OrcaMenuSelected",
+    accelerator = "OrcaMenuHint",
   },
   menus = {
     { label = "&File", items = {} },

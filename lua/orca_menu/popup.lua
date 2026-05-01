@@ -4,6 +4,27 @@ local actions = require("orca_menu.actions")
 
 local M = {}
 
+local function ensure_highlights()
+  local normal_float = vim.api.nvim_get_hl(0, { name = state.config.highlights.menu, link = false })
+  local menu_fg = normal_float.fg
+  local menu_bg = normal_float.bg
+  local special = vim.api.nvim_get_hl(0, { name = "Special", link = false })
+  local pink_fg = special.fg
+
+  vim.api.nvim_set_hl(0, "OrcaMenuHint", {
+    fg = pink_fg,
+    bg = menu_bg,
+    default = false,
+  })
+
+  vim.api.nvim_set_hl(0, "OrcaMenuSelected", {
+    fg = pink_fg,
+    bg = menu_bg,
+    bold = true,
+    default = false,
+  })
+end
+
 local function debug_log(lines)
   local logfile = "/tmp/orca_menu_mouse.log"
   local fd = io.open(logfile, "a")
@@ -63,9 +84,6 @@ local function highlight_entry(buf, entry)
         entry.rendered_lines[idx].hint_start,
         entry.rendered_lines[idx].hint_end
       )
-    end
-    if item.accelerator_index and item.kind ~= "separator" and not (item.key and item.key ~= "") then
-      vim.api.nvim_buf_add_highlight(buf, state.namespace, state.config.highlights.accelerator, idx - 1, item.accelerator_index - 1, item.accelerator_index)
     end
   end
 end
@@ -178,6 +196,7 @@ local function draw_level(level)
 end
 
 function M.redraw_all()
+  ensure_highlights()
   local stack = vim.deepcopy(state.menu_stack)
   destroy_windows_only()
   state.menu_stack = stack
