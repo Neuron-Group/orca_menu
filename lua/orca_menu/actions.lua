@@ -31,8 +31,10 @@ end
 
 function M.run(item)
   require("orca_menu.popup").close_all()
-  if state.config and state.config.keys.mode_backend == "hydra" then
+  local hydra_mode = require("orca_menu.hydra_mode")
+  if state.config and state.config.keys.mode_backend == "hydra" and hydra_mode.is_active() then
     state.pending_action = item
+    hydra_mode.exit()
     return
   end
   vim.schedule(function()
