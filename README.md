@@ -240,7 +240,3 @@ By default:
 - `lua/orca_menu/lualine.lua`
 - `flake.nix`
 - `nix/overlay.nix`
-
-## License
-
-MIT
