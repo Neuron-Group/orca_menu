@@ -94,10 +94,10 @@ require('orca_menu').setup({
 Behavior:
 
     exact client.name matching
-    later attached matching LSP overrides win
+    matching overrides come from LSP clients attached to the current buffer
     menus replace base menus completely
     other fields are deep-merged
-    LSP changes close popups and exit menu mode before refresh
+    current buffer or LSP changes close popups and exit menu mode before refresh
 
 DEFAULT KEYS ~
 

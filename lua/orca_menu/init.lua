@@ -10,9 +10,10 @@ local hydra_mode = require("orca_menu.hydra_mode")
 local augroup = vim.api.nvim_create_augroup("OrcaMenu", { clear = true })
 
 local function active_lsp_names()
+  local current_buf = vim.api.nvim_get_current_buf()
   local names = {}
-  for _, client_id in ipairs(state.lsp_client_ids or {}) do
-    local client = vim.lsp.get_client_by_id(client_id)
+  local clients = vim.lsp.get_clients({ bufnr = current_buf })
+  for _, client in ipairs(clients) do
     if client and client.name then
       table.insert(names, client.name)
     end
@@ -66,32 +67,6 @@ local function refresh_config()
   lualine.register()
 end
 
-local function track_lsp_client(client_id)
-  local seen = {}
-  local ordered_ids = {}
-  for _, existing_id in ipairs(state.lsp_client_ids or {}) do
-    local client = vim.lsp.get_client_by_id(existing_id)
-    if client and not seen[existing_id] then
-      seen[existing_id] = true
-      table.insert(ordered_ids, existing_id)
-    end
-  end
-  if client_id and vim.lsp.get_client_by_id(client_id) and not seen[client_id] then
-    table.insert(ordered_ids, client_id)
-  end
-  state.lsp_client_ids = ordered_ids
-end
-
-local function untrack_lsp_client(client_id)
-  local kept_ids = {}
-  for _, existing_id in ipairs(state.lsp_client_ids or {}) do
-    if existing_id ~= client_id and vim.lsp.get_client_by_id(existing_id) then
-      table.insert(kept_ids, existing_id)
-    end
-  end
-  state.lsp_client_ids = kept_ids
-end
-
 function M.open_menu(index, _use_mouse)
   popup.open_top(index or state.active_top)
 end
@@ -126,10 +101,6 @@ end
 
 function M.setup(user_config)
   state.base_config = vim.deepcopy(user_config or {})
-  state.lsp_client_ids = {}
-  for _, client in ipairs(vim.lsp.get_clients()) do
-    table.insert(state.lsp_client_ids, client.id)
-  end
   state.config = config.resolve(state.base_config, active_lsp_names())
   rebuild_click_handlers()
 
@@ -152,16 +123,21 @@ function M.setup(user_config)
 
   vim.api.nvim_create_autocmd("LspAttach", {
     group = augroup,
-    callback = function(args)
-      track_lsp_client(args.data and args.data.client_id or nil)
+    callback = function()
       refresh_config()
     end,
   })
 
   vim.api.nvim_create_autocmd("LspDetach", {
     group = augroup,
-    callback = function(args)
-      untrack_lsp_client(args.data and args.data.client_id or nil)
+    callback = function()
+      vim.schedule(refresh_config)
+    end,
+  })
+
+  vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
+    group = augroup,
+    callback = function()
       refresh_config()
     end,
   })

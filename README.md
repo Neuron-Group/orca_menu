@@ -187,10 +187,10 @@ require("orca_menu").setup({
 ```
 
 - keys in `lsp_overrides` match exact `client.name`
-- matching overrides are applied in LSP attach order, later matches win
+- matching overrides are resolved from LSP clients attached to the current buffer
 - `menus` fully replaces base `menus` inside an override
 - other fields are deep-merged onto the base config
-- when LSP state changes, open popups close and menu mode exits before refresh
+- when the current buffer or its LSP state changes, open popups close and menu mode exits before refresh
 
 ## Menu Behavior
 
