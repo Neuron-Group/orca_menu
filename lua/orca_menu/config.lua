@@ -7,6 +7,9 @@ local defaults = {
     spacing = " ",
     section = "y",
   },
+  topbar = {
+    hint_format = "{label}({hint})",
+  },
   keys = {
     open = "<M-m>",
     mode_backend = "hydra",

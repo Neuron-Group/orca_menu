@@ -134,6 +134,9 @@ require("orca_menu").setup({
     section = "y",
     spacing = " ",
   },
+  topbar = {
+    hint_format = "{label}({hint})",
+  },
   submenu = {
     border = "rounded",
     min_width = 18,
@@ -171,6 +174,7 @@ Default keys:
 - in a child submenu, `Esc` closes only that child and returns to its parent
 - in a first-level popup, `Esc` closes the popup and leaves menu mode
 - after executing an action, all popups close and menu mode exits before the action runs
+- resizing the editor or windows closes all popups and exits menu mode
 - when a popup is taller than the screen, selection keeps the visible window scrolled
 - child submenus open beside the visible parent row and flip left if needed
 - `submenu.scroll_indicator_up` and `submenu.scroll_indicator_down` customize the border scroll markers
@@ -190,6 +194,39 @@ Rendered labels look like:
 
 - `File(f)`
 - `Tools(t)`
+
+Top-bar key hints are customizable with `topbar.hint_format`:
+
+```lua
+require("orca_menu").setup({
+  topbar = {
+    hint_format = "{label}[{hint}]",
+  },
+})
+```
+
+Supported placeholders:
+
+- `{label}` for the menu label
+- `{hint}` for the rendered key hint
+
+Examples:
+
+- `"{label}({hint})"` -> `File(f)`
+- `"{label}[{hint}]"` -> `File[f]`
+- `"{hint} -> {label}"` -> `f -> File`
+
+You can also use a function for full custom formatting:
+
+```lua
+require("orca_menu").setup({
+  topbar = {
+    hint_format = function(ctx)
+      return string.format("%s <%s>", ctx.label, ctx.hint)
+    end,
+  },
+})
+```
 
 ### Popup Item Keys
 

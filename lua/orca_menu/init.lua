@@ -6,6 +6,8 @@ local popup = require("orca_menu.popup")
 local input = require("orca_menu.input")
 local lualine = require("orca_menu.lualine")
 
+local augroup = vim.api.nvim_create_augroup("OrcaMenu", { clear = true })
+
 function M.open_menu(index, _use_mouse)
   popup.open_top(index or state.active_top)
 end
@@ -54,6 +56,15 @@ function M.setup(user_config)
       M.toggle()
     end
   end, { nargs = "?" })
+
+  vim.api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
+    group = augroup,
+    callback = function()
+      if state.menu_mode or popup.is_open() or #state.menu_stack > 0 then
+        popup.close_all()
+      end
+    end,
+  })
 
   if state.config.keys.open and state.config.keys.open ~= "" then
     if state.config.keys.mode_backend == "hydra" then

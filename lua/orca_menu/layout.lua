@@ -2,13 +2,8 @@ local state = require("orca_menu.state")
 
 local M = {}
 
-local function top_bar_display_label(menu, index)
-  local label = (menu and menu.label ~= "") and menu.label or tostring(index)
-  local key_hint = M.display_key_hint(menu and menu.key)
-  if key_hint ~= "" then
-    label = string.format("%s(%s)", label, key_hint)
-  end
-  return label
+local function top_bar_base_label(menu, index)
+  return (menu and menu.label ~= "") and menu.label or tostring(index)
 end
 
 local function truncate_display(text, max_width)
@@ -74,6 +69,42 @@ function M.display_key_hint(key)
   end
 
   return key:gsub("^<", ""):gsub(">$", "")
+end
+
+function M.top_bar_display_label(menu, index)
+  local label = top_bar_base_label(menu, index)
+  local hint = M.display_key_hint(menu and menu.key)
+  if hint == "" then
+    return label
+  end
+
+  local format = state.config
+    and state.config.topbar
+    and state.config.topbar.hint_format
+    or "{label}({hint})"
+
+  if type(format) == "function" then
+    local ok, rendered = pcall(format, {
+      label = label,
+      hint = hint,
+      menu = menu,
+      index = index,
+    })
+    if ok and type(rendered) == "string" and rendered ~= "" then
+      return rendered
+    end
+    return label
+  end
+
+  if type(format) ~= "string" or format == "" then
+    format = "{label}({hint})"
+  end
+
+  local rendered = format
+    :gsub("{label}", label)
+    :gsub("{hint}", hint)
+
+  return rendered
 end
 
 function M.item_right_hint(item)
@@ -191,7 +222,7 @@ function M.refresh_label_positions()
 
   local search_from = 1
   for index, menu in ipairs(state.config.menus) do
-    local label = top_bar_display_label(menu, index)
+    local label = M.top_bar_display_label(menu, index)
     local start_byte = rendered:find(label, search_from, true)
     if start_byte then
       state.label_positions[index] = math.max(vim.fn.strdisplaywidth(rendered:sub(1, start_byte - 1)) + 1, 1)
@@ -218,7 +249,7 @@ function M.label_hit_at_col(col)
   for index, menu in ipairs(state.config.menus) do
     local start_col = state.label_positions[index]
     if start_col then
-      local label_width = vim.fn.strdisplaywidth(top_bar_display_label(menu, index))
+      local label_width = vim.fn.strdisplaywidth(M.top_bar_display_label(menu, index))
       local end_col = start_col + label_width - 1
       if col >= start_col and col <= end_col then
         return index
@@ -232,7 +263,7 @@ function M.resolve_anchor(index, items)
   M.refresh_label_positions()
   local start_col = state.label_positions[index]
   local menu = state.config.menus[index]
-  local label_width = vim.fn.strdisplaywidth(top_bar_display_label(menu, index))
+  local label_width = vim.fn.strdisplaywidth(M.top_bar_display_label(menu, index))
   local popup_width = M.submenu_width(items)
   local col
 

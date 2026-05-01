@@ -32,6 +32,9 @@ require('orca_menu').setup({
     section = 'y',
     spacing = ' ',
   },
+  topbar = {
+    hint_format = '{label}({hint})',
+  },
   submenu = {
     border = 'rounded',
     min_width = 18,
@@ -73,12 +76,53 @@ ESC BEHAVIOR ~
     child submenu       Close only that child and return to parent.
     first-level popup   Close the popup and leave menu mode.
     after action        Close all popups and leave menu mode first.
+    window resize       Close all popups and leave menu mode.
 
 TOP MENU FIELDS ~
 
     label       Visible text. Prefix a letter with '&' for accelerator.
     key         Optional direct key for the visible top menu.
     items       Top-level popup entries.
+
+TOP BAR HINT FORMAT ~
+
+Top-bar key hints can be customized with topbar.hint_format.
+
+Supported placeholders:
+
+    {label}    Top-level menu label
+    {hint}     Rendered key hint
+
+Examples:
+
+>lua
+require('orca_menu').setup({
+  topbar = {
+    hint_format = '{label}[{hint}]',
+  },
+})
+<
+
+Produces:
+
+    File[f]
+
+Other useful formats:
+
+    {label}({hint})    -> File(f)
+    {hint} -> {label}  -> f -> File
+
+For fully custom behavior, topbar.hint_format may also be a function:
+
+>lua
+require('orca_menu').setup({
+  topbar = {
+    hint_format = function(ctx)
+      return string.format('%s <%s>', ctx.label, ctx.hint)
+    end,
+  },
+})
+<
 
 POPUP ITEM FIELDS ~
 

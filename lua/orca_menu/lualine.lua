@@ -11,11 +11,7 @@ function M.component_at(index)
   if not menu then
     return ""
   end
-  local label = menu.label ~= "" and menu.label or tostring(index)
-  local key_hint = layout.display_key_hint(menu.key)
-  if key_hint ~= "" then
-    label = string.format("%s(%s)", label, key_hint)
-  end
+  local label = layout.top_bar_display_label(menu, index)
   local spacing = state.config.lualine.spacing or " "
   if state.config.enable_mouse == false then
     return string.format("%s%s%s", spacing, label, spacing)
