@@ -10,9 +10,13 @@ configurable in Lua.
 
 - top menu bar rendered through `lualine`
 - floating popup menus and nested submenus
+- tall popup menus auto-scroll with selection
 - `h/j/k/l`, arrows, `Enter`, `Esc`, and custom key navigation
 - right-aligned popup key hints
 - mouse support for menu bar and popup items
+- mouse-wheel scrolling for open popup menus
+- wheel scrolling moves by nearly a full visible page
+- popup borders show `↑`/`↓` when more items are hidden above or below
 - configurable menu labels, accelerators, commands, and Lua callbacks
 - Nix flake packaging included in this repository
 
@@ -163,6 +167,8 @@ Default keys:
 - in a child submenu, `Esc` closes only that child and returns to its parent
 - in a first-level popup, `Esc` closes the popup and leaves menu mode
 - after executing an action, all popups close and menu mode exits before the action runs
+- when a popup is taller than the screen, selection keeps the visible window scrolled
+- child submenus open beside the visible parent row and flip left if needed
 
 ### Top Menu Keys
 

@@ -5,6 +5,8 @@ INTRODUCTION ~
 Orca Menu provides a bottom menu bar for Neovim using floating popup windows.
 It supports keyboard navigation, nested submenus, mouse interaction, lualine
 integration, custom key hints, and Lua callbacks.
+Tall popup menus automatically keep the selected row visible, and child
+submenus open next to the visible parent row.
 
 REQUIREMENTS ~
 
@@ -112,6 +114,8 @@ Default internal groups:
 MOUSE ~
 
 Left click works on the top bar and on visible popup entries.
+Mouse wheel scrolls the hovered open popup menu by nearly a full page.
+The popup border shows ↑ or ↓ on the right side when more items are hidden.
 
     top bar, same item      Close the open popup tree.
     top bar, other item     Switch to that popup.

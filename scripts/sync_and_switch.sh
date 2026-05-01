@@ -13,4 +13,4 @@ if [[ "${1:-}" == "--no-switch" ]]; then
   exit 0
 fi
 
-home-manager switch --flake "$HM_DIR#neuron"
+home-manager switch --impure --flake "$HM_DIR#neuron"

@@ -4,6 +4,109 @@ local actions = require("orca_menu.actions")
 
 local M = {}
 
+local function available_content_height()
+  local border_rows = state.config.submenu.border and 2 or 0
+  return math.max(vim.o.lines - vim.o.cmdheight - border_rows - 2, 1)
+end
+
+local function visible_height_for(entry)
+  return math.max(math.min(#(entry.items or {}), available_content_height()), 1)
+end
+
+local function ensure_valid_selection(entry)
+  local items = entry.items or {}
+  if #items == 0 then
+    entry.selected = 1
+    return
+  end
+
+  local selected = math.max(math.min(entry.selected or 1, #items), 1)
+  if items[selected] and items[selected].kind ~= "separator" then
+    entry.selected = selected
+    return
+  end
+
+  for idx, item in ipairs(items) do
+    if item.kind ~= "separator" then
+      entry.selected = idx
+      return
+    end
+  end
+
+  entry.selected = 1
+end
+
+local function ensure_scroll_visible(entry)
+  ensure_valid_selection(entry)
+
+  local visible_height = visible_height_for(entry)
+  local max_scroll_top = math.max(#(entry.items or {}) - visible_height + 1, 1)
+  local scroll_top = math.max(math.min(entry.scroll_top or 1, max_scroll_top), 1)
+  local selected = entry.selected or 1
+
+  if selected < scroll_top then
+    scroll_top = selected
+  elseif selected >= scroll_top + visible_height then
+    scroll_top = selected - visible_height + 1
+  end
+
+  entry.scroll_top = math.max(math.min(scroll_top, max_scroll_top), 1)
+  entry.visible_height = visible_height
+end
+
+local function selected_visible_index(entry)
+  ensure_scroll_visible(entry)
+  return math.max((entry.selected or 1) - (entry.scroll_top or 1) + 1, 1)
+end
+
+local function move_selection(entry, direction, steps, wrap)
+  if not entry or #(entry.items or {}) == 0 then
+    return false
+  end
+
+  local items = entry.items
+  local selected = math.max(math.min(entry.selected or 1, #items), 1)
+  local moved = false
+
+  for _ = 1, math.max(steps or 1, 1) do
+    local next_idx = selected
+
+    while true do
+      next_idx = next_idx + direction
+
+      if wrap then
+        if next_idx < 1 then
+          next_idx = #items
+        elseif next_idx > #items then
+          next_idx = 1
+        end
+        if next_idx == selected then
+          break
+        end
+      elseif next_idx < 1 or next_idx > #items then
+        next_idx = selected
+        break
+      end
+
+      if items[next_idx].kind ~= "separator" then
+        selected = next_idx
+        moved = true
+        break
+      end
+    end
+
+    if next_idx == selected and not moved then
+      break
+    end
+  end
+
+  if moved then
+    entry.selected = selected
+  end
+
+  return moved
+end
+
 local function ensure_highlights()
   local normal_float = vim.api.nvim_get_hl(0, { name = state.config.highlights.menu, link = false })
   local menu_fg = normal_float.fg
@@ -23,6 +126,53 @@ local function ensure_highlights()
     bold = true,
     default = false,
   })
+end
+
+local function resolve_border_chars(border)
+  if not border then
+    return nil
+  end
+
+  if type(border) == "table" then
+    local chars = vim.deepcopy(border)
+    if #chars == 8 then
+      return chars
+    end
+    return nil
+  end
+
+  local presets = {
+    none = { "", "", "", "", "", "", "", "" },
+    single = { "┌", "─", "┐", "│", "┘", "─", "└", "│" },
+    double = { "╔", "═", "╗", "║", "╝", "═", "╚", "║" },
+    rounded = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
+    solid = { " ", " ", " ", " ", " ", " ", " ", " " },
+    shadow = { "", "", " ", " ", " ", " ", "", "" },
+  }
+
+  return presets[border]
+end
+
+local function border_with_scroll_indicators(entry)
+  local border = state.config.submenu.border
+  local chars = resolve_border_chars(border)
+  if not chars then
+    return border
+  end
+
+  local max_scroll_top = math.max(#(entry.items or {}) - (entry.visible_height or #(entry.items or {})) + 1, 1)
+  local has_up = (entry.scroll_top or 1) > 1
+  local has_down = (entry.scroll_top or 1) < max_scroll_top
+
+  if has_up then
+    chars[3] = "↑"
+  end
+
+  if has_down then
+    chars[5] = "↓"
+  end
+
+  return chars
 end
 
 local function destroy_windows_only()
@@ -60,17 +210,21 @@ end
 
 local function highlight_entry(buf, entry)
   vim.api.nvim_buf_clear_namespace(buf, state.namespace, 0, -1)
-  for idx, item in ipairs(entry.items) do
+  local scroll_top = entry.scroll_top or 1
+  local visible_end = math.min(scroll_top + (entry.visible_height or #entry.items) - 1, #entry.items)
+  for idx = scroll_top, visible_end do
+    local item = entry.items[idx]
+    local line_idx = idx - scroll_top
     local hl = idx == (entry.selected or 1) and state.config.highlights.menu_sel or state.config.highlights.menu
-    vim.api.nvim_buf_add_highlight(buf, state.namespace, hl, idx - 1, 0, -1)
-    if entry.rendered_lines and entry.rendered_lines[idx] and entry.rendered_lines[idx].hint_start and entry.rendered_lines[idx].hint_end then
+    vim.api.nvim_buf_add_highlight(buf, state.namespace, hl, line_idx, 0, -1)
+    if entry.rendered_lines and entry.rendered_lines[line_idx + 1] and entry.rendered_lines[line_idx + 1].hint_start and entry.rendered_lines[line_idx + 1].hint_end then
       vim.api.nvim_buf_add_highlight(
         buf,
         state.namespace,
         state.config.highlights.accelerator,
-        idx - 1,
-        entry.rendered_lines[idx].hint_start,
-        entry.rendered_lines[idx].hint_end
+        line_idx,
+        entry.rendered_lines[line_idx + 1].hint_start,
+        entry.rendered_lines[line_idx + 1].hint_end
       )
     end
   end
@@ -82,12 +236,17 @@ local function draw_level(level)
     return
   end
 
+  ensure_scroll_visible(entry)
+
   local width = layout.submenu_width(entry.items)
   local max_hint_width = layout.max_hint_width(entry.items)
   local arrow_width = layout.arrow_width(entry.items)
   local lines = {}
   local rendered_lines = {}
-  for _, item in ipairs(entry.items) do
+  local scroll_top = entry.scroll_top or 1
+  local visible_end = math.min(scroll_top + (entry.visible_height or #entry.items) - 1, #entry.items)
+  for idx = scroll_top, visible_end do
+    local item = entry.items[idx]
     local rendered = layout.format_item_line(item, width, max_hint_width, arrow_width)
     table.insert(rendered_lines, rendered)
     table.insert(lines, rendered.text)
@@ -108,11 +267,24 @@ local function draw_level(level)
     col = state.anchor.col
   else
     local prev = state.menu_stack[level - 1]
-    local target_content_row = (prev.content_row or prev.row) + math.max((prev.selected or 1) - 1, 0)
+    local target_content_row = (prev.content_row or prev.row) + math.max(selected_visible_index(prev) - 1, 0)
     row = target_content_row - border_size - 1
-    col = (prev.content_col or prev.col) + (prev.content_width or prev.width)
-    local max_row = math.max(0, vim.o.lines - vim.o.cmdheight - #lines - 3)
-    row = math.min(row, max_row)
+    local parent_frame_col = prev.frame_col or prev.col
+    local parent_frame_width = prev.frame_width or prev.width
+    local right_col = parent_frame_col + parent_frame_width
+    local left_col = parent_frame_col - (width + (border_size * 2))
+    local max_frame_col = math.max(vim.o.columns - (width + (border_size * 2)) + 1, 1)
+
+    if right_col + width + (border_size * 2) - 1 <= vim.o.columns then
+      col = right_col
+    elseif left_col >= 1 then
+      col = left_col
+    else
+      col = math.max(math.min(right_col, max_frame_col), 1)
+    end
+
+    local max_row = math.max(0, vim.o.lines - vim.o.cmdheight - #lines - (border_size * 2) - 1)
+    row = math.max(math.min(row, max_row), 0)
   end
 
   local win = vim.api.nvim_open_win(buf, false, {
@@ -123,7 +295,7 @@ local function draw_level(level)
     height = math.max(#lines, 1),
     focusable = false,
     style = "minimal",
-    border = state.config.submenu.border,
+    border = border_with_scroll_indicators(entry),
     zindex = 250 + level,
   })
   table.insert(state.windows, win)
@@ -190,7 +362,7 @@ function M.open_top(index)
   state.menu_mode = true
   require("orca_menu.input").enable_keys()
   state.menu_stack = {
-    { items = items, selected = 1 },
+    { items = items, selected = 1, scroll_top = 1 },
   }
   M.redraw_all()
 end
@@ -217,14 +389,11 @@ function M.select_row(delta)
   if not entry then
     return
   end
-  local idx = entry.selected or 1
-  for _ = 1, #entry.items do
-    idx = ((idx - 1 + delta) % #entry.items) + 1
-    if entry.items[idx].kind ~= "separator" then
-      entry.selected = idx
-      M.redraw_all()
-      return
-    end
+  if #(entry.items or {}) == 0 then
+    return
+  end
+  if move_selection(entry, delta < 0 and -1 or 1, 1, true) then
+    M.redraw_all()
   end
 end
 
@@ -245,6 +414,7 @@ function M.activate_selected()
     table.insert(state.menu_stack, {
       items = item.items or {},
       selected = 1,
+      scroll_top = 1,
     })
     M.redraw_all()
     return
@@ -323,13 +493,81 @@ local function trim_stack_to(level)
   end
 end
 
+local function content_hit_level_at(screen_row, screen_col)
+  for idx = #state.menu_stack, 1, -1 do
+    local entry = state.menu_stack[idx]
+    local row_start = entry.content_row or entry.row
+    local row_end = row_start + (entry.content_height or entry.height) - 1
+    local col_start = entry.content_col or entry.col
+    local col_end = col_start + (entry.content_width or entry.width) - 1
+    if screen_row >= row_start and screen_row <= row_end and screen_col >= col_start and screen_col <= col_end then
+      return idx
+    end
+  end
+  return nil
+end
+
+local function frame_hit_level_at(screen_row, screen_col)
+  for idx = #state.menu_stack, 1, -1 do
+    local entry = state.menu_stack[idx]
+    local row_start = entry.frame_row or entry.row
+    local row_end = row_start + (entry.frame_height or entry.height) - 1
+    local col_start = entry.frame_col or entry.col
+    local col_end = col_start + (entry.frame_width or entry.width) - 1
+    if screen_row >= row_start and screen_row <= row_end and screen_col >= col_start and screen_col <= col_end then
+      return idx
+    end
+  end
+  return nil
+end
+
+local function hit_level_at(screen_row, screen_col)
+  return content_hit_level_at(screen_row, screen_col) or frame_hit_level_at(screen_row, screen_col)
+end
+
+function M.scroll_at_mouse(delta)
+  if not M.is_open() or #state.menu_stack == 0 then
+    return false
+  end
+
+  local mouse = vim.fn.getmousepos()
+  local screen_row = math.max((mouse.screenrow or 1), 1)
+  local screen_col = math.max((mouse.screencol or 1), 1)
+  local level = hit_level_at(screen_row, screen_col)
+  if not level then
+    return false
+  end
+
+  trim_stack_to(level)
+
+  local entry = state.menu_stack[level]
+  if not entry or #(entry.items or {}) == 0 then
+    return true
+  end
+
+  ensure_scroll_visible(entry)
+  local step = math.max((entry.visible_height or 1) - 1, 1)
+  if move_selection(entry, delta < 0 and -1 or 1, step, false) then
+    M.redraw_all()
+  end
+
+  return true
+end
+
 local function item_at_level_row(level, screen_row)
   local entry = state.menu_stack[level]
   if not entry then
     return nil, nil
   end
 
-  local row = screen_row - entry.content_row + 1
+  local visible_row = screen_row - entry.content_row + 1
+  local visible_height = entry.visible_height or #(entry.items or {})
+  if visible_row < 1 or visible_row > visible_height then
+    return nil, visible_row
+  end
+
+  local row = (entry.scroll_top or 1) + visible_row - 1
+
   if row < 1 or row > #(entry.items or {}) then
     return nil, row
   end
@@ -363,6 +601,7 @@ local function activate_item_at_level(level, row)
     table.insert(state.menu_stack, {
       items = item.items or {},
       selected = 1,
+      scroll_top = 1,
     })
     M.redraw_all()
     return
@@ -396,32 +635,8 @@ function M.handle_mouse()
   end
 
   local screen_row = math.max((mouse.screenrow or 1), 1)
-  local content_hit_level
-  local frame_hit_level
-
-  for idx = #state.menu_stack, 1, -1 do
-    local entry = state.menu_stack[idx]
-    local row_start = entry.content_row or entry.row
-    local row_end = row_start + (entry.content_height or entry.height) - 1
-    local col_start = entry.content_col or entry.col
-    local col_end = col_start + (entry.content_width or entry.width) - 1
-    if screen_row >= row_start and screen_row <= row_end and screen_col >= col_start and screen_col <= col_end then
-      content_hit_level = idx
-      break
-    end
-  end
-
-  for idx = #state.menu_stack, 1, -1 do
-    local entry = state.menu_stack[idx]
-    local row_start = entry.frame_row or entry.row
-    local row_end = row_start + (entry.frame_height or entry.height) - 1
-    local col_start = entry.frame_col or entry.col
-    local col_end = col_start + (entry.frame_width or entry.width) - 1
-    if screen_row >= row_start and screen_row <= row_end and screen_col >= col_start and screen_col <= col_end then
-      frame_hit_level = idx
-      break
-    end
-  end
+  local content_hit_level = content_hit_level_at(screen_row, screen_col)
+  local frame_hit_level = frame_hit_level_at(screen_row, screen_col)
 
   local clicked_level = content_hit_level or frame_hit_level
 
@@ -431,8 +646,7 @@ function M.handle_mouse()
   end
 
   local entry = state.menu_stack[clicked_level]
-  local row = screen_row - (entry.content_row or entry.row) + 1
-  local item = item_at_level_row(clicked_level, screen_row)
+  local item, row = item_at_level_row(clicked_level, screen_row)
 
   if not item then
     return

@@ -132,6 +132,11 @@ function M.install_mouse()
   if state.global_mouse_installed then
     return
   end
+
+  local function fallback_mouse(keys)
+    vim.cmd.exec(string.format('"normal! %s"', keys))
+  end
+
   vim.keymap.set("n", "<LeftMouse>", function()
     if popup.is_open() then
       popup.handle_mouse()
@@ -142,10 +147,23 @@ function M.install_mouse()
       if bar_index then
         popup.open_top(bar_index)
       else
-        vim.cmd.exec '"normal! \\<LeftMouse>"'
+        fallback_mouse("\\<LeftMouse>")
       end
     end
   end, { silent = true })
+
+  vim.keymap.set("n", "<ScrollWheelUp>", function()
+    if not popup.scroll_at_mouse(-1) then
+      fallback_mouse("\\<ScrollWheelUp>")
+    end
+  end, { silent = true })
+
+  vim.keymap.set("n", "<ScrollWheelDown>", function()
+    if not popup.scroll_at_mouse(1) then
+      fallback_mouse("\\<ScrollWheelDown>")
+    end
+  end, { silent = true })
+
   state.global_mouse_installed = true
 end
 

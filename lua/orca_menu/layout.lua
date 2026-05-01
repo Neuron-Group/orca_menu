@@ -162,7 +162,9 @@ function M.submenu_width(items)
 end
 
 function M.popup_height(items)
-  return math.max(#(items or {}), 1)
+  local border_rows = state.config.submenu.border and 2 or 0
+  local max_height = math.max(vim.o.lines - vim.o.cmdheight - border_rows - 2, 1)
+  return math.max(math.min(#(items or {}), max_height), 1)
 end
 
 local function evaluated_statusline()
