@@ -269,19 +269,7 @@ local function draw_level(level)
     local prev = state.menu_stack[level - 1]
     local target_content_row = (prev.content_row or prev.row) + math.max(selected_visible_index(prev) - 1, 0)
     row = target_content_row - border_size - 1
-    local parent_frame_col = prev.frame_col or prev.col
-    local parent_frame_width = prev.frame_width or prev.width
-    local right_col = parent_frame_col + parent_frame_width
-    local left_col = parent_frame_col - (width + (border_size * 2))
-    local max_frame_col = math.max(vim.o.columns - (width + (border_size * 2)) + 1, 1)
-
-    if right_col + width + (border_size * 2) - 1 <= vim.o.columns then
-      col = right_col
-    elseif left_col >= 1 then
-      col = left_col
-    else
-      col = math.max(math.min(right_col, max_frame_col), 1)
-    end
+    col = (prev.content_col or prev.col) + (prev.content_width or prev.width)
 
     local max_row = math.max(0, vim.o.lines - vim.o.cmdheight - #lines - (border_size * 2) - 1)
     row = math.max(math.min(row, max_row), 0)

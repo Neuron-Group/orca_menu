@@ -154,4 +154,19 @@ function M.setup()
   return M.hydra
 end
 
+function M.exit()
+  if M.hydra and not hydra_exit_pending then
+    hydra_exit_pending = true
+    vim.schedule(function()
+      if M.hydra then
+        if M.hydra.layer then
+          M.hydra.layer:exit()
+        else
+          M.hydra:exit()
+        end
+      end
+    end)
+  end
+end
+
 return M
