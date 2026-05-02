@@ -1,1 +1,8 @@
-scripts/
+.nix-cache/
+.nix-tmp/
+.tmp-cache/
+.tmp-data/
+.tmp-home/
+.tmp-state/
+result
+tests/nvf/flake.lock

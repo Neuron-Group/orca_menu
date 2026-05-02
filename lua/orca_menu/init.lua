@@ -102,6 +102,7 @@ end
 function M.setup(user_config)
   state.base_config = vim.deepcopy(user_config or {})
   state.config = config.resolve(state.base_config, active_lsp_names())
+  state.mouse_trace_path = vim.env.ORCA_MENU_MOUSE_TRACE
   rebuild_click_handlers()
 
   vim.api.nvim_create_user_command("OrcaMenu", function(opts)
@@ -111,6 +112,29 @@ function M.setup(user_config)
       M.toggle()
     end
   end, { nargs = "?" })
+
+  vim.api.nvim_create_user_command("OrcaMenuMouseTrace", function(opts)
+    if opts.args == "off" then
+      state.mouse_trace_path = nil
+      vim.notify("OrcaMenu mouse tracing disabled")
+      return
+    end
+
+    local path = opts.args ~= "" and opts.args or vim.env.ORCA_MENU_MOUSE_TRACE
+    if not path or path == "" then
+      vim.notify("Provide a log path or set ORCA_MENU_MOUSE_TRACE", vim.log.levels.ERROR)
+      return
+    end
+
+    state.mouse_trace_path = path
+    vim.fn.writefile({}, path)
+    vim.notify("OrcaMenu mouse tracing -> " .. path)
+  end, {
+    nargs = "?",
+    complete = function()
+      return { "off" }
+    end,
+  })
 
   vim.api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
     group = augroup,

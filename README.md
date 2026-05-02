@@ -326,3 +326,49 @@ By default:
 - `lua/orca_menu/lualine.lua`
 - `flake.nix`
 - `nix/overlay.nix`
+
+## Testing
+
+Run the local headless test suite with:
+
+```bash
+bash scripts/check.sh
+```
+
+Run the Nix checks with:
+
+```bash
+nix flake check
+```
+
+For manual mouse-event tracing in a real UI:
+
+```bash
+ORCA_MENU_MOUSE_TRACE=/tmp/orca_menu_mouse.jsonl nix run ./tests/nvf
+```
+
+Inside Neovim you can also enable tracing manually:
+
+```vim
+:OrcaMenuMouseTrace /tmp/orca_menu_mouse.jsonl
+```
+
+Disable it with:
+
+```vim
+:OrcaMenuMouseTrace off
+```
+
+For randomized stress test failures, the error output includes a replay command you can rerun directly. You can also replay a saved sequence manually:
+
+```bash
+ORCA_MENU_REPLAY='open_key,mouse_top,activate_selected' \
+  nvim --headless -u tests/minimal_init.lua -l tests/integration/randomized_stress.lua
+```
+
+Or for the repeat-biased suite:
+
+```bash
+ORCA_MENU_REPLAY='top_file_click,submenu_key_toggle,top_file_release' \
+  nvim --headless -u tests/minimal_init.lua -l tests/integration/randomized_repeat_bias.lua
+```

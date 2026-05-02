@@ -7,25 +7,48 @@
   };
 
   outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs { inherit system; };
-      in {
-        packages.default = pkgs.vimUtils.buildVimPlugin {
-          pname = "orca-menu";
-          version = "dev";
-          src = self;
-        };
-
-        overlays.default = final: prev: {
-          vimPlugins = prev.vimPlugins // {
-            orca-menu = final.vimUtils.buildVimPlugin {
-              pname = "orca-menu";
-              version = "dev";
-              src = self;
-            };
+    let
+      src = builtins.path {
+        path = ./.;
+        name = "orca-menu-src";
+      };
+      overlay = final: prev: {
+        vimPlugins = prev.vimPlugins // {
+          orca-menu = final.vimUtils.buildVimPlugin {
+            pname = "orca-menu";
+            version = "dev";
+            src = src;
           };
         };
-      }
-    );
+      };
+    in
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ overlay ];
+        };
+        pluginPackage = pkgs.vimPlugins.orca-menu;
+      in {
+        packages.default = pluginPackage;
+
+        checks = {
+          package = pluginPackage;
+          tests = pkgs.runCommand "orca-menu-tests" {
+            nativeBuildInputs = [ pkgs.bash pkgs.neovim ];
+          } ''
+            export HOME="$TMPDIR/home"
+            export XDG_STATE_HOME="$TMPDIR/state"
+            export XDG_DATA_HOME="$TMPDIR/data"
+            export XDG_CACHE_HOME="$TMPDIR/cache"
+            mkdir -p "$HOME" "$XDG_STATE_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME"
+            cd ${src}
+            bash ${src}/scripts/check.sh
+            touch "$out"
+          '';
+        };
+      })
+    // {
+      overlays.default = overlay;
+    };
 }

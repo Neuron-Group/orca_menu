@@ -5,6 +5,48 @@ local M = {}
 
 local dynamic_item_keys = {}
 local dynamic_top_keys = {}
+local mouse_keys = {
+  "<LeftMouse>",
+  "<2-LeftMouse>",
+  "<3-LeftMouse>",
+  "<4-LeftMouse>",
+  "<LeftRelease>",
+  "<2-LeftRelease>",
+  "<3-LeftRelease>",
+  "<4-LeftRelease>",
+  "<LeftDrag>",
+  "<2-LeftDrag>",
+  "<3-LeftDrag>",
+  "<4-LeftDrag>",
+  "<ScrollWheelUp>",
+  "<ScrollWheelDown>",
+}
+
+local function trace_mouse(event, extra)
+  local trace_path = state.mouse_trace_path or vim.env.ORCA_MENU_MOUSE_TRACE
+  if type(trace_path) ~= "string" or trace_path == "" then
+    return
+  end
+
+  local mouse = vim.fn.getmousepos()
+  local line = vim.json.encode({
+    event = event,
+    mouse = mouse,
+    mode = vim.fn.mode(),
+    popup_open = popup.is_open(),
+    menu_mode = state.menu_mode,
+    active_top = state.active_top,
+    stack_depth = #state.menu_stack,
+    extra = extra,
+    time = vim.loop.hrtime(),
+  })
+
+  if not line then
+    return
+  end
+
+  pcall(vim.fn.writefile, { line }, trace_path, "a")
+end
 
 local function bind(keys, fn)
   local opts = { silent = true, noremap = true }
@@ -127,42 +169,119 @@ function M.disable_keys()
   state.keymaps_installed = false
 end
 
-function M.install_mouse()
-  if state.global_mouse_installed then
+function M.disable_mouse()
+  if not state.global_mouse_installed then
     return
   end
+
+  for _, key in ipairs(mouse_keys) do
+    pcall(vim.keymap.del, "n", key)
+  end
+
+  state.global_mouse_installed = false
+end
+
+function M.install_mouse()
   if state.config and state.config.enable_mouse == false then
+    M.disable_mouse()
+    return
+  end
+
+  if state.global_mouse_installed then
     return
   end
 
   local function fallback_mouse(keys)
+    trace_mouse("fallback", { keys = keys })
     vim.cmd.exec(string.format('"normal! %s"', keys))
   end
 
-  vim.keymap.set("n", "<LeftMouse>", function()
+  local function handle_left_mouse(event, keys, allow_menu_click)
+    trace_mouse(event, { phase = "start", keys = keys, allow_menu_click = allow_menu_click })
+    if not allow_menu_click then
+      trace_mouse(event, { phase = popup.is_open() and "swallowed_popup" or "swallowed_inactive", keys = keys })
+      return
+    end
+
     if popup.is_open() then
       popup.handle_mouse()
+      trace_mouse(event, { phase = "handled_popup", keys = keys })
     else
       local mouse = vim.fn.getmousepos()
       local layout = require("orca_menu.layout")
       local bar_index = layout.label_hit_at_col(math.max((mouse.screencol or 1) - 1, 0))
       if bar_index then
         popup.open_top(bar_index)
+        trace_mouse(event, { phase = "opened_top", keys = keys, bar_index = bar_index })
       else
-        fallback_mouse("\\<LeftMouse>")
+        fallback_mouse(keys)
       end
     end
+  end
+
+  vim.keymap.set("n", "<LeftMouse>", function()
+    handle_left_mouse("<LeftMouse>", "\\<LeftMouse>", true)
+  end, { silent = true })
+
+  vim.keymap.set("n", "<2-LeftMouse>", function()
+    handle_left_mouse("<2-LeftMouse>", "\\<2-LeftMouse>", true)
+  end, { silent = true })
+
+  vim.keymap.set("n", "<3-LeftMouse>", function()
+    handle_left_mouse("<3-LeftMouse>", "\\<3-LeftMouse>", true)
+  end, { silent = true })
+
+  vim.keymap.set("n", "<4-LeftMouse>", function()
+    handle_left_mouse("<4-LeftMouse>", "\\<4-LeftMouse>", true)
+  end, { silent = true })
+
+  vim.keymap.set("n", "<LeftRelease>", function()
+    handle_left_mouse("<LeftRelease>", "\\<LeftRelease>", false)
+  end, { silent = true })
+
+  vim.keymap.set("n", "<2-LeftRelease>", function()
+    handle_left_mouse("<2-LeftRelease>", "\\<2-LeftRelease>", false)
+  end, { silent = true })
+
+  vim.keymap.set("n", "<3-LeftRelease>", function()
+    handle_left_mouse("<3-LeftRelease>", "\\<3-LeftRelease>", false)
+  end, { silent = true })
+
+  vim.keymap.set("n", "<4-LeftRelease>", function()
+    handle_left_mouse("<4-LeftRelease>", "\\<4-LeftRelease>", false)
+  end, { silent = true })
+
+  vim.keymap.set("n", "<LeftDrag>", function()
+    handle_left_mouse("<LeftDrag>", "\\<LeftDrag>", false)
+  end, { silent = true })
+
+  vim.keymap.set("n", "<2-LeftDrag>", function()
+    handle_left_mouse("<2-LeftDrag>", "\\<2-LeftDrag>", false)
+  end, { silent = true })
+
+  vim.keymap.set("n", "<3-LeftDrag>", function()
+    handle_left_mouse("<3-LeftDrag>", "\\<3-LeftDrag>", false)
+  end, { silent = true })
+
+  vim.keymap.set("n", "<4-LeftDrag>", function()
+    handle_left_mouse("<4-LeftDrag>", "\\<4-LeftDrag>", false)
   end, { silent = true })
 
   vim.keymap.set("n", "<ScrollWheelUp>", function()
+    trace_mouse("<ScrollWheelUp>", { phase = "start" })
     if not popup.scroll_at_mouse(-1) then
       fallback_mouse("\\<ScrollWheelUp>")
+    else
+      trace_mouse("<ScrollWheelUp>", { phase = "handled_popup" })
     end
   end, { silent = true })
 
   vim.keymap.set("n", "<ScrollWheelDown>", function()
+    trace_mouse("<ScrollWheelDown>", { phase = "start" })
     if not popup.scroll_at_mouse(1) then
       fallback_mouse("\\<ScrollWheelDown>")
+    else
+      trace_mouse("<ScrollWheelDown>", { phase = "handled_popup" })
     end
   end, { silent = true })
 

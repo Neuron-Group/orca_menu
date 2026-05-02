@@ -3,6 +3,7 @@ local layout = require("orca_menu.layout")
 local actions = require("orca_menu.actions")
 
 local M = {}
+local activate_item_at_level
 
 local function sync_hydra_exit_if_needed()
   if state.config and state.config.keys.mode_backend == "hydra" then
@@ -448,24 +449,14 @@ function M.activate_item_key(key)
     local entry = state.menu_stack[level]
     for idx, item in ipairs(entry.items or {}) do
       if item.kind ~= "separator" and type(item.key) == "string" and item.key:lower() == lowered_key then
-        entry.selected = idx
-        while #state.menu_stack > level do
-          table.remove(state.menu_stack)
-        end
-        M.redraw_all()
-        M.activate_selected()
+        activate_item_at_level(level, idx)
         return true
       end
     end
 
     for idx, item in ipairs(entry.items or {}) do
       if item.kind ~= "separator" and item.accelerator == lowered_key then
-        entry.selected = idx
-        while #state.menu_stack > level do
-          table.remove(state.menu_stack)
-        end
-        M.redraw_all()
-        M.activate_selected()
+        activate_item_at_level(level, idx)
         return true
       end
     end
@@ -587,7 +578,7 @@ local function item_at_level_row(level, screen_row)
   return entry.items[row], row
 end
 
-local function activate_item_at_level(level, row)
+activate_item_at_level = function(level, row)
   local entry = state.menu_stack[level]
   if not entry then
     return
@@ -604,11 +595,13 @@ local function activate_item_at_level(level, row)
 
   if item.kind == "submenu" then
     local same_selected_parent = had_children and was_selected == row
-    trim_stack_to(level)
     if same_selected_parent then
+      trim_stack_to(level)
       M.redraw_all()
       return
     end
+
+    trim_stack_to(level)
 
     table.insert(state.menu_stack, {
       items = item.items or {},
