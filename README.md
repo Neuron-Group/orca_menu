@@ -217,6 +217,14 @@ Default keys:
 - child submenus open beside the visible parent row and flip left if needed
 - `submenu.scroll_indicator_up` and `submenu.scroll_indicator_down` customize the border scroll markers
 
+### Mode Handoff
+
+- in normal mode, the open key enters menu mode directly
+- in visual mode, the open key or menu mouse click first leaves visual mode, then enters menu mode
+- in insert mode, the open key or menu mouse click first leaves insert mode, then enters menu mode
+- popup navigation keys and menu item keys are active in normal and visual mode
+- insert mode only supports safe menu entry paths, so ordinary typing is not hijacked by menu item keys
+
 ### Top Menu Keys
 
 Each top-level menu can define:

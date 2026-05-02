@@ -5,6 +5,8 @@ local M = {}
 
 local dynamic_item_keys = {}
 local dynamic_top_keys = {}
+local keymap_modes = { "n", "x" }
+local entry_modes = { "n", "x", "i" }
 local mouse_keys = {
   "<LeftMouse>",
   "<2-LeftMouse>",
@@ -51,9 +53,58 @@ end
 local function bind(keys, fn)
   local opts = { silent = true, noremap = true }
   for _, key in ipairs(keys or {}) do
-    vim.keymap.set("n", key, function()
+    vim.keymap.set(keymap_modes, key, function()
       fn()
     end, opts)
+  end
+end
+
+local function current_mode()
+  return vim.fn.mode()
+end
+
+local function in_visual_mode()
+  local mode = current_mode()
+  return mode == "v" or mode == "V" or mode == "\22"
+end
+
+local function in_insert_mode()
+  return current_mode():sub(1, 1) == "i"
+end
+
+local function leave_visual_mode()
+  if in_visual_mode() then
+    pcall(vim.cmd.normal, { args = { vim.keycode("<Esc>") }, bang = true })
+  end
+end
+
+local function leave_insert_mode()
+  if in_insert_mode() then
+    vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "i", false)
+  end
+end
+
+local function leave_editor_mode()
+  leave_visual_mode()
+  leave_insert_mode()
+end
+
+local function run_after_editor_mode(fn)
+  if in_visual_mode() or in_insert_mode() then
+    leave_editor_mode()
+    vim.schedule(fn)
+  else
+    fn()
+  end
+end
+
+local function replay_key(key)
+  if in_visual_mode() then
+    vim.api.nvim_feedkeys(vim.keycode(key), "x", false)
+  elseif in_insert_mode() then
+    vim.api.nvim_feedkeys(vim.keycode(key), "i", false)
+  else
+    vim.api.nvim_feedkeys(vim.keycode(key), "n", false)
   end
 end
 
@@ -141,19 +192,21 @@ function M.enable_keys()
   bind(state.config.keys.back, popup.go_back)
   bind(state.config.keys.close, popup.close_all)
   for _, key in ipairs(dynamic_top_keys) do
-    vim.keymap.set("n", key, function()
-      if not popup.activate_top_key(key) and not popup.activate_item_key(key) then
-        local fallback = vim.fn.keytrans(key)
-        vim.cmd.exec(string.format('"normal! %s"', fallback))
-      end
+    vim.keymap.set(keymap_modes, key, function()
+      run_after_editor_mode(function()
+        if not popup.activate_top_key(key) and not popup.activate_item_key(key) then
+          replay_key(key)
+        end
+      end)
     end, { silent = true, noremap = true })
   end
   for _, key in ipairs(dynamic_item_keys) do
-    vim.keymap.set("n", key, function()
-      if not popup.activate_top_key(key) and not popup.activate_item_key(key) then
-        local fallback = vim.fn.keytrans(key)
-        vim.cmd.exec(string.format('"normal! %s"', fallback))
-      end
+    vim.keymap.set(keymap_modes, key, function()
+      run_after_editor_mode(function()
+        if not popup.activate_top_key(key) and not popup.activate_item_key(key) then
+          replay_key(key)
+        end
+      end)
     end, { silent = true, noremap = true })
   end
   state.keymaps_installed = true
@@ -165,6 +218,7 @@ function M.disable_keys()
   end
   for _, key in ipairs(all_keys()) do
     pcall(vim.keymap.del, "n", key)
+    pcall(vim.keymap.del, "x", key)
   end
   state.keymaps_installed = false
 end
@@ -176,6 +230,8 @@ function M.disable_mouse()
 
   for _, key in ipairs(mouse_keys) do
     pcall(vim.keymap.del, "n", key)
+    pcall(vim.keymap.del, "x", key)
+    pcall(vim.keymap.del, "i", key)
   end
 
   state.global_mouse_installed = false
@@ -193,7 +249,7 @@ function M.install_mouse()
 
   local function fallback_mouse(keys)
     trace_mouse("fallback", { keys = keys })
-    vim.cmd.exec(string.format('"normal! %s"', keys))
+    replay_key(keys)
   end
 
   local function handle_left_mouse(event, keys, allow_menu_click)
@@ -204,85 +260,93 @@ function M.install_mouse()
     end
 
     if popup.is_open() then
-      popup.handle_mouse()
-      trace_mouse(event, { phase = "handled_popup", keys = keys })
+      run_after_editor_mode(function()
+        popup.handle_mouse()
+        trace_mouse(event, { phase = "handled_popup", keys = keys })
+      end)
     else
       local mouse = vim.fn.getmousepos()
       local layout = require("orca_menu.layout")
       local bar_index = layout.label_hit_at_col(math.max((mouse.screencol or 1) - 1, 0))
       if bar_index then
-        popup.open_top(bar_index)
-        trace_mouse(event, { phase = "opened_top", keys = keys, bar_index = bar_index })
+        run_after_editor_mode(function()
+          popup.open_top(bar_index)
+          trace_mouse(event, { phase = "opened_top", keys = keys, bar_index = bar_index })
+        end)
       else
         fallback_mouse(keys)
       end
     end
   end
 
-  vim.keymap.set("n", "<LeftMouse>", function()
-    handle_left_mouse("<LeftMouse>", "\\<LeftMouse>", true)
+  vim.keymap.set(entry_modes, "<LeftMouse>", function()
+    handle_left_mouse("<LeftMouse>", "<LeftMouse>", true)
   end, { silent = true })
 
-  vim.keymap.set("n", "<2-LeftMouse>", function()
-    handle_left_mouse("<2-LeftMouse>", "\\<2-LeftMouse>", true)
+  vim.keymap.set(entry_modes, "<2-LeftMouse>", function()
+    handle_left_mouse("<2-LeftMouse>", "<2-LeftMouse>", true)
   end, { silent = true })
 
-  vim.keymap.set("n", "<3-LeftMouse>", function()
-    handle_left_mouse("<3-LeftMouse>", "\\<3-LeftMouse>", true)
+  vim.keymap.set(entry_modes, "<3-LeftMouse>", function()
+    handle_left_mouse("<3-LeftMouse>", "<3-LeftMouse>", true)
   end, { silent = true })
 
-  vim.keymap.set("n", "<4-LeftMouse>", function()
-    handle_left_mouse("<4-LeftMouse>", "\\<4-LeftMouse>", true)
+  vim.keymap.set(entry_modes, "<4-LeftMouse>", function()
+    handle_left_mouse("<4-LeftMouse>", "<4-LeftMouse>", true)
   end, { silent = true })
 
-  vim.keymap.set("n", "<LeftRelease>", function()
-    handle_left_mouse("<LeftRelease>", "\\<LeftRelease>", false)
+  vim.keymap.set(entry_modes, "<LeftRelease>", function()
+    handle_left_mouse("<LeftRelease>", "<LeftRelease>", false)
   end, { silent = true })
 
-  vim.keymap.set("n", "<2-LeftRelease>", function()
-    handle_left_mouse("<2-LeftRelease>", "\\<2-LeftRelease>", false)
+  vim.keymap.set(entry_modes, "<2-LeftRelease>", function()
+    handle_left_mouse("<2-LeftRelease>", "<2-LeftRelease>", false)
   end, { silent = true })
 
-  vim.keymap.set("n", "<3-LeftRelease>", function()
-    handle_left_mouse("<3-LeftRelease>", "\\<3-LeftRelease>", false)
+  vim.keymap.set(entry_modes, "<3-LeftRelease>", function()
+    handle_left_mouse("<3-LeftRelease>", "<3-LeftRelease>", false)
   end, { silent = true })
 
-  vim.keymap.set("n", "<4-LeftRelease>", function()
-    handle_left_mouse("<4-LeftRelease>", "\\<4-LeftRelease>", false)
+  vim.keymap.set(entry_modes, "<4-LeftRelease>", function()
+    handle_left_mouse("<4-LeftRelease>", "<4-LeftRelease>", false)
   end, { silent = true })
 
-  vim.keymap.set("n", "<LeftDrag>", function()
-    handle_left_mouse("<LeftDrag>", "\\<LeftDrag>", false)
+  vim.keymap.set(entry_modes, "<LeftDrag>", function()
+    handle_left_mouse("<LeftDrag>", "<LeftDrag>", false)
   end, { silent = true })
 
-  vim.keymap.set("n", "<2-LeftDrag>", function()
-    handle_left_mouse("<2-LeftDrag>", "\\<2-LeftDrag>", false)
+  vim.keymap.set(entry_modes, "<2-LeftDrag>", function()
+    handle_left_mouse("<2-LeftDrag>", "<2-LeftDrag>", false)
   end, { silent = true })
 
-  vim.keymap.set("n", "<3-LeftDrag>", function()
-    handle_left_mouse("<3-LeftDrag>", "\\<3-LeftDrag>", false)
+  vim.keymap.set(entry_modes, "<3-LeftDrag>", function()
+    handle_left_mouse("<3-LeftDrag>", "<3-LeftDrag>", false)
   end, { silent = true })
 
-  vim.keymap.set("n", "<4-LeftDrag>", function()
-    handle_left_mouse("<4-LeftDrag>", "\\<4-LeftDrag>", false)
+  vim.keymap.set(entry_modes, "<4-LeftDrag>", function()
+    handle_left_mouse("<4-LeftDrag>", "<4-LeftDrag>", false)
   end, { silent = true })
 
-  vim.keymap.set("n", "<ScrollWheelUp>", function()
+  vim.keymap.set(entry_modes, "<ScrollWheelUp>", function()
     trace_mouse("<ScrollWheelUp>", { phase = "start" })
-    if not popup.scroll_at_mouse(-1) then
-      fallback_mouse("\\<ScrollWheelUp>")
-    else
-      trace_mouse("<ScrollWheelUp>", { phase = "handled_popup" })
-    end
+    run_after_editor_mode(function()
+      if not popup.scroll_at_mouse(-1) then
+        fallback_mouse("<ScrollWheelUp>")
+      else
+        trace_mouse("<ScrollWheelUp>", { phase = "handled_popup" })
+      end
+    end)
   end, { silent = true })
 
-  vim.keymap.set("n", "<ScrollWheelDown>", function()
+  vim.keymap.set(entry_modes, "<ScrollWheelDown>", function()
     trace_mouse("<ScrollWheelDown>", { phase = "start" })
-    if not popup.scroll_at_mouse(1) then
-      fallback_mouse("\\<ScrollWheelDown>")
-    else
-      trace_mouse("<ScrollWheelDown>", { phase = "handled_popup" })
-    end
+    run_after_editor_mode(function()
+      if not popup.scroll_at_mouse(1) then
+        fallback_mouse("<ScrollWheelDown>")
+      else
+        trace_mouse("<ScrollWheelDown>", { phase = "handled_popup" })
+      end
+    end)
   end, { silent = true })
 
   state.global_mouse_installed = true

@@ -9,6 +9,34 @@ local hydra_mode = require("orca_menu.hydra_mode")
 
 local augroup = vim.api.nvim_create_augroup("OrcaMenu", { clear = true })
 
+local function leave_visual_mode()
+  local mode = vim.fn.mode()
+  if mode == "v" or mode == "V" or mode == "\22" then
+    pcall(vim.cmd.normal, { args = { vim.keycode("<Esc>") }, bang = true })
+  end
+end
+
+local function leave_insert_mode()
+  if vim.fn.mode():sub(1, 1) == "i" then
+    vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "i", false)
+  end
+end
+
+local function leave_editor_mode()
+  leave_visual_mode()
+  leave_insert_mode()
+end
+
+local function run_after_editor_mode(fn)
+  local mode = vim.fn.mode()
+  if mode == "v" or mode == "V" or mode == "\22" or mode:sub(1, 1) == "i" then
+    leave_editor_mode()
+    vim.schedule(fn)
+  else
+    fn()
+  end
+end
+
 local function active_lsp_names()
   local current_buf = vim.api.nvim_get_current_buf()
   local names = {}
@@ -38,6 +66,8 @@ end
 local function apply_open_key_binding()
   if state.current_open_key and state.current_open_key ~= "" then
     pcall(vim.keymap.del, "n", state.current_open_key)
+    pcall(vim.keymap.del, "x", state.current_open_key)
+    pcall(vim.keymap.del, "i", state.current_open_key)
   end
 
   state.current_open_key = state.config.keys.open
@@ -51,8 +81,10 @@ local function apply_open_key_binding()
     hydra_mode.reset()
     hydra_mode.setup()
   else
-    vim.keymap.set("n", state.current_open_key, function()
-      require("orca_menu").toggle()
+    vim.keymap.set({ "n", "x", "i" }, state.current_open_key, function()
+      run_after_editor_mode(function()
+        require("orca_menu").toggle()
+      end)
     end, { desc = "Toggle Orca menu", silent = true })
   end
 end
