@@ -92,7 +92,9 @@ end
 local function run_after_editor_mode(fn)
   if in_visual_mode() or in_insert_mode() then
     leave_editor_mode()
-    vim.schedule(fn)
+    vim.schedule(function()
+      vim.schedule(fn)
+    end)
   else
     fn()
   end

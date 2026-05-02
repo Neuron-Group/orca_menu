@@ -26,6 +26,7 @@ run_suite tests/integration/mouse_strict.lua
 run_suite tests/integration/mouse_toggle.lua
 run_suite tests/integration/visual_mode.lua
 run_suite tests/integration/insert_mode.lua
+run_suite tests/integration/function_key_open.lua
 run_suite tests/integration/leader_open_key.lua
 run_suite tests/integration/mode_shift.lua
 run_suite tests/integration/mixed_input.lua

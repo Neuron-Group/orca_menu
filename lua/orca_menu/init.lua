@@ -31,7 +31,9 @@ local function run_after_editor_mode(fn)
   local mode = vim.fn.mode()
   if mode == "v" or mode == "V" or mode == "\22" or mode:sub(1, 1) == "i" then
     leave_editor_mode()
-    vim.schedule(fn)
+    vim.schedule(function()
+      vim.schedule(fn)
+    end)
   else
     fn()
   end

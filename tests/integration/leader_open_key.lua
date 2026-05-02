@@ -29,8 +29,9 @@ require("orca_menu").setup({
 local state = require("orca_menu.state")
 local popup = require("orca_menu.popup")
 
-local function press_leader_open(mode_prefix)
-  vim.api.nvim_feedkeys((mode_prefix or "") .. vim.keycode("<leader>m"), "x", false)
+local function press_leader_open_typed(mode_prefix)
+  vim.fn.feedkeys((mode_prefix or "") .. vim.keycode("<leader>m"), "xt")
+  H.flush()
   H.flush()
 end
 
@@ -44,20 +45,20 @@ H.truthy(normal_map.callback, "leader open key should be mapped in normal mode")
 
 vim.api.nvim_buf_set_lines(0, 0, -1, false, { "alpha", "beta" })
 vim.cmd("normal! gg0v$")
-press_leader_open()
+press_leader_open_typed()
 H.eq(vim.fn.mode(), "n", "leader open key should leave visual mode")
 H.truthy(state.menu_mode, "leader open key from visual mode should enable menu mode")
 H.falsy(popup.is_open(), "leader open key from visual mode should not open popup immediately")
 
 popup.close_all()
 vim.cmd("normal! gg0")
-press_leader_open("i")
+press_leader_open_typed("i")
 H.eq(vim.fn.mode(), "n", "leader open key should leave insert mode")
 H.truthy(state.menu_mode, "leader open key from insert mode should enable menu mode")
 H.falsy(popup.is_open(), "leader open key from insert mode should not open popup immediately")
 
 popup.close_all()
-press_leader_open()
+press_leader_open_typed()
 H.truthy(state.menu_mode, "leader open key from normal mode should enable menu mode")
 H.falsy(popup.is_open(), "leader open key from normal mode should not open popup immediately")
 
