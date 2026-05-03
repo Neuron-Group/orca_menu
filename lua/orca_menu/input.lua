@@ -24,6 +24,11 @@ local mouse_keys = {
   "<ScrollWheelUp>",
   "<ScrollWheelDown>",
 }
+local mouse_key_lookup = {}
+
+for _, key in ipairs(mouse_keys) do
+  mouse_key_lookup[key] = true
+end
 
 local function trace_mouse(event, extra)
   local trace_path = state.mouse_trace_path or vim.env.ORCA_MENU_MOUSE_TRACE
@@ -61,12 +66,22 @@ local function bind(keys, fn)
 end
 
 local function replay_key(key)
+  if mouse_key_lookup[key] then
+    M.disable_mouse()
+  end
+
   if mode.is_visual() then
     vim.api.nvim_feedkeys(vim.keycode(key), "x", false)
   elseif mode.is_insert() then
     vim.api.nvim_feedkeys(vim.keycode(key), "i", false)
   else
     vim.api.nvim_feedkeys(vim.keycode(key), "n", false)
+  end
+
+  if mouse_key_lookup[key] then
+    vim.schedule(function()
+      M.install_mouse()
+    end)
   end
 end
 
@@ -215,7 +230,12 @@ function M.install_mouse()
   local function handle_left_mouse(event, keys, allow_menu_click)
     trace_mouse(event, { phase = "start", keys = keys, allow_menu_click = allow_menu_click })
     if not allow_menu_click then
-      trace_mouse(event, { phase = popup.is_open() and "swallowed_popup" or "swallowed_inactive", keys = keys })
+      if popup.is_open() then
+        trace_mouse(event, { phase = "swallowed_popup", keys = keys })
+      else
+        trace_mouse(event, { phase = "fallback_inactive", keys = keys })
+        fallback_mouse(keys)
+      end
       return
     end
 

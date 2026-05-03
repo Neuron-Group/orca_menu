@@ -24,6 +24,7 @@ run_suite tests/integration/mouse_smoke.lua
 run_suite tests/integration/topbar_blink.lua
 run_suite tests/integration/mouse_strict.lua
 run_suite tests/integration/mouse_toggle.lua
+run_suite tests/integration/mouse_passthrough.lua
 run_suite tests/integration/visual_mode.lua
 run_suite tests/integration/insert_mode.lua
 run_suite tests/integration/function_key_open.lua
