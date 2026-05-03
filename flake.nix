@@ -35,7 +35,7 @@
         checks = {
           package = pluginPackage;
           tests = pkgs.runCommand "orca-menu-tests" {
-            nativeBuildInputs = [ pkgs.bash pkgs.neovim ];
+            nativeBuildInputs = [ pkgs.bash pkgs.neovim pkgs.python3 ];
           } ''
             export HOME="$TMPDIR/home"
             export XDG_STATE_HOME="$TMPDIR/state"
