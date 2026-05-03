@@ -1,3 +1,13 @@
 WRN 2026-05-02T21:02:21.687 ?.6774     server_start:199: Failed to start server: operation not permitted: /run/user/1000/nvf.6774.0
 WRN 2026-05-02T23:37:40.110 ?.146106   server_start:199: Failed to start server: operation not permitted: /run/user/1000/nvf.146106.0
 WRN 2026-05-03T19:15:18.676 ?.63086    server_start:199: Failed to start server: operation not permitted: /run/user/1000/nvf.63086.0
+WRN 2026-05-03T19:53:59.547 ?.77140    server_start:199: Failed to start server: operation not permitted: /run/user/1000/nvf.77140.0
+WRN 2026-05-03T19:54:12.074 ?.77164    server_start:199: Failed to start server: operation not permitted: /run/user/1000/nvf.77164.0
+WRN 2026-05-03T19:54:12.125 ?.77161    server_start:199: Failed to start server: operation not permitted: /run/user/1000/nvf.77161.0
+WRN 2026-05-03T19:55:23.788 ?.77327    server_start:199: Failed to start server: operation not permitted: /run/user/1000/nvf.77327.0
+WRN 2026-05-03T19:55:23.855 ?.77329    server_start:199: Failed to start server: operation not permitted: /run/user/1000/nvf.77329.0
+WRN 2026-05-03T19:55:23.928 ?.77330    server_start:199: Failed to start server: operation not permitted: /run/user/1000/nvf.77330.0
+WRN 2026-05-03T19:55:26.546 ?.77334    server_start:199: Failed to start server: operation not permitted: /run/user/1000/nvf.77334.0
+WRN 2026-05-03T19:55:30.481 ?.77338    server_start:199: Failed to start server: operation not permitted: /run/user/1000/nvf.77338.0
+WRN 2026-05-03T19:55:30.532 ?.77339    server_start:199: Failed to start server: operation not permitted: /run/user/1000/nvf.77339.0
+WRN 2026-05-03T19:55:30.554 ?.77326    server_start:199: Failed to start server: operation not permitted: /run/user/1000/nvf.77326.0

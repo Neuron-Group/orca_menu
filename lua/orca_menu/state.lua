@@ -8,6 +8,7 @@ local M = {
   pending_action = nil,
   anchor = { row = nil, col = nil },
   label_positions = {},
+  label_visibility_known = false,
   menu_mode = false,
   global_mouse_installed = false,
   keymaps_installed = false,

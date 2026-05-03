@@ -214,11 +214,14 @@ end
 function M.refresh_label_positions()
   state.label_positions = {}
   state.visible_labels = {}
+  state.label_visibility_known = false
 
   local rendered = evaluated_statusline()
   if not rendered then
     return
   end
+
+  state.label_visibility_known = true
 
   local search_from = 1
   for index, menu in ipairs(state.config.menus) do
@@ -234,6 +237,9 @@ end
 
 function M.is_top_visible(index)
   M.refresh_label_positions()
+  if not state.label_visibility_known then
+    return true
+  end
   return state.visible_labels and state.visible_labels[index] == true
 end
 
