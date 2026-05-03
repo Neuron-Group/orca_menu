@@ -73,17 +73,23 @@ popup.enter_menu_mode(1)
 H.truthy(state.menu_mode, "enter_menu_mode should activate menu mode")
 H.truthy(state.keymaps_installed, "enter_menu_mode should install menu keymaps")
 
-vim.api.nvim_feedkeys("f", "x", false)
+local top_key = vim.fn.maparg("f", "n", false, true).callback
+H.truthy(top_key, "active menu-mode top key should be mapped")
+top_key()
 H.flush()
 H.truthy(popup.is_open(), "active menu-mode top key should open popup")
 H.eq(state.active_top, 1, "active menu-mode top key should target the requested menu")
 H.eq(#state.menu_stack, 1, "active menu-mode top key should create one popup level")
 
-vim.api.nvim_feedkeys("j", "x", false)
+local down_key = vim.fn.maparg("j", "n", false, true).callback
+H.truthy(down_key, "active menu-mode down key should be mapped")
+down_key()
 H.flush()
 H.eq(state.menu_stack[1].selected, 2, "active menu-mode down key should move menu selection")
 
-vim.api.nvim_feedkeys("q", "x", false)
+local close_key = vim.fn.maparg("q", "n", false, true).callback
+H.truthy(close_key, "active menu-mode close key should be mapped")
+close_key()
 H.flush()
 H.falsy(state.menu_mode, "close key should leave menu mode")
 H.falsy(state.keymaps_installed, "close key should remove menu keymaps")
