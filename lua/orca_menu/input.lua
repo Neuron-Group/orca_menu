@@ -8,6 +8,7 @@ local dynamic_item_keys = {}
 local dynamic_top_keys = {}
 local keymap_modes = { "n", "x" }
 local entry_modes = { "n", "x", "i" }
+local nonvisual_entry_modes = { "n", "i" }
 local mouse_keys = {
   "<LeftMouse>",
   "<2-LeftMouse>",
@@ -66,10 +67,6 @@ local function bind(keys, fn)
 end
 
 local function replay_key(key)
-  if mouse_key_lookup[key] then
-    M.disable_mouse()
-  end
-
   if mode.is_visual() then
     vim.api.nvim_feedkeys(vim.keycode(key), "x", false)
   elseif mode.is_insert() then
@@ -83,6 +80,15 @@ local function replay_key(key)
       M.install_mouse()
     end)
   end
+end
+
+local function replay_mouse(key)
+  M.disable_mouse()
+  vim.api.nvim_input(vim.keycode(key))
+
+  vim.schedule(function()
+    M.install_mouse()
+  end)
 end
 
 local function all_keys()
@@ -224,7 +230,7 @@ function M.install_mouse()
 
   local function fallback_mouse(keys)
     trace_mouse("fallback", { keys = keys })
-    replay_key(keys)
+    replay_mouse(keys)
   end
 
   local function handle_left_mouse(event, keys, allow_menu_click)
@@ -263,51 +269,51 @@ function M.install_mouse()
     handle_left_mouse("<LeftMouse>", "<LeftMouse>", true)
   end, { silent = true })
 
-  vim.keymap.set(entry_modes, "<2-LeftMouse>", function()
+  vim.keymap.set(nonvisual_entry_modes, "<2-LeftMouse>", function()
     handle_left_mouse("<2-LeftMouse>", "<2-LeftMouse>", true)
   end, { silent = true })
 
-  vim.keymap.set(entry_modes, "<3-LeftMouse>", function()
+  vim.keymap.set(nonvisual_entry_modes, "<3-LeftMouse>", function()
     handle_left_mouse("<3-LeftMouse>", "<3-LeftMouse>", true)
   end, { silent = true })
 
-  vim.keymap.set(entry_modes, "<4-LeftMouse>", function()
+  vim.keymap.set(nonvisual_entry_modes, "<4-LeftMouse>", function()
     handle_left_mouse("<4-LeftMouse>", "<4-LeftMouse>", true)
   end, { silent = true })
 
-  vim.keymap.set(entry_modes, "<LeftRelease>", function()
+  vim.keymap.set(nonvisual_entry_modes, "<LeftRelease>", function()
     handle_left_mouse("<LeftRelease>", "<LeftRelease>", false)
   end, { silent = true })
 
-  vim.keymap.set(entry_modes, "<2-LeftRelease>", function()
+  vim.keymap.set(nonvisual_entry_modes, "<2-LeftRelease>", function()
     handle_left_mouse("<2-LeftRelease>", "<2-LeftRelease>", false)
   end, { silent = true })
 
-  vim.keymap.set(entry_modes, "<3-LeftRelease>", function()
+  vim.keymap.set(nonvisual_entry_modes, "<3-LeftRelease>", function()
     handle_left_mouse("<3-LeftRelease>", "<3-LeftRelease>", false)
   end, { silent = true })
 
-  vim.keymap.set(entry_modes, "<4-LeftRelease>", function()
+  vim.keymap.set(nonvisual_entry_modes, "<4-LeftRelease>", function()
     handle_left_mouse("<4-LeftRelease>", "<4-LeftRelease>", false)
   end, { silent = true })
 
-  vim.keymap.set(entry_modes, "<LeftDrag>", function()
+  vim.keymap.set(nonvisual_entry_modes, "<LeftDrag>", function()
     handle_left_mouse("<LeftDrag>", "<LeftDrag>", false)
   end, { silent = true })
 
-  vim.keymap.set(entry_modes, "<2-LeftDrag>", function()
+  vim.keymap.set(nonvisual_entry_modes, "<2-LeftDrag>", function()
     handle_left_mouse("<2-LeftDrag>", "<2-LeftDrag>", false)
   end, { silent = true })
 
-  vim.keymap.set(entry_modes, "<3-LeftDrag>", function()
+  vim.keymap.set(nonvisual_entry_modes, "<3-LeftDrag>", function()
     handle_left_mouse("<3-LeftDrag>", "<3-LeftDrag>", false)
   end, { silent = true })
 
-  vim.keymap.set(entry_modes, "<4-LeftDrag>", function()
+  vim.keymap.set(nonvisual_entry_modes, "<4-LeftDrag>", function()
     handle_left_mouse("<4-LeftDrag>", "<4-LeftDrag>", false)
   end, { silent = true })
 
-  vim.keymap.set(entry_modes, "<ScrollWheelUp>", function()
+  vim.keymap.set(nonvisual_entry_modes, "<ScrollWheelUp>", function()
     trace_mouse("<ScrollWheelUp>", { phase = "start" })
     mode.run_after_editor_mode(function()
       if not popup.scroll_at_mouse(-1) then
@@ -318,7 +324,7 @@ function M.install_mouse()
     end)
   end, { silent = true })
 
-  vim.keymap.set(entry_modes, "<ScrollWheelDown>", function()
+  vim.keymap.set(nonvisual_entry_modes, "<ScrollWheelDown>", function()
     trace_mouse("<ScrollWheelDown>", { phase = "start" })
     mode.run_after_editor_mode(function()
       if not popup.scroll_at_mouse(1) then
@@ -328,6 +334,25 @@ function M.install_mouse()
       end
     end)
   end, { silent = true })
+
+  for _, key in ipairs({ "<2-LeftMouse>", "<3-LeftMouse>", "<4-LeftMouse>" }) do
+    pcall(vim.keymap.del, "x", key)
+  end
+
+  for _, key in ipairs({
+    "<LeftRelease>",
+    "<2-LeftRelease>",
+    "<3-LeftRelease>",
+    "<4-LeftRelease>",
+    "<LeftDrag>",
+    "<2-LeftDrag>",
+    "<3-LeftDrag>",
+    "<4-LeftDrag>",
+    "<ScrollWheelUp>",
+    "<ScrollWheelDown>",
+  }) do
+    pcall(vim.keymap.del, "x", key)
+  end
 
   state.global_mouse_installed = true
 end
