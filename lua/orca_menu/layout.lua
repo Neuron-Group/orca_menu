@@ -221,9 +221,8 @@ function M.refresh_label_positions()
     return
   end
 
-  state.label_visibility_known = true
-
   local search_from = 1
+  local found_any_label = false
   for index, menu in ipairs(state.config.menus) do
     local label = M.top_bar_display_label(menu, index)
     local start_byte = rendered:find(label, search_from, true)
@@ -231,8 +230,11 @@ function M.refresh_label_positions()
       state.label_positions[index] = math.max(vim.fn.strdisplaywidth(rendered:sub(1, start_byte - 1)) + 1, 1)
       state.visible_labels[index] = true
       search_from = start_byte + #label
+      found_any_label = true
     end
   end
+
+  state.label_visibility_known = found_any_label
 end
 
 function M.is_top_visible(index)
