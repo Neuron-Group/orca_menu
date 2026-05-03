@@ -60,13 +60,22 @@ local function apply_open_key_binding()
 end
 
 local function refresh_config()
-  popup.close_all()
+  local was_open = popup.is_open()
+  local was_menu_mode = state.menu_mode
+  local active_top = state.active_top
+
   state.config = config.resolve(state.base_config or {}, active_lsp_names())
   state.active_top = math.min(math.max(state.active_top or 1, 1), math.max(#(state.config.menus or {}), 1))
   rebuild_click_handlers()
   apply_open_key_binding()
   input.install_mouse()
   lualine.register()
+
+  if was_open then
+    popup.open_top(math.min(active_top or 1, math.max(#(state.config.menus or {}), 1)))
+  elseif was_menu_mode then
+    popup.enter_menu_mode(math.min(active_top or 1, math.max(#(state.config.menus or {}), 1)))
+  end
 end
 
 function M.open_menu(index, _use_mouse)

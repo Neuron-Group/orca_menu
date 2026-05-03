@@ -20,6 +20,7 @@ run_suite() {
 
 run_suite tests/unit/config_layout.lua
 run_suite tests/integration/menu_flow.lua
+run_suite tests/integration/notify_dismiss_regression.lua
 run_suite tests/integration/mouse_smoke.lua
 run_suite tests/integration/topbar_blink.lua
 run_suite tests/integration/mouse_strict.lua
