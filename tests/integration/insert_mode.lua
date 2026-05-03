@@ -79,11 +79,9 @@ H.falsy(state.menu_mode, "action should leave menu mode after insert-mode entry"
 H.render_statusline()
 layout.refresh_label_positions()
 vim.cmd("normal! gg0")
-local mouse = { screenrow = vim.o.lines - vim.o.cmdheight, screencol = state.label_positions[1] + 1 }
-local restore = H.stub_mouse(mouse)
-local left_mouse = vim.fn.maparg("<LeftMouse>", "i", false, true).callback
-H.truthy(left_mouse, "left mouse should be mapped in insert mode")
-left_mouse()
+local click_menu = _G.orca_menu_click_menu_1
+H.truthy(click_menu, "top-bar click handler should exist")
+click_menu()
 H.flush()
 H.truthy(state.menu_mode, "mouse top-bar open from insert mode should enable menu mode")
 H.truthy(popup.is_open(), "mouse top-bar open from insert mode should open popup")
@@ -93,12 +91,9 @@ H.eq(#state.menu_stack, 2, "submenu hotkey should work after mouse open from ins
 popup.go_back()
 H.eq(#state.menu_stack, 1, "go_back should close child submenu after insert-mode mouse open")
 
-mouse.screencol = state.label_positions[1] + 1
-left_mouse()
+click_menu()
 H.falsy(popup.is_open(), "mouse click on active top menu should close popup from insert-origin flow")
 H.falsy(state.menu_mode, "mouse click on active top menu should leave menu mode from insert-origin flow")
-
-restore()
 
 H.eq(vim.fn.maparg("f", "i", false, true), {}, "top-menu keys should not be mapped in insert mode")
 H.eq(vim.fn.maparg("t", "i", false, true), {}, "submenu item keys should not be mapped in insert mode")

@@ -217,6 +217,7 @@ function M.close_all()
   state.menu_stack = {}
   state.menu_mode = false
   require("orca_menu.input").disable_keys()
+  require("orca_menu.input").disable_mouse()
   sync_hydra_exit_if_needed()
 end
 
@@ -380,6 +381,7 @@ function M.open_top(index)
     { items = items, selected = 1, scroll_top = 1 },
   }
   M.redraw_all()
+  require("orca_menu.input").install_mouse()
 end
 
 function M.move_top(delta)

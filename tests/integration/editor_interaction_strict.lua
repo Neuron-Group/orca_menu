@@ -99,37 +99,13 @@ layout.refresh_label_positions()
 
 local mouse = { screenrow = 1, screencol = 1 }
 local restore = H.stub_mouse(mouse)
-local left_mouse = vim.fn.maparg("<LeftMouse>", "n", false, true).callback
-local left_drag = vim.fn.maparg("<LeftDrag>", "n", false, true).callback
-local left_release = vim.fn.maparg("<LeftRelease>", "n", false, true).callback
-
-H.truthy(left_mouse, "normal-mode left mouse should be mapped")
-H.truthy(left_drag, "normal-mode left drag should be mapped")
-H.truthy(left_release, "normal-mode left release should be mapped")
-
-for _ = 1, 8 do
-  left_mouse()
-  H.flush()
-  H.falsy(state.menu_mode, "outside left click should not enable menu mode")
-  H.falsy(popup.is_open(), "outside left click should not open popup")
-  H.truthy(vim.fn.maparg("<LeftMouse>", "n", false, true).callback, "left mouse mapping should survive passthrough replay")
-
-  left_drag()
-  H.flush()
-  H.falsy(state.menu_mode, "outside left drag should not enable menu mode")
-  H.falsy(popup.is_open(), "outside left drag should not open popup")
-  H.truthy(vim.fn.maparg("<LeftDrag>", "n", false, true).callback, "left drag mapping should survive passthrough replay")
-
-  left_release()
-  H.flush()
-  H.falsy(state.menu_mode, "outside left release should not enable menu mode")
-  H.falsy(popup.is_open(), "outside left release should not open popup")
-  H.truthy(vim.fn.maparg("<LeftRelease>", "n", false, true).callback, "left release mapping should survive passthrough replay")
-end
+H.eq(vim.fn.maparg("<LeftMouse>", "n", false, true), {}, "normal-mode left mouse should stay native while inactive")
+H.eq(vim.fn.maparg("<LeftDrag>", "n", false, true), {}, "normal-mode left drag should stay native while inactive")
+H.eq(vim.fn.maparg("<LeftRelease>", "n", false, true), {}, "normal-mode left release should stay native while inactive")
 
 mouse.screenrow = vim.o.lines - vim.o.cmdheight
 mouse.screencol = state.label_positions[1] + 1
-left_mouse()
+_G.orca_menu_click_menu_1()
 H.flush()
 H.truthy(state.menu_mode, "mouse menu open should still work after repeated passthrough")
 H.truthy(popup.is_open(), "popup should still open after repeated passthrough")

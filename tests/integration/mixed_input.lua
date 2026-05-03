@@ -66,8 +66,6 @@ layout.refresh_label_positions()
 
 local mouse = { screenrow = vim.o.lines - vim.o.cmdheight, screencol = state.label_positions[1] + 1 }
 local restore = H.stub_mouse(mouse)
-local left_mouse = vim.fn.maparg("<LeftMouse>", "n", false, true).callback
-H.truthy(left_mouse, "left mouse mapping should exist")
 
 local function top_col(index)
   return state.label_positions[index] + 1
@@ -78,7 +76,7 @@ local function click_top(index)
   layout.refresh_label_positions()
   mouse.screenrow = vim.o.lines - vim.o.cmdheight
   mouse.screencol = top_col(index)
-  left_mouse()
+  _G["orca_menu_click_menu_" .. index]()
 end
 
 click_top(1)
@@ -122,7 +120,7 @@ H.eq(state.active_top, 1, "keyboard top activation should target File")
 
 mouse.screenrow = state.menu_stack[1].content_row
 mouse.screencol = state.menu_stack[1].content_col + 1
-left_mouse()
+popup.handle_mouse()
 H.eq(#state.menu_stack, 2, "mouse click on submenu row should open child popup after keyboard open")
 
 popup.go_back()

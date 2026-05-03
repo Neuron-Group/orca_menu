@@ -31,7 +31,7 @@ local function rebuild_click_handlers()
 
   for index, _ in ipairs(state.config.menus or {}) do
     _G["orca_menu_click_menu_" .. index] = function()
-      require("orca_menu").open_menu(index, true)
+      require("orca_menu").click(index)
     end
   end
 end
@@ -70,11 +70,25 @@ local function refresh_config()
 end
 
 function M.open_menu(index, _use_mouse)
-  popup.open_top(index or state.active_top)
+  local target = index or state.active_top
+  if _use_mouse then
+    mode.run_after_editor_mode(function()
+      popup.open_top(target)
+    end)
+    return
+  end
+  popup.open_top(target)
 end
 
 function M.click(index)
-  M.open_menu(index, true)
+  local target = index or state.active_top
+  mode.run_after_editor_mode(function()
+    if popup.is_open() and state.active_top == target then
+      popup.close_all()
+    else
+      popup.open_top(target)
+    end
+  end)
 end
 
 function M.toggle()

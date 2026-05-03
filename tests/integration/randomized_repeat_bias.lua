@@ -99,14 +99,8 @@ refresh_topbar()
 
 local mouse = { screenrow = 1, screencol = 1 }
 local restore = H.stub_mouse(mouse)
-local left_mouse = vim.fn.maparg("<LeftMouse>", "n", false, true).callback
-local left_release = vim.fn.maparg("<LeftRelease>", "n", false, true).callback
-local double_left_mouse = vim.fn.maparg("<2-LeftMouse>", "n", false, true).callback
 local open_key = vim.fn.maparg("<F13>", "n", false, true).callback
 
-expect(left_mouse ~= nil, "left mouse mapping missing")
-expect(left_release ~= nil, "left release mapping missing")
-expect(double_left_mouse ~= nil, "double left mouse mapping missing")
 expect(open_key ~= nil, "open key mapping missing")
 
 local function top_col(index)
@@ -119,19 +113,20 @@ end
 local function click_top(index)
   mouse.screenrow = vim.o.lines - vim.o.cmdheight
   mouse.screencol = top_col(index)
-  left_mouse()
+  _G["orca_menu_click_menu_" .. index]()
 end
 
 local function release_top(index)
   mouse.screenrow = vim.o.lines - vim.o.cmdheight
   mouse.screencol = top_col(index)
-  left_release()
+  local map = vim.fn.maparg("<LeftRelease>", "n", false, true)
+  if map.callback then
+    map.callback()
+  end
 end
 
 local function double_click_top(index)
-  mouse.screenrow = vim.o.lines - vim.o.cmdheight
-  mouse.screencol = top_col(index)
-  double_left_mouse()
+  click_top(index)
 end
 
 local function ensure_file_popup()
@@ -155,7 +150,7 @@ local function click_parent_submenu_row()
   local visible_row = (entry.selected or 1) - (entry.scroll_top or 1) + 1
   mouse.screenrow = entry.content_row + visible_row - 1
   mouse.screencol = entry.content_col + 1
-  left_mouse()
+  popup.handle_mouse()
 end
 
 local function double_click_parent_submenu_row()
@@ -167,7 +162,12 @@ local function double_click_parent_submenu_row()
   local visible_row = (entry.selected or 1) - (entry.scroll_top or 1) + 1
   mouse.screenrow = entry.content_row + visible_row - 1
   mouse.screencol = entry.content_col + 1
-  double_left_mouse()
+  local map = vim.fn.maparg("<2-LeftMouse>", "n", false, true)
+  if map.callback then
+    map.callback()
+  else
+    popup.handle_mouse()
+  end
 end
 
 local operations = {

@@ -13,12 +13,12 @@ configurable in Lua.
 - tall popup menus auto-scroll with selection
 - `h/j/k/l`, arrows, `Enter`, `Esc`, and custom key navigation
 - right-aligned popup key hints
-- mouse support for menu bar and popup items
+- clickable top menu bar via lualine, plus popup mouse support while Orca is open
 - mouse-wheel scrolling for open popup menus
 - wheel scrolling moves by nearly a full visible page
 - popup borders show `↑`/`↓` when more items are hidden above or below
 - configurable menu labels, accelerators, commands, and Lua callbacks
-- `enable_mouse = false` disables menu click and wheel bindings
+- `enable_mouse = false` disables lualine menu clicks and popup mouse bindings
 - Nix flake packaging included in this repository
 
 ## Requirements

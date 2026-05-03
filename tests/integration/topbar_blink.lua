@@ -30,40 +30,34 @@ local layout = require("orca_menu.layout")
 H.render_statusline()
 layout.refresh_label_positions()
 
-local mouse = { screenrow = vim.o.lines - vim.o.cmdheight, screencol = state.label_positions[1] + 1 }
-local restore = H.stub_mouse(mouse)
-local left_mouse = vim.fn.maparg("<LeftMouse>", "n", false, true).callback
-local left_release = vim.fn.maparg("<LeftRelease>", "n", false, true).callback
-H.truthy(left_mouse, "left mouse mapping should exist")
-H.truthy(left_release, "left release mapping should exist")
+local click_file = _G.orca_menu_click_menu_1
+local click_edit = _G.orca_menu_click_menu_2
+H.truthy(click_file, "top-bar click handler for File should exist")
+H.truthy(click_edit, "top-bar click handler for Edit should exist")
+H.eq(vim.fn.maparg("<LeftRelease>", "n", false, true), {}, "release should stay native while popup is inactive")
 
-left_mouse()
+click_file()
 H.truthy(popup.is_open(), "top-bar press should open popup")
 H.truthy(state.menu_mode, "top-bar press should enable menu mode")
+H.truthy(vim.fn.maparg("<LeftRelease>", "n", false, true).callback, "release should be handled while popup is open")
 
-left_release()
+vim.fn.maparg("<LeftRelease>", "n", false, true).callback()
 H.truthy(popup.is_open(), "top-bar release should not close or reopen popup")
 H.truthy(state.menu_mode, "top-bar release should keep menu mode active")
 
-left_mouse()
+click_file()
 H.falsy(popup.is_open(), "second top-bar press on same menu should close popup tree")
 H.falsy(state.menu_mode, "second top-bar press on same menu should leave menu mode")
+H.eq(vim.fn.maparg("<LeftRelease>", "n", false, true), {}, "release should return native after close")
 
-left_release()
-H.falsy(popup.is_open(), "release after close should not reopen the same top-bar popup")
-H.falsy(state.menu_mode, "release after close should not re-enter menu mode")
-
-left_mouse()
+click_file()
 H.truthy(popup.is_open(), "top-bar popup should reopen cleanly after close")
-mouse.screencol = state.label_positions[2] + 1
-left_mouse()
+click_edit()
 H.truthy(popup.is_open(), "switching top-bar targets should keep popup open")
 H.eq(state.active_top, 2, "switching top-bar targets should move active top")
-left_release()
+vim.fn.maparg("<LeftRelease>", "n", false, true).callback()
 H.truthy(popup.is_open(), "release after top-bar switch should not close or reopen")
 H.eq(state.active_top, 2, "release after top-bar switch should keep active top stable")
 
-restore()
 H.finish()
 print("ok - tests/integration/topbar_blink.lua")
-

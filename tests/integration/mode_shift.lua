@@ -80,16 +80,14 @@ H.falsy(popup.is_open(), "action execution should close popup tree")
 
 H.render_statusline()
 layout.refresh_label_positions()
-local mouse = { screenrow = vim.o.lines - vim.o.cmdheight, screencol = state.label_positions[1] + 1 }
-local restore = H.stub_mouse(mouse)
-local left_mouse = vim.fn.maparg("<LeftMouse>", "n", false, true).callback
-left_mouse()
+local click_menu = _G.orca_menu_click_menu_1
+H.truthy(click_menu, "top-bar click handler should exist")
+click_menu()
 H.truthy(state.menu_mode, "mouse top-bar open should enable menu mode")
 H.truthy(popup.is_open(), "mouse top-bar open should open popup tree")
-left_mouse()
+click_menu()
 H.falsy(state.menu_mode, "mouse top-bar close should leave menu mode")
 H.falsy(popup.is_open(), "mouse top-bar close should close popup tree")
 
-restore()
 H.finish()
 print("ok - tests/integration/mode_shift.lua")

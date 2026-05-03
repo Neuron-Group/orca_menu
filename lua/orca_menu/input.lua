@@ -205,10 +205,6 @@ function M.disable_keys()
 end
 
 function M.disable_mouse()
-  if not state.global_mouse_installed then
-    return
-  end
-
   for _, key in ipairs(mouse_keys) do
     pcall(vim.keymap.del, "n", key)
     pcall(vim.keymap.del, "x", key)
@@ -220,6 +216,11 @@ end
 
 function M.install_mouse()
   if state.config and state.config.enable_mouse == false then
+    M.disable_mouse()
+    return
+  end
+
+  if not popup.is_open() then
     M.disable_mouse()
     return
   end

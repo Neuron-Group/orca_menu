@@ -84,11 +84,9 @@ H.falsy(state.menu_mode, "action should leave menu mode after visual-mode entry"
 H.render_statusline()
 layout.refresh_label_positions()
 vim.cmd("normal! gg0v$")
-local mouse = { screenrow = vim.o.lines - vim.o.cmdheight, screencol = state.label_positions[1] + 1 }
-local restore = H.stub_mouse(mouse)
-local left_mouse = vim.fn.maparg("<LeftMouse>", "x", false, true).callback
-H.truthy(left_mouse, "left mouse should be mapped in visual mode")
-left_mouse()
+local click_menu = _G.orca_menu_click_menu_1
+H.truthy(click_menu, "top-bar click handler should exist")
+click_menu()
 H.flush()
 H.eq(vim.fn.mode(), "n", "mouse top-bar open should leave visual mode")
 H.truthy(state.menu_mode, "mouse top-bar open from visual mode should enable menu mode")
@@ -101,11 +99,9 @@ popup.go_back()
 H.eq(#state.menu_stack, 1, "go_back should close child submenu after visual-mode mouse open")
 H.truthy(state.menu_mode, "go_back should keep menu mode active at root popup")
 
-mouse.screencol = state.label_positions[1] + 1
-left_mouse()
+click_menu()
 H.falsy(popup.is_open(), "mouse click on active top menu should close popup from visual-origin flow")
 H.falsy(state.menu_mode, "mouse click on active top menu should leave menu mode from visual-origin flow")
 
-restore()
 H.finish()
 print("ok - tests/integration/visual_mode.lua")

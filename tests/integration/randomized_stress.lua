@@ -59,12 +59,8 @@ layout.refresh_label_positions()
 local mouse = { screenrow = 1, screencol = 1 }
 local restore = H.stub_mouse(mouse)
 
-local left_mouse = vim.fn.maparg("<LeftMouse>", "n", false, true).callback
-local left_release = vim.fn.maparg("<LeftRelease>", "n", false, true).callback
 local open_key = vim.fn.maparg("<F13>", "n", false, true).callback
 
-H.truthy(left_mouse, "left mouse mapping should exist")
-H.truthy(left_release, "left release mapping should exist")
 H.truthy(open_key, "open key mapping should exist")
 
 local seed = 1337
@@ -139,16 +135,24 @@ local function current_entry()
   return state.menu_stack[#state.menu_stack]
 end
 
+local function active_mouse_callback(key)
+  local map = vim.fn.maparg(key, "n", false, true)
+  return map.callback
+end
+
 local function click_top(index)
   mouse.screenrow = vim.o.lines - vim.o.cmdheight
   mouse.screencol = top_col(index)
-  left_mouse()
+  _G["orca_menu_click_menu_" .. index]()
 end
 
 local function release_top(index)
   mouse.screenrow = vim.o.lines - vim.o.cmdheight
   mouse.screencol = top_col(index)
-  left_release()
+  local callback = active_mouse_callback("<LeftRelease>")
+  if callback then
+    callback()
+  end
 end
 
 local function click_selected_row()
@@ -159,14 +163,14 @@ local function click_selected_row()
   local visible_row = (entry.selected or 1) - (entry.scroll_top or 1) + 1
   mouse.screenrow = entry.content_row + visible_row - 1
   mouse.screencol = entry.content_col + 1
-  left_mouse()
+  popup.handle_mouse()
   return true
 end
 
 local function click_outside()
   mouse.screenrow = 1
   mouse.screencol = vim.o.columns
-  left_mouse()
+  popup.handle_mouse()
 end
 
 local function visible_item_keys()

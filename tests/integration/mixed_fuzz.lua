@@ -86,12 +86,8 @@ layout.refresh_label_positions()
 
 local mouse = { screenrow = 1, screencol = 1 }
 local restore = H.stub_mouse(mouse)
-local left_mouse = vim.fn.maparg("<LeftMouse>", "n", false, true).callback
-local left_release = vim.fn.maparg("<LeftRelease>", "n", false, true).callback
 local open_key = vim.fn.maparg("<F13>", "n", false, true).callback
 
-H.truthy(left_mouse, "left mouse mapping should exist")
-H.truthy(left_release, "left release mapping should exist")
 H.truthy(open_key, "open key should exist")
 
 local menu_count = #(state.config.menus or {})
@@ -130,27 +126,30 @@ local function click_top(index)
   refresh_topbar()
   mouse.screenrow = vim.o.lines - vim.o.cmdheight
   mouse.screencol = top_col(index)
-  left_mouse()
+  _G["orca_menu_click_menu_" .. index]()
 end
 
 local function release_top(index)
   refresh_topbar()
   mouse.screenrow = vim.o.lines - vim.o.cmdheight
   mouse.screencol = top_col(index)
-  left_release()
+  local map = vim.fn.maparg("<LeftRelease>", "n", false, true)
+  if map.callback then
+    map.callback()
+  end
 end
 
 local function click_row(level, visible_row)
   local entry = state.menu_stack[level]
   mouse.screenrow = entry.content_row + visible_row - 1
   mouse.screencol = entry.content_col + 1
-  left_mouse()
+  popup.handle_mouse()
 end
 
 local function click_outside()
   mouse.screenrow = 1
   mouse.screencol = vim.o.columns
-  left_mouse()
+  popup.handle_mouse()
 end
 
 local steps = {
