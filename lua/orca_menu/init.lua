@@ -27,13 +27,31 @@ local function leave_editor_mode()
   leave_insert_mode()
 end
 
+local function wait_for_normal_mode(fn, remaining_checks)
+  local checks = remaining_checks or 40
+  local mode = vim.fn.mode()
+  local mode_prefix = mode:sub(1, 1)
+
+  if not (mode == "v" or mode == "V" or mode == "\22" or mode_prefix == "i") then
+    fn()
+    return
+  end
+
+  if checks <= 0 then
+    fn()
+    return
+  end
+
+  vim.schedule(function()
+    wait_for_normal_mode(fn, checks - 1)
+  end)
+end
+
 local function run_after_editor_mode(fn)
   local mode = vim.fn.mode()
   if mode == "v" or mode == "V" or mode == "\22" or mode:sub(1, 1) == "i" then
     leave_editor_mode()
-    vim.schedule(function()
-      vim.schedule(fn)
-    end)
+    wait_for_normal_mode(fn)
   else
     fn()
   end
@@ -73,22 +91,19 @@ local function apply_open_key_binding()
   end
 
   state.current_open_key = state.config.keys.open
-  state.current_open_backend = state.config.keys.mode_backend
 
   if not state.current_open_key or state.current_open_key == "" then
     return
   end
 
-  if state.current_open_backend == "hydra" then
-    hydra_mode.reset()
-    hydra_mode.setup()
-  else
-    vim.keymap.set({ "n", "x", "i" }, state.current_open_key, function()
-      run_after_editor_mode(function()
-        require("orca_menu").toggle()
-      end)
-    end, { desc = "Toggle Orca menu", silent = true })
-  end
+  hydra_mode.reset()
+  hydra_mode.setup()
+
+  vim.keymap.set({ "n", "x", "i" }, state.current_open_key, function()
+    run_after_editor_mode(function()
+      hydra_mode.activate()
+    end)
+  end, { desc = "Enter Orca menu", silent = true })
 end
 
 local function refresh_config()

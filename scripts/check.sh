@@ -29,6 +29,8 @@ run_suite tests/integration/insert_mode.lua
 run_suite tests/integration/function_key_open.lua
 run_suite tests/integration/leader_open_key.lua
 run_suite tests/integration/mode_shift.lua
+echo "==> tests/terminal/run_open_hotkey_terminal.py"
+python3 tests/terminal/run_open_hotkey_terminal.py
 run_suite tests/integration/mixed_input.lua
 run_suite tests/integration/mixed_fuzz.lua
 run_suite tests/integration/randomized_stress.lua

@@ -23,6 +23,10 @@ package.preload.hydra = function()
       end
     end
 
+    function hydra:activate()
+      self:enter()
+    end
+
     function hydra:press(key)
       for _, head in ipairs(self.spec.heads or {}) do
         if head[1] == key then
@@ -46,7 +50,6 @@ require("orca_menu").setup({
   enable_mouse = true,
   keys = {
     open = "<F13>",
-    mode_backend = "hydra",
   },
   menus = {
     {

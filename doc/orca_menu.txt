@@ -12,7 +12,7 @@ REQUIREMENTS ~
 
     Neovim 0.9+
     lualine.nvim
-    hydra.nvim        For the default Hydra-backed menu mode.
+    hydra.nvim        Required for Orca Menu mode.
 
 COMMANDS ~
 
@@ -26,7 +26,6 @@ require('orca_menu').setup({
   enable_mouse = true,
   keys = {
     open = '<M-m>',
-    mode_backend = 'hydra',
   },
   lualine = {
     section = 'y',
@@ -206,7 +205,7 @@ The popup border shows ↑ or ↓ on the right side when more items are hidden.
 Those markers can be changed with submenu.scroll_indicator_up and
 submenu.scroll_indicator_down.
 Set enable_mouse = false to disable Orca Menu mouse bindings entirely.
-With the Hydra backend, opening a menu via mouse also enables keyboard
+Opening a menu via mouse also enables keyboard
 navigation, and closing it via mouse exits menu mode.
 
     top bar, same item      Close the open popup tree.

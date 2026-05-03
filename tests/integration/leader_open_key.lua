@@ -6,7 +6,6 @@ require("orca_menu").setup({
   enable_mouse = true,
   keys = {
     open = "<leader>m",
-    mode_backend = "builtin",
     next = { "l" },
     prev = { "h" },
     down = { "j" },

@@ -4,7 +4,6 @@ require("orca_menu").setup({
   enable_mouse = true,
   keys = {
     open = "<F12>",
-    mode_backend = "builtin",
   },
   menus = {
     { label = "&File", key = "f", items = { { label = "&Open", key = "o", action = function() end } } },

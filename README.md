@@ -25,7 +25,7 @@ configurable in Lua.
 
 - Neovim `>= 0.9`
 - `nvim-lualine/lualine.nvim`
-- `anuvyklack/hydra.nvim` when using the default Hydra backend
+- `anuvyklack/hydra.nvim`
 
 ## Installation
 
@@ -128,7 +128,6 @@ require("orca_menu").setup({
   enable_mouse = true,
   keys = {
     open = "<M-m>",
-    mode_backend = "hydra",
   },
   lualine = {
     section = "y",

@@ -12,7 +12,6 @@ local defaults = {
   },
   keys = {
     open = "<M-m>",
-    mode_backend = "hydra",
     next = { "l", "<Right>" },
     prev = { "h", "<Left>" },
     down = { "j", "<Down>" },

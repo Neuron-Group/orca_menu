@@ -8,6 +8,7 @@ local M = {
 
 local hydra_exit_pending = false
 local hydra_active = false
+local hydra_activate_pending = false
 
 local function close_hydra_mode()
   popup.close_all()
@@ -149,12 +150,43 @@ function M.setup()
           vim.schedule(function()
             actions.execute_item(pending_action)
           end)
+        elseif hydra_activate_pending then
+          hydra_activate_pending = false
+          vim.schedule(function()
+            M.activate()
+          end)
         end
       end,
     },
   })
 
   return M.hydra
+end
+
+function M.activate()
+  if hydra_exit_pending then
+    hydra_activate_pending = true
+    return true
+  end
+
+  if hydra_active then
+    return true
+  end
+
+  local hydra = M.setup()
+  if not hydra then
+    return false
+  end
+
+  if hydra.activate then
+    hydra:activate()
+  elseif hydra.enter then
+    hydra:enter()
+  else
+    return false
+  end
+
+  return true
 end
 
 function M.exit()
@@ -183,6 +215,7 @@ function M.reset()
   M.hydra = nil
   hydra_exit_pending = false
   hydra_active = false
+  hydra_activate_pending = false
 end
 
 return M

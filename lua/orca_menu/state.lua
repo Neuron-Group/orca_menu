@@ -12,7 +12,6 @@ local M = {
   global_mouse_installed = false,
   keymaps_installed = false,
   current_open_key = nil,
-  current_open_backend = nil,
   mouse_trace_path = nil,
   namespace = vim.api.nvim_create_namespace("orca_menu"),
 }

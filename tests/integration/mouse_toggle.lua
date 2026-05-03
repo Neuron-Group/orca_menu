@@ -13,7 +13,6 @@ state.config = {
     select = {},
     back = {},
     close = {},
-    mode_backend = "builtin",
   },
   menus = {},
 }

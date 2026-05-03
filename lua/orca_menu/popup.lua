@@ -6,12 +6,10 @@ local M = {}
 local activate_item_at_level
 
 local function sync_hydra_exit_if_needed()
-  if state.config and state.config.keys.mode_backend == "hydra" then
-    local hydra_mode = require("orca_menu.hydra_mode")
-    if hydra_mode.is_active() then
-      hydra_mode.exit()
-      return true
-    end
+  local hydra_mode = require("orca_menu.hydra_mode")
+  if hydra_mode.is_active() then
+    hydra_mode.exit()
+    return true
   end
   return false
 end
@@ -229,6 +227,10 @@ end
 function M.enter_menu_mode(index)
   state.active_top = index or state.active_top
   state.menu_mode = true
+  if M.is_open() then
+    require("orca_menu.input").enable_keys()
+    return
+  end
   state.menu_stack = {}
   require("orca_menu.input").enable_keys()
 end

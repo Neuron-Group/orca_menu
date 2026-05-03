@@ -89,12 +89,29 @@ local function leave_editor_mode()
   leave_insert_mode()
 end
 
+local function wait_for_normal_mode(fn, remaining_checks)
+  local checks = remaining_checks or 40
+  local mode = current_mode()
+
+  if not (in_visual_mode() or mode:sub(1, 1) == "i") then
+    fn()
+    return
+  end
+
+  if checks <= 0 then
+    fn()
+    return
+  end
+
+  vim.schedule(function()
+    wait_for_normal_mode(fn, checks - 1)
+  end)
+end
+
 local function run_after_editor_mode(fn)
   if in_visual_mode() or in_insert_mode() then
     leave_editor_mode()
-    vim.schedule(function()
-      vim.schedule(fn)
-    end)
+    wait_for_normal_mode(fn)
   else
     fn()
   end
@@ -175,11 +192,9 @@ local function refresh_dynamic_top_keys()
 end
 
 function M.enable_keys()
-  if state.config and state.config.keys.mode_backend == "hydra" then
-    local hydra_mode = require("orca_menu.hydra_mode")
-    if hydra_mode.is_active() then
-      return
-    end
+  local hydra_mode = require("orca_menu.hydra_mode")
+  if hydra_mode.is_active() then
+    return
   end
   if state.keymaps_installed then
     return

@@ -103,7 +103,7 @@ These should run in Neovim headless mode and exercise real plugin state.
 
 Recommended setup:
 
-- configure `mode_backend` to a non-Hydra value for most tests
+- use a Hydra stub for most automated tests
 - use `require("orca_menu").setup(...)`
 - inspect `require("orca_menu.state")`
 - trigger behavior through public commands or real key input
@@ -156,10 +156,10 @@ For border and redraw-sensitive behavior, also assert:
 
 The plugin has two meaningful execution modes:
 
-- non-Hydra mode
+- Hydra mode
 - Hydra-backed mode
 
-Most behavior should be tested once in non-Hydra mode because it is easier to drive deterministically. Then add a smaller Hydra-focused suite that verifies only backend-specific contracts:
+Most behavior should be tested with a lightweight Hydra stub for deterministic automation. Add a smaller Hydra-focused suite that verifies backend-specific contracts against terminal input and activation flow:
 
 - entering through the Hydra body key opens menu mode
 - closing through `q` exits Hydra and clears menu state
