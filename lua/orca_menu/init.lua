@@ -6,56 +6,9 @@ local popup = require("orca_menu.popup")
 local input = require("orca_menu.input")
 local lualine = require("orca_menu.lualine")
 local hydra_mode = require("orca_menu.hydra_mode")
+local mode = require("orca_menu.mode")
 
 local augroup = vim.api.nvim_create_augroup("OrcaMenu", { clear = true })
-
-local function leave_visual_mode()
-  local mode = vim.fn.mode()
-  if mode == "v" or mode == "V" or mode == "\22" then
-    pcall(vim.cmd.normal, { args = { vim.keycode("<Esc>") }, bang = true })
-  end
-end
-
-local function leave_insert_mode()
-  if vim.fn.mode():sub(1, 1) == "i" then
-    vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "i", false)
-  end
-end
-
-local function leave_editor_mode()
-  leave_visual_mode()
-  leave_insert_mode()
-end
-
-local function wait_for_normal_mode(fn, remaining_checks)
-  local checks = remaining_checks or 40
-  local mode = vim.fn.mode()
-  local mode_prefix = mode:sub(1, 1)
-
-  if not (mode == "v" or mode == "V" or mode == "\22" or mode_prefix == "i") then
-    fn()
-    return
-  end
-
-  if checks <= 0 then
-    fn()
-    return
-  end
-
-  vim.schedule(function()
-    wait_for_normal_mode(fn, checks - 1)
-  end)
-end
-
-local function run_after_editor_mode(fn)
-  local mode = vim.fn.mode()
-  if mode == "v" or mode == "V" or mode == "\22" or mode:sub(1, 1) == "i" then
-    leave_editor_mode()
-    wait_for_normal_mode(fn)
-  else
-    fn()
-  end
-end
 
 local function active_lsp_names()
   local current_buf = vim.api.nvim_get_current_buf()
@@ -100,7 +53,7 @@ local function apply_open_key_binding()
   hydra_mode.setup()
 
   vim.keymap.set({ "n", "x", "i" }, state.current_open_key, function()
-    run_after_editor_mode(function()
+    mode.run_after_editor_mode(function()
       hydra_mode.activate()
     end)
   end, { desc = "Enter Orca menu", silent = true })

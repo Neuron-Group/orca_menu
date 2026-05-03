@@ -35,6 +35,11 @@ if start_mode == "insert" then
   vim.cmd("startinsert")
 elseif start_mode == "visual" then
   vim.cmd("normal! gg0v$")
+elseif start_mode == "visual_line" then
+  vim.cmd("normal! gg0V")
+elseif start_mode == "visual_block" then
+  vim.api.nvim_feedkeys("gg0" .. vim.keycode("<C-v>") .. "j", "xt", false)
+elseif start_mode == "normal" then
 else
   error("unsupported ORCA_TERMINAL_START_MODE: " .. start_mode)
 end

@@ -12,6 +12,12 @@ import time
 
 CASES = [
     {
+        "name": "f12_normal",
+        "open_key": "<F12>",
+        "start_mode": "normal",
+        "send": b"\x1b[24~",
+    },
+    {
         "name": "f12_insert",
         "open_key": "<F12>",
         "start_mode": "insert",
@@ -22,6 +28,24 @@ CASES = [
         "open_key": "<F12>",
         "start_mode": "visual",
         "send": b"\x1b[24~",
+    },
+    {
+        "name": "f12_visual_line",
+        "open_key": "<F12>",
+        "start_mode": "visual_line",
+        "send": b"\x1b[24~",
+    },
+    {
+        "name": "f12_visual_block",
+        "open_key": "<F12>",
+        "start_mode": "visual_block",
+        "send": b"\x1b[24~",
+    },
+    {
+        "name": "leader_normal",
+        "open_key": "<leader>m",
+        "start_mode": "normal",
+        "send": b" m",
     },
     {
         "name": "leader_insert",
@@ -36,6 +60,18 @@ CASES = [
         "send": b" m",
     },
     {
+        "name": "leader_visual_line",
+        "open_key": "<leader>m",
+        "start_mode": "visual_line",
+        "send": b" m",
+    },
+    {
+        "name": "meta_normal",
+        "open_key": "<M-m>",
+        "start_mode": "normal",
+        "send": b"\x1bm",
+    },
+    {
         "name": "meta_insert",
         "open_key": "<M-m>",
         "start_mode": "insert",
@@ -45,6 +81,12 @@ CASES = [
         "name": "meta_visual",
         "open_key": "<M-m>",
         "start_mode": "visual",
+        "send": b"\x1bm",
+    },
+    {
+        "name": "meta_visual_block",
+        "open_key": "<M-m>",
+        "start_mode": "visual_block",
         "send": b"\x1bm",
     },
 ]

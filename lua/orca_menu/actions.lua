@@ -12,7 +12,7 @@ function M.execute_item(item)
     return
   end
   if type(item.lua) == "string" then
-    local chunk, err = loadstring(item.lua)
+    local chunk, err = load(item.lua, "orca_menu_item", "t", _G)
     if not chunk then
       vim.notify(err, vim.log.levels.ERROR)
       return

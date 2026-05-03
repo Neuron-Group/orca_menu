@@ -1,5 +1,6 @@
 local state = require("orca_menu.state")
 local popup = require("orca_menu.popup")
+local mode = require("orca_menu.mode")
 
 local M = {}
 
@@ -59,68 +60,10 @@ local function bind(keys, fn)
   end
 end
 
-local function current_mode()
-  return vim.fn.mode()
-end
-
-local function in_visual_mode()
-  local mode = current_mode()
-  return mode == "v" or mode == "V" or mode == "\22"
-end
-
-local function in_insert_mode()
-  return current_mode():sub(1, 1) == "i"
-end
-
-local function leave_visual_mode()
-  if in_visual_mode() then
-    pcall(vim.cmd.normal, { args = { vim.keycode("<Esc>") }, bang = true })
-  end
-end
-
-local function leave_insert_mode()
-  if in_insert_mode() then
-    vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "i", false)
-  end
-end
-
-local function leave_editor_mode()
-  leave_visual_mode()
-  leave_insert_mode()
-end
-
-local function wait_for_normal_mode(fn, remaining_checks)
-  local checks = remaining_checks or 40
-  local mode = current_mode()
-
-  if not (in_visual_mode() or mode:sub(1, 1) == "i") then
-    fn()
-    return
-  end
-
-  if checks <= 0 then
-    fn()
-    return
-  end
-
-  vim.schedule(function()
-    wait_for_normal_mode(fn, checks - 1)
-  end)
-end
-
-local function run_after_editor_mode(fn)
-  if in_visual_mode() or in_insert_mode() then
-    leave_editor_mode()
-    wait_for_normal_mode(fn)
-  else
-    fn()
-  end
-end
-
 local function replay_key(key)
-  if in_visual_mode() then
+  if mode.is_visual() then
     vim.api.nvim_feedkeys(vim.keycode(key), "x", false)
-  elseif in_insert_mode() then
+  elseif mode.is_insert() then
     vim.api.nvim_feedkeys(vim.keycode(key), "i", false)
   else
     vim.api.nvim_feedkeys(vim.keycode(key), "n", false)
@@ -210,7 +153,7 @@ function M.enable_keys()
   bind(state.config.keys.close, popup.close_all)
   for _, key in ipairs(dynamic_top_keys) do
     vim.keymap.set(keymap_modes, key, function()
-      run_after_editor_mode(function()
+      mode.run_after_editor_mode(function()
         if not popup.activate_top_key(key) and not popup.activate_item_key(key) then
           replay_key(key)
         end
@@ -219,7 +162,7 @@ function M.enable_keys()
   end
   for _, key in ipairs(dynamic_item_keys) do
     vim.keymap.set(keymap_modes, key, function()
-      run_after_editor_mode(function()
+      mode.run_after_editor_mode(function()
         if not popup.activate_top_key(key) and not popup.activate_item_key(key) then
           replay_key(key)
         end
@@ -277,7 +220,7 @@ function M.install_mouse()
     end
 
     if popup.is_open() then
-      run_after_editor_mode(function()
+      mode.run_after_editor_mode(function()
         popup.handle_mouse()
         trace_mouse(event, { phase = "handled_popup", keys = keys })
       end)
@@ -286,7 +229,7 @@ function M.install_mouse()
       local layout = require("orca_menu.layout")
       local bar_index = layout.label_hit_at_col(math.max((mouse.screencol or 1) - 1, 0))
       if bar_index then
-        run_after_editor_mode(function()
+        mode.run_after_editor_mode(function()
           popup.open_top(bar_index)
           trace_mouse(event, { phase = "opened_top", keys = keys, bar_index = bar_index })
         end)
@@ -346,7 +289,7 @@ function M.install_mouse()
 
   vim.keymap.set(entry_modes, "<ScrollWheelUp>", function()
     trace_mouse("<ScrollWheelUp>", { phase = "start" })
-    run_after_editor_mode(function()
+    mode.run_after_editor_mode(function()
       if not popup.scroll_at_mouse(-1) then
         fallback_mouse("<ScrollWheelUp>")
       else
@@ -357,7 +300,7 @@ function M.install_mouse()
 
   vim.keymap.set(entry_modes, "<ScrollWheelDown>", function()
     trace_mouse("<ScrollWheelDown>", { phase = "start" })
-    run_after_editor_mode(function()
+    mode.run_after_editor_mode(function()
       if not popup.scroll_at_mouse(1) then
         fallback_mouse("<ScrollWheelDown>")
       else
