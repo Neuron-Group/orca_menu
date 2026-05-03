@@ -161,7 +161,7 @@ function M.setup(user_config)
     end,
   })
 
-  vim.api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
+  vim.api.nvim_create_autocmd("VimResized", {
     group = augroup,
     callback = function()
       if state.menu_mode or popup.is_open() or #state.menu_stack > 0 then
@@ -184,7 +184,7 @@ function M.setup(user_config)
     end,
   })
 
-  vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
+  vim.api.nvim_create_autocmd("BufEnter", {
     group = augroup,
     callback = function()
       refresh_config()

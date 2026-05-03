@@ -10,6 +10,10 @@ import tempfile
 import time
 
 
+class PtyUnavailable(Exception):
+    pass
+
+
 CASES = [
     {
         "name": "f12_normal",
@@ -142,7 +146,10 @@ def run_case(repo_root, case):
         for key in ("HOME", "XDG_STATE_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME"):
             os.makedirs(env[key], exist_ok=True)
 
-        master_fd, slave_fd = pty.openpty()
+        try:
+            master_fd, slave_fd = pty.openpty()
+        except OSError as exc:
+            raise PtyUnavailable(str(exc)) from exc
         command = [
             "nvim",
             "-u",
@@ -197,8 +204,12 @@ def run_case(repo_root, case):
 
 def main():
     repo_root = os.getcwd()
-    for case in CASES:
-        run_case(repo_root, case)
+    try:
+        for case in CASES:
+            run_case(repo_root, case)
+    except PtyUnavailable as exc:
+        print(f"skip - tests/terminal/run_open_hotkey_terminal.py ({exc})")
+        return
 
 
 if __name__ == "__main__":
