@@ -117,6 +117,12 @@ ESC BEHAVIOR ~
     after action        Close all popups and leave menu mode first.
     window resize       Close all popups and leave menu mode.
 
+MODE HANDOFF ~
+
+    normal mode         Open key enters Orca mode directly.
+    insert mode         Open key leaves insert mode, then enters Orca mode.
+    visual modes        Open key leaves visual mode, then enters Orca mode.
+
 TOP MENU FIELDS ~
 
     label       Visible text. Prefix a letter with '&' for accelerator.
@@ -174,6 +180,9 @@ POPUP ITEM FIELDS ~
     items       Nested submenu items.
 
 Use { label = '-' } to insert a separator.
+
+When lua is a string, Orca Menu compiles it with load() and executes it in the
+global Lua environment.
 
 KEY HINTS ~
 

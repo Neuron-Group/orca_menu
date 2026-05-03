@@ -152,12 +152,9 @@ For border and redraw-sensitive behavior, also assert:
 - submenu opens on the expected side, or flips left when needed
 - selected row remains visible after repeated scroll or keyboard moves
 
-## Backend Coverage
+## Hydra Coverage
 
-The plugin has two meaningful execution modes:
-
-- Hydra mode
-- Hydra-backed mode
+The plugin now uses Hydra as its only menu backend.
 
 Most behavior should be tested with a lightweight Hydra stub for deterministic automation. Add a smaller Hydra-focused suite that verifies backend-specific contracts against terminal input and activation flow:
 
@@ -166,6 +163,7 @@ Most behavior should be tested with a lightweight Hydra stub for deterministic a
 - selecting an action stores `state.pending_action`, exits Hydra, then executes the action
 - `Esc` in a child submenu goes back one level instead of closing Hydra immediately
 - mouse-opened menus still allow keyboard continuation under Hydra
+- real PTY input leaves insert, visual, visual-line, and visual-block mode before Hydra activation
 
 This keeps the Hydra suite focused and avoids duplicating the entire keyboard matrix.
 
@@ -202,6 +200,7 @@ If implementation time is limited, build the suite in this order.
 - pending-action lifecycle
 - Hydra enter and exit state cleanup
 - back behavior at nested and root levels
+- PTY-backed open-key coverage for terminal byte input
 
 ## Concrete Test Cases
 
@@ -257,11 +256,12 @@ This gives realistic coverage without making the suite flaky.
 
 ## Final Proposal
 
-Adopt a self-hosted headless Neovim test harness with:
+Adopt a self-hosted Neovim test harness with:
 
 - unit tests for `config`, `layout`, and `actions`
 - integration tests for keyboard and popup-stack behavior
 - a smaller UI suite for mouse and geometry-sensitive paths
 - a narrow Hydra-specific suite for deferred action execution and exit lifecycle
+- a PTY-backed terminal suite for real open-key entry across editor modes
 
 That strategy fits the current repo structure, keeps dependencies low, and directly targets the code paths most likely to regress.

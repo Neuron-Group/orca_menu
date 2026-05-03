@@ -219,8 +219,8 @@ Default keys:
 ### Mode Handoff
 
 - in normal mode, the open key enters menu mode directly
-- in visual mode, the open key or menu mouse click first leaves visual mode, then enters menu mode
-- in insert mode, the open key or menu mouse click first leaves insert mode, then enters menu mode
+- in visual, visual-line, and visual-block mode, the open key or menu mouse click first leaves editor mode, then enters Hydra-backed Orca mode
+- in insert mode, the open key or menu mouse click first leaves insert mode, then enters Hydra-backed Orca mode
 - popup navigation keys and menu item keys are active in normal and visual mode
 - insert mode only supports safe menu entry paths, so ordinary typing is not hijacked by menu item keys
 
@@ -307,6 +307,8 @@ Each item may use:
 
 Use `{ label = "-" }` for a separator.
 
+When `lua` is a string, it is compiled with `load(...)` and executed in the global Lua environment.
+
 ## Highlights
 
 Default popup highlights:
@@ -341,6 +343,16 @@ Run the local headless test suite with:
 ```bash
 bash scripts/check.sh
 ```
+
+That suite includes a PTY-backed terminal test for real open-key input in:
+
+- normal mode
+- insert mode
+- visual mode
+- visual-line mode
+- visual-block mode
+
+The terminal suite currently covers `<F12>`, `<leader>m`, and `<M-m>`.
 
 Run the Nix checks with:
 
