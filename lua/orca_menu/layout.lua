@@ -173,6 +173,8 @@ function M.format_item_line(item, total_width, hint_width, arrow_width, check_wi
       text = string.rep("─", total_width),
       hint_start = nil,
       hint_end = nil,
+      check_start = nil,
+      check_end = nil,
     }
   end
 
@@ -195,19 +197,23 @@ function M.format_item_line(item, total_width, hint_width, arrow_width, check_wi
   local line = label .. string.rep(" ", label_pad)
   local hint_start = nil
   local hint_end = nil
+  local check_start = nil
+  local check_end = nil
 
   if right_section_width > 0 then
     local right_width = vim.fn.strdisplaywidth(right)
     line = line .. string.rep(" ", gap)
     if check_section_width > 0 then
       line = line .. string.rep(" ", math.max(check_section_width - vim.fn.strdisplaywidth(check), 0))
+      check_start = #line
       line = line .. check
+      check_end = #line
       line = line .. " "
     end
     line = line .. string.rep(" ", math.max(hint_width - right_width, 0))
-    hint_start = vim.fn.strdisplaywidth(line)
+    hint_start = #line
     line = line .. right
-    hint_end = hint_start + right_width
+    hint_end = #line
     if arrow_width > 0 then
       line = line .. " "
       line = line .. string.rep(" ", math.max(arrow_width - vim.fn.strdisplaywidth(arrow), 0))
@@ -219,6 +225,8 @@ function M.format_item_line(item, total_width, hint_width, arrow_width, check_wi
     text = line,
     hint_start = hint_start,
     hint_end = hint_end,
+    check_start = check_start,
+    check_end = check_end,
   }
 end
 

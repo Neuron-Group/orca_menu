@@ -455,11 +455,24 @@ Default popup highlights:
   - selected popup row highlight
 - `accelerator`
   - popup key-hint highlight
+- `checked`
+  - popup checked-state highlight
 
 By default:
 
 - right-side key hints use `OrcaMenuHint`
 - the selected row uses `OrcaMenuSelected`
+- checkmarks use `OrcaMenuChecked`
+
+Example override:
+
+```lua
+require("orca_menu").setup({
+  highlights = {
+    checked = "DiagnosticOk",
+  },
+})
+```
 
 ## Main Files
 

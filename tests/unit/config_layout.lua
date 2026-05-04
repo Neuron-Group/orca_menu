@@ -13,6 +13,7 @@ end
 
 local config = require("orca_menu.config")
 local layout = require("orca_menu.layout")
+local popup = require("orca_menu.popup")
 local state = require("orca_menu.state")
 
 local normalized = config.normalize({
@@ -96,10 +97,52 @@ vim.wo.number = true
 local checked_line = layout.format_item_line(state.config.menus[1].items[1], 30, 1, 0)
 H.truthy(checked_line.text:find("", 1, true), "checked items should render a checkmark")
 H.truthy(checked_line.text:find("n", 1, true), "checked items should keep their right-side key hint")
+local hint_text = checked_line.text:sub((checked_line.hint_start or 0) + 1, checked_line.hint_end or 0)
+H.eq(hint_text, "n", "hint highlight span should still point exactly at the key hint")
 
 vim.wo.number = false
 local unchecked_line = layout.format_item_line(state.config.menus[1].items[1], 30, 1, 0)
 H.falsy(unchecked_line.text:find("", 1, true), "unchecked items should not render a checkmark")
+
+state.config = config.normalize({
+  highlights = {
+    checked = "WarningMsg",
+  },
+  menus = {
+    {
+      label = "&View",
+      items = {
+        {
+          label = "Toggle &Explorer",
+          key = "oo",
+          checked = true,
+        },
+      },
+    },
+  },
+})
+
+popup.open_top(1)
+local checked_popup_buf = state.menu_stack[1].buf
+local checked_popup_line = vim.api.nvim_buf_get_lines(checked_popup_buf, 0, 1, false)[1]
+local popup_marks = vim.api.nvim_buf_get_extmarks(checked_popup_buf, state.namespace, 0, -1, { details = true })
+local hint_mark
+local check_mark
+
+for _, mark in ipairs(popup_marks) do
+  local details = mark[4] or {}
+  if details.hl_group == "OrcaMenuHint" then
+    hint_mark = mark
+  elseif details.hl_group == "WarningMsg" then
+    check_mark = mark
+  end
+end
+
+H.truthy(hint_mark, "popup should add a dedicated highlight for key hints")
+H.truthy(check_mark, "popup should add a dedicated highlight for checked state")
+H.eq(checked_popup_line:sub(hint_mark[3] + 1, (hint_mark[4] or {}).end_col), "oo", "multi-key hint highlight should cover the full rendered hint")
+H.eq(checked_popup_line:sub(check_mark[3] + 1, (check_mark[4] or {}).end_col), "", "checked highlight should cover only the checkmark")
+popup.close_all()
 
 state.config = config.normalize({
   submenu = {
@@ -131,7 +174,6 @@ local none_anchor = layout.resolve_anchor(1, state.config.menus[1].items)
 
 H.eq(none_anchor.row, rounded_anchor.row, 'border = "none" should keep the same popup geometry as bordered popups')
 
-local popup = require("orca_menu.popup")
 popup.open_top(1)
 popup.activate_selected()
 

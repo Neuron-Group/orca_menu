@@ -30,6 +30,7 @@ local defaults = {
     menu = "NormalFloat",
     menu_sel = "OrcaMenuSelected",
     accelerator = "OrcaMenuHint",
+    checked = "OrcaMenuChecked",
   },
   menus = {
     { label = "&File", items = {} },

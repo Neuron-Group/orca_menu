@@ -274,11 +274,23 @@ HIGHLIGHTS ~
     menu            Base popup highlight
     menu_sel        Selected popup row highlight
     accelerator     Popup key-hint highlight
+    checked         Popup checked-state highlight
 
 Default internal groups:
 
     OrcaMenuSelected
     OrcaMenuHint
+    OrcaMenuChecked
+
+Example:
+
+>lua
+require('orca_menu').setup({
+  highlights = {
+    checked = 'DiagnosticOk',
+  },
+})
+<
 
 MOUSE ~
 

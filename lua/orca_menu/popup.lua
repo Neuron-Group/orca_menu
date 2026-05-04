@@ -131,6 +131,11 @@ local function ensure_highlights()
     default = false,
   })
 
+  vim.api.nvim_set_hl(0, "OrcaMenuChecked", {
+    fg = pink_fg,
+    default = false,
+  })
+
   vim.api.nvim_set_hl(0, "OrcaMenuSelected", {
     fg = pink_fg,
     bg = menu_bg,
@@ -194,6 +199,7 @@ local function level_highlight_names(level)
       menu = state.config.highlights.menu,
       menu_sel = state.config.highlights.menu_sel,
       accelerator = state.config.highlights.accelerator,
+      checked = state.config.highlights.checked,
     }
   end
 
@@ -201,6 +207,7 @@ local function level_highlight_names(level)
     menu = "OrcaMenuLevel" .. level,
     menu_sel = "OrcaMenuSelectedLevel" .. level,
     accelerator = "OrcaMenuHintLevel" .. level,
+    checked = "OrcaMenuCheckedLevel" .. level,
   }
 end
 
@@ -213,6 +220,7 @@ local function ensure_level_highlights(level)
   local menu_base = vim.api.nvim_get_hl(0, { name = state.config.highlights.menu, link = false })
   local menu_sel_base = vim.api.nvim_get_hl(0, { name = state.config.highlights.menu_sel, link = false })
   local accelerator_base = vim.api.nvim_get_hl(0, { name = state.config.highlights.accelerator, link = false })
+  local checked_base = vim.api.nvim_get_hl(0, { name = state.config.highlights.checked, link = false })
   local delta = shade_offset_for_level(level)
   local bg = adjust_color(menu_base.bg, delta)
   local bg_luma = color_luma(bg)
@@ -221,6 +229,7 @@ local function ensure_level_highlights(level)
   vim.api.nvim_set_hl(0, names.menu, vim.tbl_extend("force", menu_base, { bg = bg, default = false }))
   vim.api.nvim_set_hl(0, names.menu_sel, vim.tbl_extend("force", menu_sel_base, { bg = selected_bg, default = false }))
   vim.api.nvim_set_hl(0, names.accelerator, vim.tbl_extend("force", accelerator_base, { bg = nil, default = false }))
+  vim.api.nvim_set_hl(0, names.checked, vim.tbl_extend("force", checked_base, { bg = nil, default = false }))
 
   return names
 end
@@ -341,6 +350,16 @@ local function highlight_entry(buf, entry)
         line_idx,
         entry.rendered_lines[line_idx + 1].hint_start,
         entry.rendered_lines[line_idx + 1].hint_end
+      )
+    end
+    if entry.rendered_lines and entry.rendered_lines[line_idx + 1] and entry.rendered_lines[line_idx + 1].check_start and entry.rendered_lines[line_idx + 1].check_end then
+      vim.api.nvim_buf_add_highlight(
+        buf,
+        state.namespace,
+        highlights.checked,
+        line_idx,
+        entry.rendered_lines[line_idx + 1].check_start,
+        entry.rendered_lines[line_idx + 1].check_end
       )
     end
   end
