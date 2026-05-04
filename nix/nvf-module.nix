@@ -8,7 +8,7 @@ let
   cfg = config.vim.orcaMenu;
   overlay = import ./overlay.nix;
   pluginPkgs = import pkgs.path {
-    system = pkgs.system;
+    system = pkgs.stdenv.hostPlatform.system;
     overlays = [ overlay ];
   };
   inherit (lib) literalExpression mkEnableOption mkIf mkMerge mkOption optionalAttrs types;
