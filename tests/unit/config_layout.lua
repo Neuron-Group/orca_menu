@@ -1,5 +1,16 @@
 local H = dofile(vim.fn.getcwd() .. "/tests/helpers.lua")
 
+local function color_luma(color)
+  if type(color) ~= "number" then
+    return nil
+  end
+
+  local red = bit.rshift(color, 16)
+  local green = bit.band(bit.rshift(color, 8), 0xFF)
+  local blue = bit.band(color, 0xFF)
+  return (red * 0.299) + (green * 0.587) + (blue * 0.114)
+end
+
 local config = require("orca_menu.config")
 local layout = require("orca_menu.layout")
 local state = require("orca_menu.state")
@@ -108,12 +119,23 @@ H.truthy(child_winhl:find("FloatBorder:OrcaMenuLevel2", 1, true), 'borderless po
 
 local parent_hl = vim.api.nvim_get_hl(0, { name = "OrcaMenuLevel1", link = false })
 local child_hl = vim.api.nvim_get_hl(0, { name = "OrcaMenuLevel2", link = false })
-local editor_hl = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
+local parent_sel_hl = vim.api.nvim_get_hl(0, { name = "OrcaMenuSelectedLevel1", link = false })
+local child_sel_hl = vim.api.nvim_get_hl(0, { name = "OrcaMenuSelectedLevel2", link = false })
+local child_hint_hl = vim.api.nvim_get_hl(0, { name = "OrcaMenuHintLevel2", link = false })
 H.truthy(parent_hl.bg ~= nil, "parent popup highlight should define a background")
 H.truthy(child_hl.bg ~= nil, "child popup highlight should define a background")
+H.truthy(parent_sel_hl.bg ~= nil, "parent selected highlight should define a background")
+H.truthy(child_sel_hl.bg ~= nil, "child selected highlight should define a background")
 H.truthy(parent_hl.bg ~= child_hl.bg, "child popup background should differ slightly from its parent")
-if parent_hl.bg ~= nil and child_hl.bg ~= nil and editor_hl.bg ~= nil then
-  H.truthy(math.abs(child_hl.bg - editor_hl.bg) > math.abs(parent_hl.bg - editor_hl.bg), "child popup background should move farther away from the editor background")
+H.truthy(parent_hl.bg ~= parent_sel_hl.bg, "selected parent row should have a deeper background under borderless theme")
+H.truthy(child_hl.bg ~= child_sel_hl.bg, "selected child row should have a deeper background under borderless theme")
+H.eq(child_hint_hl.bg, nil, "hint highlight should not paint its own background")
+if color_luma(parent_hl.bg) >= 128 then
+  H.truthy(color_luma(child_hl.bg) < color_luma(parent_hl.bg), "light palettes should darken child popups slightly")
+  H.truthy(color_luma(child_sel_hl.bg) < color_luma(child_hl.bg), "light palettes should darken the selected row")
+else
+  H.truthy(color_luma(child_hl.bg) > color_luma(parent_hl.bg), "dark palettes should lighten child popups slightly")
+  H.truthy(color_luma(child_sel_hl.bg) > color_luma(child_hl.bg), "dark palettes should lighten the selected row")
 end
 
 popup.close_all()

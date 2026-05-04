@@ -128,7 +128,6 @@ local function ensure_highlights()
 
   vim.api.nvim_set_hl(0, "OrcaMenuHint", {
     fg = pink_fg,
-    bg = menu_bg,
     default = false,
   })
 
@@ -180,23 +179,13 @@ local function shade_offset_for_level(level)
   end
 
   local menu_base = vim.api.nvim_get_hl(0, { name = state.config.highlights.menu, link = false })
-  local editor_base = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
   local menu_luma = color_luma(menu_base.bg)
-  local editor_luma = color_luma(editor_base.bg)
-
-  if menu_luma ~= nil and editor_luma ~= nil then
-    if menu_luma > editor_luma then
-      return step
-    elseif menu_luma < editor_luma then
-      return -step
-    end
-  end
 
   if menu_luma ~= nil and menu_luma >= 128 then
-    return step
+    return -step
   end
 
-  return -step
+  return step
 end
 
 local function level_highlight_names(level)
@@ -226,10 +215,12 @@ local function ensure_level_highlights(level)
   local accelerator_base = vim.api.nvim_get_hl(0, { name = state.config.highlights.accelerator, link = false })
   local delta = shade_offset_for_level(level)
   local bg = adjust_color(menu_base.bg, delta)
+  local bg_luma = color_luma(bg)
+  local selected_bg = adjust_color(bg, (bg_luma ~= nil and bg_luma >= 128) and -10 or 10)
 
   vim.api.nvim_set_hl(0, names.menu, vim.tbl_extend("force", menu_base, { bg = bg, default = false }))
-  vim.api.nvim_set_hl(0, names.menu_sel, vim.tbl_extend("force", menu_sel_base, { bg = bg, default = false }))
-  vim.api.nvim_set_hl(0, names.accelerator, vim.tbl_extend("force", accelerator_base, { bg = bg, default = false }))
+  vim.api.nvim_set_hl(0, names.menu_sel, vim.tbl_extend("force", menu_sel_base, { bg = selected_bg, default = false }))
+  vim.api.nvim_set_hl(0, names.accelerator, vim.tbl_extend("force", accelerator_base, { bg = nil, default = false }))
 
   return names
 end
