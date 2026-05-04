@@ -85,6 +85,10 @@ function M.item_enabled(item)
   return true
 end
 
+function M.top_menu_enabled(menu)
+  return M.item_enabled(menu)
+end
+
 function M.display_key_hint(key)
   if type(key) ~= "string" or key == "" then
     return ""

@@ -13,6 +13,37 @@ local function item_selectable(item)
   return item and item.kind ~= "separator" and item_enabled(item)
 end
 
+local function top_menu_enabled(menu)
+  return layout.top_menu_enabled(menu)
+end
+
+local function resolve_enabled_top(index)
+  local menus = state.config.menus or {}
+  local count = #menus
+  if count == 0 then
+    return nil
+  end
+
+  local start = math.max(math.min(index or state.active_top or 1, count), 1)
+  if layout.is_top_visible(start) and top_menu_enabled(menus[start]) then
+    return start
+  end
+
+  for offset = 1, count do
+    local forward = ((start - 1 + offset) % count) + 1
+    if layout.is_top_visible(forward) and top_menu_enabled(menus[forward]) then
+      return forward
+    end
+
+    local backward = ((start - 1 - offset) % count) + 1
+    if layout.is_top_visible(backward) and top_menu_enabled(menus[backward]) then
+      return backward
+    end
+  end
+
+  return nil
+end
+
 local SHADE_STEPS = { 0, 8, 14, 20, 26, 32 }
 
 local function sync_hydra_exit_if_needed()
@@ -349,7 +380,15 @@ function M.is_open()
 end
 
 function M.enter_menu_mode(index)
-  state.active_top = index or state.active_top
+  local resolved = resolve_enabled_top(index or state.active_top)
+  if not resolved then
+    state.active_top = math.min(math.max(index or state.active_top or 1, 1), math.max(#(state.config.menus or {}), 1))
+    state.menu_stack = {}
+    state.menu_mode = false
+    require("orca_menu.input").disable_keys()
+    return
+  end
+  state.active_top = resolved
   state.menu_mode = true
   if M.is_open() then
     require("orca_menu.input").enable_keys()
@@ -514,10 +553,14 @@ function M.redraw_all()
 end
 
 function M.open_top(index)
-  if index and not layout.is_top_visible(index) then
+  local resolved = resolve_enabled_top(index or state.active_top)
+  if index and not layout.is_top_visible(index) and not resolved then
     return
   end
-  state.active_top = index or state.active_top
+  if not resolved then
+    return
+  end
+  state.active_top = resolved
   local items = actions.current_items()
   state.anchor = layout.resolve_anchor(state.active_top, items)
   state.menu_mode = true
@@ -536,7 +579,7 @@ function M.move_top(delta)
   local count = #state.config.menus
   for offset = 1, count do
     local next_index = ((state.active_top - 1 + (delta * offset)) % count) + 1
-    if layout.is_top_visible(next_index) then
+    if layout.is_top_visible(next_index) and top_menu_enabled(state.config.menus[next_index]) then
       state.active_top = next_index
       if M.is_open() then
         M.open_top(state.active_top)
@@ -621,7 +664,7 @@ function M.activate_top_key(key)
 
   local lowered_key = key:lower()
   for index, menu in ipairs(state.config.menus or {}) do
-    if layout.is_top_visible(index) and type(menu.key) == "string" and menu.key:lower() == lowered_key then
+    if layout.is_top_visible(index) and top_menu_enabled(menu) and type(menu.key) == "string" and menu.key:lower() == lowered_key then
       state.active_top = index
       M.open_top(index)
       return true
@@ -629,7 +672,7 @@ function M.activate_top_key(key)
   end
 
   for index, menu in ipairs(state.config.menus or {}) do
-    if layout.is_top_visible(index) and menu.accelerator == lowered_key then
+    if layout.is_top_visible(index) and top_menu_enabled(menu) and menu.accelerator == lowered_key then
       state.active_top = index
       M.open_top(index)
       return true

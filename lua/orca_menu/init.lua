@@ -92,6 +92,10 @@ end
 function M.click(index)
   local target = index or state.active_top
   mode.run_after_editor_mode(function()
+    if not require("orca_menu.layout").top_menu_enabled(state.config.menus[target]) then
+      return
+    end
+
     if popup.is_open() and state.active_top == target then
       popup.close_all()
     else

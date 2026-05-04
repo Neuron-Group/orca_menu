@@ -349,12 +349,14 @@ Each top-level menu can define:
 ```lua
 { label = "&File", key = "f", items = { ... } }
 { label = "&Edit", key = "ee", items = { ... } }
+{ label = "&LSP", key = "p", enabled = function() return next(vim.lsp.get_clients({ bufnr = 0 })) ~= nil end, items = { ... } }
 ```
 
 - explicit `key` opens that visible top menu
 - explicit `key` may be a multi-key sequence such as `"gm"`, `"ee"`, or `"<leader>mm"`
 - if `key` is absent, the `&` accelerator is used as a fallback
 - `&` accelerators stay single-character only; `label = "&File"` gives `f`, not `fi`
+- `enabled = false` or `enabled = function() ... end` also works on top-level menus
 
 Rendered labels look like:
 

@@ -2,10 +2,6 @@
   lib,
   ...
 }: {
-  imports = [
-    ../../nix/nvf-module.nix
-  ];
-
   vim.orcaMenu = {
     enable = true;
 

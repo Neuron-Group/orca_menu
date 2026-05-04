@@ -21,6 +21,9 @@ function M.component_at(index)
   end
   local label = layout.top_bar_display_label(menu, index)
   local spacing = state.config.lualine.spacing or " "
+  if not layout.top_menu_enabled(menu) then
+    label = string.format("%%#%s#%s%%*", state.config.highlights.disabled, label)
+  end
   if state.config.enable_mouse == false then
     return string.format("%s%s%s", spacing, label, spacing)
   end
