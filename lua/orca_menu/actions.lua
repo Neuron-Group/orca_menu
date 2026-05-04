@@ -1,4 +1,5 @@
 local state = require("orca_menu.state")
+local layout = require("orca_menu.layout")
 
 local M = {}
 
@@ -30,6 +31,10 @@ function M.execute_item(item)
 end
 
 function M.run(item)
+  if not layout.item_enabled(item) then
+    return
+  end
+
   require("orca_menu.popup").close_all()
   local hydra_mode = require("orca_menu.hydra_mode")
   if hydra_mode.is_active() then

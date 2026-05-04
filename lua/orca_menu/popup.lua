@@ -5,6 +5,14 @@ local actions = require("orca_menu.actions")
 local M = {}
 local activate_item_at_level
 
+local function item_enabled(item)
+  return layout.item_enabled(item)
+end
+
+local function item_selectable(item)
+  return item and item.kind ~= "separator" and item_enabled(item)
+end
+
 local SHADE_STEPS = { 0, 8, 14, 20, 26, 32 }
 
 local function sync_hydra_exit_if_needed()
@@ -29,24 +37,24 @@ end
 local function ensure_valid_selection(entry)
   local items = entry.items or {}
   if #items == 0 then
-    entry.selected = 1
+    entry.selected = nil
     return
   end
 
-  local selected = math.max(math.min(entry.selected or 1, #items), 1)
-  if items[selected] and items[selected].kind ~= "separator" then
+  local selected = entry.selected and math.max(math.min(entry.selected, #items), 1) or nil
+  if selected and item_selectable(items[selected]) then
     entry.selected = selected
     return
   end
 
   for idx, item in ipairs(items) do
-    if item.kind ~= "separator" then
+    if item_selectable(item) then
       entry.selected = idx
       return
     end
   end
 
-  entry.selected = 1
+  entry.selected = nil
 end
 
 local function ensure_scroll_visible(entry)
@@ -55,11 +63,11 @@ local function ensure_scroll_visible(entry)
   local visible_height = visible_height_for(entry)
   local max_scroll_top = math.max(#(entry.items or {}) - visible_height + 1, 1)
   local scroll_top = math.max(math.min(entry.scroll_top or 1, max_scroll_top), 1)
-  local selected = entry.selected or 1
+  local selected = entry.selected
 
-  if selected < scroll_top then
+  if selected and selected < scroll_top then
     scroll_top = selected
-  elseif selected >= scroll_top + visible_height then
+  elseif selected and selected >= scroll_top + visible_height then
     scroll_top = selected - visible_height + 1
   end
 
@@ -69,7 +77,10 @@ end
 
 local function selected_visible_index(entry)
   ensure_scroll_visible(entry)
-  return math.max((entry.selected or 1) - (entry.scroll_top or 1) + 1, 1)
+  if not entry.selected then
+    return 1
+  end
+  return math.max(entry.selected - (entry.scroll_top or 1) + 1, 1)
 end
 
 local function move_selection(entry, direction, steps, wrap)
@@ -78,7 +89,10 @@ local function move_selection(entry, direction, steps, wrap)
   end
 
   local items = entry.items
-  local selected = math.max(math.min(entry.selected or 1, #items), 1)
+  local selected = entry.selected and math.max(math.min(entry.selected, #items), 1) or nil
+  if not selected then
+    return false
+  end
   local moved = false
 
   for _ = 1, math.max(steps or 1, 1) do
@@ -101,7 +115,7 @@ local function move_selection(entry, direction, steps, wrap)
         break
       end
 
-      if items[next_idx].kind ~= "separator" then
+      if item_selectable(items[next_idx]) then
         selected = next_idx
         moved = true
         break
@@ -133,6 +147,15 @@ local function ensure_highlights()
 
   vim.api.nvim_set_hl(0, "OrcaMenuChecked", {
     fg = pink_fg,
+    default = false,
+  })
+
+  local comment = vim.api.nvim_get_hl(0, { name = "Comment", link = false })
+  local disabled_fg = comment.fg or normal_float.fg
+
+  vim.api.nvim_set_hl(0, "OrcaMenuDisabled", {
+    fg = disabled_fg,
+    bg = menu_bg,
     default = false,
   })
 
@@ -200,6 +223,7 @@ local function level_highlight_names(level)
       menu_sel = state.config.highlights.menu_sel,
       accelerator = state.config.highlights.accelerator,
       checked = state.config.highlights.checked,
+      disabled = state.config.highlights.disabled,
     }
   end
 
@@ -208,6 +232,7 @@ local function level_highlight_names(level)
     menu_sel = "OrcaMenuSelectedLevel" .. level,
     accelerator = "OrcaMenuHintLevel" .. level,
     checked = "OrcaMenuCheckedLevel" .. level,
+    disabled = "OrcaMenuDisabledLevel" .. level,
   }
 end
 
@@ -221,6 +246,7 @@ local function ensure_level_highlights(level)
   local menu_sel_base = vim.api.nvim_get_hl(0, { name = state.config.highlights.menu_sel, link = false })
   local accelerator_base = vim.api.nvim_get_hl(0, { name = state.config.highlights.accelerator, link = false })
   local checked_base = vim.api.nvim_get_hl(0, { name = state.config.highlights.checked, link = false })
+  local disabled_base = vim.api.nvim_get_hl(0, { name = state.config.highlights.disabled, link = false })
   local delta = shade_offset_for_level(level)
   local bg = adjust_color(menu_base.bg, delta)
   local bg_luma = color_luma(bg)
@@ -230,6 +256,7 @@ local function ensure_level_highlights(level)
   vim.api.nvim_set_hl(0, names.menu_sel, vim.tbl_extend("force", menu_sel_base, { bg = selected_bg, default = false }))
   vim.api.nvim_set_hl(0, names.accelerator, vim.tbl_extend("force", accelerator_base, { bg = nil, default = false }))
   vim.api.nvim_set_hl(0, names.checked, vim.tbl_extend("force", checked_base, { bg = nil, default = false }))
+  vim.api.nvim_set_hl(0, names.disabled, vim.tbl_extend("force", disabled_base, { bg = bg, default = false }))
 
   return names
 end
@@ -340,9 +367,15 @@ local function highlight_entry(buf, entry)
   for idx = scroll_top, visible_end do
     local item = entry.items[idx]
     local line_idx = idx - scroll_top
-    local hl = idx == (entry.selected or 1) and highlights.menu_sel or highlights.menu
+    local enabled = item_enabled(item)
+    local hl = highlights.menu
+    if not enabled then
+      hl = highlights.disabled
+    elseif idx == entry.selected then
+      hl = highlights.menu_sel
+    end
     vim.api.nvim_buf_add_highlight(buf, state.namespace, hl, line_idx, 0, -1)
-    if entry.rendered_lines and entry.rendered_lines[line_idx + 1] and entry.rendered_lines[line_idx + 1].hint_start and entry.rendered_lines[line_idx + 1].hint_end then
+    if enabled and entry.rendered_lines and entry.rendered_lines[line_idx + 1] and entry.rendered_lines[line_idx + 1].hint_start and entry.rendered_lines[line_idx + 1].hint_end then
       vim.api.nvim_buf_add_highlight(
         buf,
         state.namespace,
@@ -352,7 +385,7 @@ local function highlight_entry(buf, entry)
         entry.rendered_lines[line_idx + 1].hint_end
       )
     end
-    if entry.rendered_lines and entry.rendered_lines[line_idx + 1] and entry.rendered_lines[line_idx + 1].check_start and entry.rendered_lines[line_idx + 1].check_end then
+    if enabled and entry.rendered_lines and entry.rendered_lines[line_idx + 1] and entry.rendered_lines[line_idx + 1].check_start and entry.rendered_lines[line_idx + 1].check_end then
       vim.api.nvim_buf_add_highlight(
         buf,
         state.namespace,
@@ -536,7 +569,7 @@ function M.activate_selected()
     return
   end
   local item = entry.items[entry.selected or 1]
-  if not item or item.kind == "separator" then
+  if not item or not item_selectable(item) then
     return
   end
   if item.kind == "submenu" then
@@ -564,14 +597,14 @@ function M.activate_item_key(key)
   for level = #state.menu_stack, 1, -1 do
     local entry = state.menu_stack[level]
     for idx, item in ipairs(entry.items or {}) do
-      if item.kind ~= "separator" and type(item.key) == "string" and item.key:lower() == lowered_key then
+      if item_selectable(item) and type(item.key) == "string" and item.key:lower() == lowered_key then
         activate_item_at_level(level, idx)
         return true
       end
     end
 
     for idx, item in ipairs(entry.items or {}) do
-      if item.kind ~= "separator" and item.accelerator == lowered_key then
+      if item_selectable(item) and item.accelerator == lowered_key then
         activate_item_at_level(level, idx)
         return true
       end
@@ -701,7 +734,7 @@ activate_item_at_level = function(level, row)
   end
 
   local item = entry.items[row]
-  if not item or item.kind == "separator" then
+  if not item or not item_selectable(item) then
     return
   end
 

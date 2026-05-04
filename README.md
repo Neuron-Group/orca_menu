@@ -402,6 +402,7 @@ Each popup item can define:
 { label = "&Save", key = "s", command = "write" }
 { label = "&Open", key = "oo", command = "edit" }
 { label = "Toggle &Line Numbers", key = "n", command = "set number!", checked = function() return vim.wo.number end }
+{ label = "Rename &Symbol", key = "r", command = "lua vim.lsp.buf.rename()", enabled = function() return next(vim.lsp.get_clients({ bufnr = 0 })) ~= nil end }
 { label = "&Terminal", key = "t", items = { ... } }
 { label = "&Tools", key = "tt", items = { ... } }
 ```
@@ -411,6 +412,7 @@ Each popup item can define:
 - if `key` is absent, the `&` accelerator is used as a fallback
 - `&` accelerators remain single-character only for popup items as well
 - checked items may show a right-side checkmark via `checked = true` or `checked = function() ... end`
+- `enabled = false` or `enabled = function() ... end` disables a row dynamically
 - right-side key hints are rendered in the popup
 
 Examples:
@@ -432,10 +434,13 @@ Each item may use:
 - `lua`
 - `items`
 - `checked`
+- `enabled`
 
 Use `{ label = "-" }` for a separator.
 
 When `checked` is `true` or returns a truthy value, the popup shows a checkmark for that item.
+
+When `enabled` is `false` or returns a falsy value, the popup renders that row with the disabled highlight, mouse and keyboard activation do nothing, and keyboard navigation skips it. `executable` is accepted as an alias for `enabled`.
 
 Example:
 
@@ -457,6 +462,8 @@ Default popup highlights:
   - popup key-hint highlight
 - `checked`
   - popup checked-state highlight
+- `disabled`
+  - popup disabled-row highlight
 
 By default:
 
@@ -470,6 +477,7 @@ Example override:
 require("orca_menu").setup({
   highlights = {
     checked = "DiagnosticOk",
+    disabled = "Comment",
   },
 })
 ```

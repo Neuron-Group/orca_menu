@@ -31,6 +31,7 @@ local defaults = {
     menu_sel = "OrcaMenuSelected",
     accelerator = "OrcaMenuHint",
     checked = "OrcaMenuChecked",
+    disabled = "OrcaMenuDisabled",
   },
   menus = {
     { label = "&File", items = {} },

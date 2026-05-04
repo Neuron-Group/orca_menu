@@ -104,6 +104,37 @@ vim.wo.number = false
 local unchecked_line = layout.format_item_line(state.config.menus[1].items[1], 30, 1, 0)
 H.falsy(unchecked_line.text:find("", 1, true), "unchecked items should not render a checkmark")
 
+local enabled_calls = 0
+local executable_calls = 0
+state.config = config.normalize({
+  menus = {
+    {
+      label = "&View",
+      items = {
+        {
+          label = "&Blocked",
+          enabled = function()
+            enabled_calls = enabled_calls + 1
+            return false
+          end,
+        },
+        {
+          label = "&Ready",
+          executable = function()
+            executable_calls = executable_calls + 1
+            return true
+          end,
+        },
+      },
+    },
+  },
+})
+
+H.falsy(layout.item_enabled(state.config.menus[1].items[1]), "enabled callback should be able to disable an item")
+H.truthy(layout.item_enabled(state.config.menus[1].items[2]), "executable alias should also enable an item")
+H.eq(enabled_calls, 1, "enabled callback should be evaluated dynamically")
+H.eq(executable_calls, 1, "executable alias should be evaluated dynamically")
+
 state.config = config.normalize({
   highlights = {
     checked = "WarningMsg",
@@ -142,6 +173,48 @@ H.truthy(hint_mark, "popup should add a dedicated highlight for key hints")
 H.truthy(check_mark, "popup should add a dedicated highlight for checked state")
 H.eq(checked_popup_line:sub(hint_mark[3] + 1, (hint_mark[4] or {}).end_col), "oo", "multi-key hint highlight should cover the full rendered hint")
 H.eq(checked_popup_line:sub(check_mark[3] + 1, (check_mark[4] or {}).end_col), "", "checked highlight should cover only the checkmark")
+popup.close_all()
+
+state.config = config.normalize({
+  highlights = {
+    disabled = "Comment",
+  },
+  menus = {
+    {
+      label = "&View",
+      items = {
+        {
+          label = "&Blocked",
+          key = "b",
+          enabled = false,
+        },
+        {
+          label = "&Ready",
+          key = "r",
+        },
+      },
+    },
+  },
+})
+
+popup.open_top(1)
+H.eq(state.menu_stack[1].selected, 2, "initial selection should skip disabled rows")
+local disabled_popup_buf = state.menu_stack[1].buf
+local disabled_marks = vim.api.nvim_buf_get_extmarks(disabled_popup_buf, state.namespace, 0, -1, { details = true })
+local disabled_row_mark
+local ready_row_mark
+
+for _, mark in ipairs(disabled_marks) do
+  local details = mark[4] or {}
+  if details.hl_group == "Comment" and mark[2] == 0 then
+    disabled_row_mark = mark
+  elseif details.hl_group == "OrcaMenuSelected" and mark[2] == 1 then
+    ready_row_mark = mark
+  end
+end
+
+H.truthy(disabled_row_mark, "disabled rows should use the configured disabled highlight")
+H.truthy(ready_row_mark, "first enabled row should still be selected")
 popup.close_all()
 
 state.config = config.normalize({

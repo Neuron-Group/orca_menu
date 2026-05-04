@@ -59,6 +59,32 @@ function M.item_checked(item)
   return not not item.checked
 end
 
+function M.item_enabled(item)
+  if not item or item.kind == "separator" then
+    return false
+  end
+
+  if type(item.enabled) == "function" then
+    local ok, value = pcall(item.enabled, item)
+    return ok and not not value or false
+  end
+
+  if item.enabled ~= nil then
+    return not not item.enabled
+  end
+
+  if type(item.executable) == "function" then
+    local ok, value = pcall(item.executable, item)
+    return ok and not not value or false
+  end
+
+  if item.executable ~= nil then
+    return not not item.executable
+  end
+
+  return true
+end
+
 function M.display_key_hint(key)
   if type(key) ~= "string" or key == "" then
     return ""
