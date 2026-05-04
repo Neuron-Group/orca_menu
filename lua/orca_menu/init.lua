@@ -7,8 +7,13 @@ local input = require("orca_menu.input")
 local lualine = require("orca_menu.lualine")
 local hydra_mode = require("orca_menu.hydra_mode")
 local mode = require("orca_menu.mode")
+local runtime_menus = require("orca_menu.runtime_menus")
+local bootstrap = require("orca_menu.bootstrap")
 
 local augroup = vim.api.nvim_create_augroup("OrcaMenu", { clear = true })
+local rebuild_click_handlers
+local apply_open_key_binding
+local refresh_config
 
 local function active_lsp_names()
   local current_buf = vim.api.nvim_get_current_buf()
@@ -22,7 +27,44 @@ local function active_lsp_names()
   return names
 end
 
-local function rebuild_click_handlers()
+local function build_config()
+  local resolved = config.resolve(state.base_config or {}, active_lsp_names())
+  resolved.menus = runtime_menus.append_to(resolved.menus)
+  return resolved
+end
+
+local function bounded_top_index(index)
+  return math.min(math.max(index or 1, 1), math.max(#(state.config.menus or {}), 1))
+end
+
+local function capture_ui_state()
+  return {
+    was_open = popup.is_open(),
+    was_menu_mode = state.menu_mode,
+    active_top = state.active_top,
+  }
+end
+
+local function apply_resolved_config()
+  state.config = build_config()
+  state.active_top = bounded_top_index(state.active_top)
+  rebuild_click_handlers()
+  apply_open_key_binding()
+  input.install_mouse()
+  lualine.register()
+end
+
+local function restore_ui_state(snapshot)
+  local active_top = bounded_top_index(snapshot.active_top)
+
+  if snapshot.was_open then
+    popup.open_top(active_top)
+  elseif snapshot.was_menu_mode then
+    popup.enter_menu_mode(active_top)
+  end
+end
+
+function rebuild_click_handlers()
   for key, _ in pairs(_G) do
     if type(key) == "string" and key:match("^orca_menu_click_menu_%d+$") then
       _G[key] = nil
@@ -36,7 +78,7 @@ local function rebuild_click_handlers()
   end
 end
 
-local function apply_open_key_binding()
+function apply_open_key_binding()
   if state.current_open_key and state.current_open_key ~= "" then
     pcall(vim.keymap.del, "n", state.current_open_key)
     pcall(vim.keymap.del, "x", state.current_open_key)
@@ -59,23 +101,10 @@ local function apply_open_key_binding()
   end, { desc = "Enter Orca menu", silent = true })
 end
 
-local function refresh_config()
-  local was_open = popup.is_open()
-  local was_menu_mode = state.menu_mode
-  local active_top = state.active_top
-
-  state.config = config.resolve(state.base_config or {}, active_lsp_names())
-  state.active_top = math.min(math.max(state.active_top or 1, 1), math.max(#(state.config.menus or {}), 1))
-  rebuild_click_handlers()
-  apply_open_key_binding()
-  input.install_mouse()
-  lualine.register()
-
-  if was_open then
-    popup.open_top(math.min(active_top or 1, math.max(#(state.config.menus or {}), 1)))
-  elseif was_menu_mode then
-    popup.enter_menu_mode(math.min(active_top or 1, math.max(#(state.config.menus or {}), 1)))
-  end
+function refresh_config()
+  local snapshot = capture_ui_state()
+  apply_resolved_config()
+  restore_ui_state(snapshot)
 end
 
 function M.open_menu(index, _use_mouse)
@@ -128,76 +157,37 @@ function M.register_lualine()
   lualine.register()
 end
 
+function M.refresh()
+  refresh_config()
+end
+
+function M.register_menu(id, menu)
+  runtime_menus.register(id, menu)
+  refresh_config()
+end
+
+function M.update_menu(id, menu)
+  runtime_menus.update(id, menu)
+  refresh_config()
+end
+
+function M.unregister_menu(id)
+  local removed = runtime_menus.unregister(id)
+  if not removed then
+    return false
+  end
+
+  refresh_config()
+  return true
+end
+
 function M.setup(user_config)
   state.base_config = vim.deepcopy(user_config or {})
-  state.config = config.resolve(state.base_config, active_lsp_names())
+  runtime_menus.reset()
   state.mouse_trace_path = vim.env.ORCA_MENU_MOUSE_TRACE
-  rebuild_click_handlers()
-
-  vim.api.nvim_create_user_command("OrcaMenu", function(opts)
-    if opts.args ~= "" then
-      M.open_menu(tonumber(opts.args) or 1, false)
-    else
-      M.toggle()
-    end
-  end, { nargs = "?" })
-
-  vim.api.nvim_create_user_command("OrcaMenuMouseTrace", function(opts)
-    if opts.args == "off" then
-      state.mouse_trace_path = nil
-      vim.notify("OrcaMenu mouse tracing disabled")
-      return
-    end
-
-    local path = opts.args ~= "" and opts.args or vim.env.ORCA_MENU_MOUSE_TRACE
-    if not path or path == "" then
-      vim.notify("Provide a log path or set ORCA_MENU_MOUSE_TRACE", vim.log.levels.ERROR)
-      return
-    end
-
-    state.mouse_trace_path = path
-    vim.fn.writefile({}, path)
-    vim.notify("OrcaMenu mouse tracing -> " .. path)
-  end, {
-    nargs = "?",
-    complete = function()
-      return { "off" }
-    end,
-  })
-
-  vim.api.nvim_create_autocmd("VimResized", {
-    group = augroup,
-    callback = function()
-      if state.menu_mode or popup.is_open() or #state.menu_stack > 0 then
-        popup.close_all()
-      end
-    end,
-  })
-
-  vim.api.nvim_create_autocmd("LspAttach", {
-    group = augroup,
-    callback = function()
-      refresh_config()
-    end,
-  })
-
-  vim.api.nvim_create_autocmd("LspDetach", {
-    group = augroup,
-    callback = function()
-      vim.schedule(refresh_config)
-    end,
-  })
-
-  vim.api.nvim_create_autocmd("BufEnter", {
-    group = augroup,
-    callback = function()
-      refresh_config()
-    end,
-  })
-
-  apply_open_key_binding()
-  input.install_mouse()
-  M.register_lualine()
+  apply_resolved_config()
+  bootstrap.install_user_commands(M)
+  bootstrap.install_autocmds(augroup, refresh_config)
 end
 
 return M

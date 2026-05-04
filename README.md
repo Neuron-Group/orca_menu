@@ -13,7 +13,8 @@ configurable in Lua.
 - tall popup menus auto-scroll with selection
 - `h/j/k/l`, arrows, `Enter`, `Esc`, and custom key navigation
 - right-aligned popup key hints
-- clickable top menu bar via lualine, plus popup mouse support while Orca is open
+- clickable top menu bar via lualine, plus popup mouse support while Orca is
+  open
 - mouse-wheel scrolling for open popup menus
 - wheel scrolling moves by nearly a full visible page
 - popup borders show `↑`/`↓` when more items are hidden above or below
@@ -33,7 +34,7 @@ configurable in Lua.
 
 ```lua
 {
-  "your-name/orca_menu",
+  "Neuron-Group/orca_menu",
   dependencies = {
     "nvim-lualine/lualine.nvim",
     "anuvyklack/hydra.nvim",
@@ -167,7 +168,8 @@ Module options:
 
 - `vim.orcaMenu.enable` enables the plugin.
 - `vim.orcaMenu.settings` maps to `require("orca_menu").setup(...)`.
-- `vim.orcaMenu.installDependencies` also installs `hydra.nvim` and `lualine.nvim`.
+- `vim.orcaMenu.installDependencies` also installs `hydra.nvim` and
+  `lualine.nvim`.
 - `vim.orcaMenu.extraConfigLua` appends custom Lua after setup.
 
 For Lua callbacks inside Nix config, use `lib.generators.mkLuaInline`:
@@ -248,13 +250,20 @@ require("orca_menu").setup({
 })
 ```
 
-- `lualine.section` chooses where the top bar is rendered. Built-in choices are `"a"`, `"b"`, `"c"`, `"x"`, `"y"`, and `"z"`.
-- `lualine.spacing` adjusts padding around each top-level label. This accepts any string.
-- `topbar.hint_format` customizes how menu labels and key hints are shown. It accepts a string template with `{label}` and `{hint}`, or a function.
-- `submenu.border` controls the floating-window border. Built-in choices are `"none"`, `"single"`, `"double"`, `"rounded"`, `"solid"`, and `"shadow"`; an 8-element border character table also works.
+- `lualine.section` chooses where the top bar is rendered. Built-in choices are
+  `"a"`, `"b"`, `"c"`, `"x"`, `"y"`, and `"z"`.
+- `lualine.spacing` adjusts padding around each top-level label. This accepts
+  any string.
+- `topbar.hint_format` customizes how menu labels and key hints are shown. It
+  accepts a string template with `{label}` and `{hint}`, or a function.
+- `submenu.border` controls the floating-window border. Built-in choices are
+  `"none"`, `"single"`, `"double"`, `"rounded"`, `"solid"`, and `"shadow"`; an
+  8-element border character table also works.
 - `submenu.min_width` controls the minimum popup width. This accepts a number.
-- `submenu.scroll_indicator_up` and `submenu.scroll_indicator_down` change the overflow markers. Each should be a single-cell display character.
-- `highlights.menu`, `highlights.menu_sel`, and `highlights.accelerator` let you reuse your own highlight groups. These accept highlight-group names.
+- `submenu.scroll_indicator_up` and `submenu.scroll_indicator_down` change the
+  overflow markers. Each should be a single-cell display character.
+- `highlights.menu`, `highlights.menu_sel`, and `highlights.accelerator` let you
+  reuse your own highlight groups. These accept highlight-group names.
 
 `topbar.hint_format` may also be a function for fully custom label rendering:
 
@@ -304,10 +313,12 @@ require("orca_menu").setup({
 ```
 
 - keys in `lsp_overrides` match exact `client.name`
-- matching overrides are resolved from LSP clients attached to the current buffer
+- matching overrides are resolved from LSP clients attached to the current
+  buffer
 - `menus` fully replaces base `menus` inside an override
 - other fields are deep-merged onto the base config
-- when the current buffer or its LSP state changes, open popups close and menu mode exits before refresh
+- when the current buffer or its LSP state changes, open popups close and menu
+  mode exits before refresh
 
 ## Menu Behavior
 
@@ -328,19 +339,25 @@ Default keys:
 
 - in a child submenu, `Esc` closes only that child and returns to its parent
 - in a first-level popup, `Esc` closes the popup and leaves menu mode
-- after executing an action, all popups close and menu mode exits before the action runs
+- after executing an action, all popups close and menu mode exits before the
+  action runs
 - resizing the editor or windows closes all popups and exits menu mode
-- when a popup is taller than the screen, selection keeps the visible window scrolled
+- when a popup is taller than the screen, selection keeps the visible window
+  scrolled
 - child submenus open beside the visible parent row and flip left if needed
-- `submenu.scroll_indicator_up` and `submenu.scroll_indicator_down` customize the border scroll markers
+- `submenu.scroll_indicator_up` and `submenu.scroll_indicator_down` customize
+  the border scroll markers
 
 ### Mode Handoff
 
 - in normal mode, the open key enters menu mode directly
-- in visual, visual-line, and visual-block mode, the open key or menu mouse click first leaves editor mode, then enters Hydra-backed Orca mode
-- in insert mode, the open key or menu mouse click first leaves insert mode, then enters Hydra-backed Orca mode
+- in visual, visual-line, and visual-block mode, the open key or menu mouse
+  click first leaves editor mode, then enters Hydra-backed Orca mode
+- in insert mode, the open key or menu mouse click first leaves insert mode,
+  then enters Hydra-backed Orca mode
 - popup navigation keys and menu item keys are active in normal and visual mode
-- insert mode only supports safe menu entry paths, so ordinary typing is not hijacked by menu item keys
+- insert mode only supports safe menu entry paths, so ordinary typing is not
+  hijacked by menu item keys
 
 ### Top Menu Keys
 
@@ -353,10 +370,13 @@ Each top-level menu can define:
 ```
 
 - explicit `key` opens that visible top menu
-- explicit `key` may be a multi-key sequence such as `"gm"`, `"ee"`, or `"<leader>mm"`
+- explicit `key` may be a multi-key sequence such as `"gm"`, `"ee"`, or
+  `"<leader>mm"`
 - if `key` is absent, the `&` accelerator is used as a fallback
-- `&` accelerators stay single-character only; `label = "&File"` gives `f`, not `fi`
-- `enabled = false` or `enabled = function() ... end` also works on top-level menus
+- `&` accelerators stay single-character only; `label = "&File"` gives `f`, not
+  `fi`
+- `enabled = false` or `enabled = function() ... end` also works on top-level
+  menus
 
 Rendered labels look like:
 
@@ -413,7 +433,8 @@ Each popup item can define:
 - explicit `key` may be a multi-key sequence such as `"oo"` or `"tt"`
 - if `key` is absent, the `&` accelerator is used as a fallback
 - `&` accelerators remain single-character only for popup items as well
-- checked items may show a right-side checkmark via `checked = true` or `checked = function() ... end`
+- checked items may show a right-side checkmark via `checked = true` or
+  `checked = function() ... end`
 - `enabled = false` or `enabled = function() ... end` disables a row dynamically
 - right-side key hints are rendered in the popup
 
@@ -440,9 +461,13 @@ Each item may use:
 
 Use `{ label = "-" }` for a separator.
 
-When `checked` is `true` or returns a truthy value, the popup shows a checkmark for that item.
+When `checked` is `true` or returns a truthy value, the popup shows a checkmark
+for that item.
 
-When `enabled` is `false` or returns a falsy value, the popup renders that row with the disabled highlight, mouse and keyboard activation do nothing, and keyboard navigation skips it. `executable` is accepted as an alias for `enabled`.
+When `enabled` is `false` or returns a falsy value, the popup renders that row
+with the disabled highlight, mouse and keyboard activation do nothing, and
+keyboard navigation skips it. `executable` is accepted as an alias for
+`enabled`.
 
 Example:
 
@@ -450,7 +475,43 @@ Example:
 { label = "Toggle &Line Numbers", key = "n", command = "set number!", checked = function() return vim.wo.number end }
 ```
 
-When `lua` is a string, it is compiled with `load(...)` and executed in the global Lua environment.
+## Runtime Menu API
+
+You can install or uninstall top-level menus at runtime:
+
+```lua
+local orca = require("orca_menu")
+
+orca.register_menu("tools", {
+  label = "&Tools",
+  key = "t",
+  items = {
+    { label = "&Build", key = "b", command = "make" },
+  },
+})
+
+orca.update_menu("tools", {
+  label = "&Tools",
+  key = "t",
+  items = {
+    { label = "&Run", key = "r", command = "make run" },
+  },
+})
+
+orca.unregister_menu("tools")
+orca.refresh()
+```
+
+- `register_menu(id, menu)` adds or replaces a runtime top-level menu
+- `update_menu(id, menu)` is an alias for `register_menu`
+- `unregister_menu(id)` removes a runtime top-level menu and returns `true` when
+  it existed
+- `refresh()` rebuilds the resolved config while preserving registered runtime
+  menus
+- runtime menus are appended after menus from `setup(...)`
+
+When `lua` is a string, it is compiled with `load(...)` and executed in the
+global Lua environment.
 
 ## Highlights
 
@@ -537,7 +598,8 @@ Disable it with:
 :OrcaMenuMouseTrace off
 ```
 
-For randomized stress test failures, the error output includes a replay command you can rerun directly. You can also replay a saved sequence manually:
+For randomized stress test failures, the error output includes a replay command
+you can rerun directly. You can also replay a saved sequence manually:
 
 ```bash
 ORCA_MENU_REPLAY='open_key,mouse_top,activate_selected' \

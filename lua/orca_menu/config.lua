@@ -107,14 +107,24 @@ local function normalize_item(item)
   return normalized
 end
 
-function M.normalize(user_config)
-  local merged = deep_extend({}, defaults, user_config or {})
-  merged.menus = vim.tbl_map(function(menu)
+function M.normalize_menus(menus)
+  return vim.tbl_map(function(menu)
     local normalized = normalize_item(menu)
     normalized.kind = "top"
     normalized.key = type(menu.key) == "string" and not reserved_custom_keys[menu.key] and menu.key or nil
     return normalized
-  end, merged.menus or {})
+  end, menus or {})
+end
+
+function M.append_menus(base_menus, extra_menus)
+  local combined = vim.deepcopy(base_menus or {})
+  vim.list_extend(combined, M.normalize_menus(extra_menus))
+  return combined
+end
+
+function M.normalize(user_config)
+  local merged = deep_extend({}, defaults, user_config or {})
+  merged.menus = M.normalize_menus(merged.menus)
   return merged
 end
 

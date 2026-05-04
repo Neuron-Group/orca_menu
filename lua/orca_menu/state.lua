@@ -1,6 +1,8 @@
 local M = {
   config = nil,
   base_config = nil,
+  dynamic_menus = {},
+  dynamic_menu_order = {},
   active_top = 1,
   windows = {},
   buffers = {},

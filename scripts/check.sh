@@ -19,7 +19,10 @@ run_suite() {
 }
 
 run_suite tests/unit/config_layout.lua
+run_suite tests/unit/runtime_registry.lua
+run_suite tests/unit/runtime_bootstrap.lua
 run_suite tests/integration/menu_flow.lua
+run_suite tests/integration/dynamic_runtime_api.lua
 run_suite tests/integration/disabled_items.lua
 run_suite tests/integration/disabled_top_menus.lua
 run_suite tests/integration/notify_dismiss_regression.lua
