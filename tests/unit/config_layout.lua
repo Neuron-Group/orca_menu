@@ -64,5 +64,28 @@ local line = layout.format_item_line({ kind = "submenu", label = "Inspect", key 
 H.truthy(line.text:find("Tab", 1, true), "formatted line should include right-side key hint")
 H.truthy(line.text:find("›", 1, true), "formatted line should include submenu arrow")
 
-print("ok - tests/unit/config_layout.lua")
+state.config = config.normalize({
+  submenu = {
+    border = "rounded",
+  },
+  menus = {
+    { label = "&File", items = { { label = "&Open" }, { label = "&Save" } } },
+  },
+})
+H.render_statusline()
+local rounded_anchor = layout.resolve_anchor(1, state.config.menus[1].items)
 
+state.config = config.normalize({
+  submenu = {
+    border = "none",
+  },
+  menus = {
+    { label = "&File", items = { { label = "&Open" }, { label = "&Save" } } },
+  },
+})
+H.render_statusline()
+local none_anchor = layout.resolve_anchor(1, state.config.menus[1].items)
+
+H.eq(none_anchor.row, rounded_anchor.row, 'border = "none" should keep the same popup geometry as bordered popups')
+
+print("ok - tests/unit/config_layout.lua")

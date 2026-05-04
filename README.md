@@ -153,6 +153,56 @@ require("orca_menu").setup({
 })
 ```
 
+## Display Customization
+
+`orca_menu` already exposes several display-oriented options through `setup()`.
+
+```lua
+require("orca_menu").setup({
+  lualine = {
+    section = "x",
+    spacing = "  ",
+  },
+  topbar = {
+    hint_format = "{label} [{hint}]",
+  },
+  submenu = {
+    border = "single",
+    min_width = 24,
+    scroll_indicator_up = "▲",
+    scroll_indicator_down = "▼",
+  },
+  highlights = {
+    menu = "NormalFloat",
+    menu_sel = "Visual",
+    accelerator = "Special",
+  },
+})
+```
+
+- `lualine.section` chooses where the top bar is rendered. Built-in choices are `"a"`, `"b"`, `"c"`, `"x"`, `"y"`, and `"z"`.
+- `lualine.spacing` adjusts padding around each top-level label. This accepts any string.
+- `topbar.hint_format` customizes how menu labels and key hints are shown. It accepts a string template with `{label}` and `{hint}`, or a function.
+- `submenu.border` controls the floating-window border. Built-in choices are `"none"`, `"single"`, `"double"`, `"rounded"`, `"solid"`, and `"shadow"`; an 8-element border character table also works.
+- `submenu.min_width` controls the minimum popup width. This accepts a number.
+- `submenu.scroll_indicator_up` and `submenu.scroll_indicator_down` change the overflow markers. Each should be a single-cell display character.
+- `highlights.menu`, `highlights.menu_sel`, and `highlights.accelerator` let you reuse your own highlight groups. These accept highlight-group names.
+
+`topbar.hint_format` may also be a function for fully custom label rendering:
+
+```lua
+require("orca_menu").setup({
+  topbar = {
+    hint_format = function(ctx)
+      return string.format("%s <%s>", ctx.label, ctx.hint)
+    end,
+  },
+})
+```
+
+This keeps the built-in lualine top bar and floating popup UI, while letting
+users tune the presentation.
+
 ## LSP Overrides
 
 You can override Orca Menu config when specific LSP clients are active.

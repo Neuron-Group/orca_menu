@@ -15,7 +15,8 @@ local function sync_hydra_exit_if_needed()
 end
 
 local function available_content_height()
-  local border_rows = state.config.submenu.border and 2 or 0
+  local border = state.config.submenu.border
+  local border_rows = (border ~= nil and border ~= false) and 2 or 0
   return math.max(vim.o.lines - vim.o.cmdheight - border_rows - 2, 1)
 end
 
@@ -152,7 +153,7 @@ local function resolve_border_chars(border)
   end
 
   local presets = {
-    none = { "", "", "", "", "", "", "", "" },
+    none = { " ", " ", " ", " ", " ", " ", " ", " " },
     single = { "┌", "─", "┐", "│", "┘", "─", "└", "│" },
     double = { "╔", "═", "╗", "║", "╝", "═", "╚", "║" },
     rounded = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
@@ -289,7 +290,8 @@ local function draw_level(level)
   vim.bo[buf].modifiable = false
 
   local row, col
-  local border_size = state.config.submenu.border and 1 or 0
+  local border = state.config.submenu.border
+  local border_size = (border ~= nil and border ~= false) and 1 or 0
   if level == 1 then
     row = state.anchor.row
     col = state.anchor.col

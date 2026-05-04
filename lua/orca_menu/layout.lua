@@ -6,6 +6,11 @@ local function top_bar_base_label(menu, index)
   return (menu and menu.label ~= "") and menu.label or tostring(index)
 end
 
+local function has_popup_border()
+  local border = state.config and state.config.submenu and state.config.submenu.border
+  return border ~= nil and border ~= false
+end
+
 local function truncate_display(text, max_width)
   if max_width <= 0 then
     return ""
@@ -193,7 +198,7 @@ function M.submenu_width(items)
 end
 
 function M.popup_height(items)
-  local border_rows = state.config.submenu.border and 2 or 0
+  local border_rows = has_popup_border() and 2 or 0
   local max_height = math.max(vim.o.lines - vim.o.cmdheight - border_rows - 2, 1)
   return math.max(math.min(#(items or {}), max_height), 1)
 end
@@ -283,7 +288,7 @@ function M.resolve_anchor(index, items)
   end
 
   local height = M.popup_height(items)
-  local border_rows = state.config.submenu.border and 2 or 0
+  local border_rows = has_popup_border() and 2 or 0
   local statusline_row = vim.o.lines - vim.o.cmdheight
   local row = math.max(1, statusline_row - height - border_rows - 1)
   return { row = row, col = col }

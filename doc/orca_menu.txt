@@ -58,6 +58,68 @@ require('orca_menu').setup({
 })
 <
 
+DISPLAY CUSTOMIZATION ~
+
+Orca Menu already exposes several display-oriented options through setup().
+
+>lua
+require('orca_menu').setup({
+  lualine = {
+    section = 'x',
+    spacing = '  ',
+  },
+  topbar = {
+    hint_format = '{label} [{hint}]',
+  },
+  submenu = {
+    border = 'single',
+    min_width = 24,
+    scroll_indicator_up = '▲',
+    scroll_indicator_down = '▼',
+  },
+  highlights = {
+    menu = 'NormalFloat',
+    menu_sel = 'Visual',
+    accelerator = 'Special',
+  },
+})
+<
+
+    lualine.section             Choose the lualine section for the top bar.
+                                Built-in choices: 'a' 'b' 'c' 'x' 'y' 'z'.
+    lualine.spacing             Adjust padding around top-level labels.
+                                Accepts any string.
+    topbar.hint_format          Change how labels and key hints are rendered.
+                                Accepts a string with {label} and {hint},
+                                or a function.
+    submenu.border              Set the floating-window border style.
+                                Built-in choices: 'none', 'single',
+                                'double', 'rounded', 'solid', 'shadow'.
+                                An 8-element border character table also
+                                works.
+    submenu.min_width           Set the minimum popup width.
+                                Accepts a number.
+    submenu.scroll_indicator_*  Change overflow markers on popup borders.
+                                Each should be a single-cell display
+                                character.
+    highlights.*                Reuse your own highlight groups.
+                                Accepts highlight-group names.
+
+topbar.hint_format may also be a function for custom rendering:
+
+>lua
+require('orca_menu').setup({
+  topbar = {
+    hint_format = function(ctx)
+      return string.format('%s <%s>', ctx.label, ctx.hint)
+    end,
+  },
+})
+<
+
+This keeps the built-in lualine top bar and floating popup UI while letting
+users tune the presentation.
+
 LSP OVERRIDES ~
 
 Orca Menu can apply config overrides when exact LSP client names are active.
