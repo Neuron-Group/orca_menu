@@ -13,6 +13,13 @@ local function validate_menu_spec(menu, method_name)
   if type(menu) ~= "table" then
     error(string.format("orca_menu.%s: menu must be a table", method_name))
   end
+
+  local ok, err = pcall(config.validate_menus, { menu }, "menu_wrapper")
+  if not ok then
+    local message = tostring(err)
+    message = message:gsub("orca_menu:%s*menu_wrapper%[1%]", string.format("orca_menu.%s: menu", method_name), 1)
+    error(message)
+  end
 end
 
 function M.reset()

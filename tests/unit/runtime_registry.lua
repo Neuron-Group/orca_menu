@@ -13,6 +13,19 @@ ok, err = pcall(runtime_menus.update, "tools", "bad")
 H.falsy(ok, "update should reject a non-table menu spec")
 H.truthy(tostring(err):find("update_menu", 1, true), "update error should mention update_menu")
 
+ok, err = pcall(runtime_menus.register, "broken", { items = {} })
+H.falsy(ok, "register should reject a menu without a string label")
+H.truthy(tostring(err):find("menu.label", 1, true), "missing top-level label should be reported clearly")
+
+ok, err = pcall(runtime_menus.register, "broken-child", {
+  label = "&Broken",
+  items = {
+    {},
+  },
+})
+H.falsy(ok, "register should reject child items without string labels")
+H.truthy(tostring(err):find("menu.items[1].label", 1, true), "missing child label should be reported clearly")
+
 runtime_menus.register("tools", {
   label = "&Tools",
   key = "t",

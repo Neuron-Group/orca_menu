@@ -90,6 +90,42 @@ local function parse_label(text)
   return table.concat(clean), accelerator_index
 end
 
+local function validate_item(item, path)
+  if type(item) ~= "table" then
+    error(string.format("orca_menu: %s must be a table", path))
+  end
+
+  if type(item.label) ~= "string" or item.label == "" then
+    error(string.format("orca_menu: %s.label must be a non-empty string", path))
+  end
+
+  if item.items ~= nil then
+    if type(item.items) ~= "table" then
+      error(string.format("orca_menu: %s.items must be a table", path))
+    end
+
+    for index, child in ipairs(item.items) do
+      validate_item(child, string.format("%s.items[%d]", path, index))
+    end
+  end
+end
+
+function M.validate_menus(menus, root_name)
+  local root = root_name or "menus"
+
+  if menus == nil then
+    return
+  end
+
+  if type(menus) ~= "table" then
+    error(string.format("orca_menu: %s must be a table", root))
+  end
+
+  for index, menu in ipairs(menus) do
+    validate_item(menu, string.format("%s[%d]", root, index))
+  end
+end
+
 local function normalize_item(item)
   if item.label == "-" then
     return { kind = "separator", label = string.rep("─", 12), raw_label = "-" }
@@ -108,6 +144,8 @@ local function normalize_item(item)
 end
 
 function M.normalize_menus(menus)
+  M.validate_menus(menus)
+
   return vim.tbl_map(function(menu)
     local normalized = normalize_item(menu)
     normalized.kind = "top"

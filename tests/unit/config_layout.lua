@@ -16,6 +16,27 @@ local layout = require("orca_menu.layout")
 local popup = require("orca_menu.popup")
 local state = require("orca_menu.state")
 
+local ok, err = pcall(config.normalize, {
+  menus = {
+    { items = {} },
+  },
+})
+H.falsy(ok, "normalize should reject top-level menus without labels")
+H.truthy(tostring(err):find("menus%[1%]%.label", 1) ~= nil, "normalize error should mention the missing top-level label")
+
+ok, err = pcall(config.normalize, {
+  menus = {
+    {
+      label = "&Broken",
+      items = {
+        {},
+      },
+    },
+  },
+})
+H.falsy(ok, "normalize should reject child items without labels")
+H.truthy(tostring(err):find("menus%[1%]%.items%[1%]%.label", 1) ~= nil, "normalize error should mention the missing child label")
+
 local normalized = config.normalize({
   menus = {
     {
