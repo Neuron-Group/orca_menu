@@ -38,6 +38,27 @@ local function truncate_display(text, max_width)
   return table.concat(out) .. "..."
 end
 
+local function checked_icon()
+  local submenu = state.config and state.config.submenu or {}
+  if type(submenu.checked_icon) == "string" and submenu.checked_icon ~= "" then
+    return submenu.checked_icon
+  end
+  return ""
+end
+
+function M.item_checked(item)
+  if not item or item.kind == "separator" then
+    return false
+  end
+
+  if type(item.checked) == "function" then
+    local ok, value = pcall(item.checked, item)
+    return ok and not not value or false
+  end
+
+  return not not item.checked
+end
+
 function M.display_key_hint(key)
   if type(key) ~= "string" or key == "" then
     return ""
@@ -137,7 +158,16 @@ function M.arrow_width(items)
   return 0
 end
 
-function M.format_item_line(item, total_width, hint_width, arrow_width)
+function M.check_width(items)
+  for _, item in ipairs(items or {}) do
+    if M.item_checked(item) then
+      return vim.fn.strdisplaywidth(checked_icon())
+    end
+  end
+  return 0
+end
+
+function M.format_item_line(item, total_width, hint_width, arrow_width, check_width)
   if item.kind == "separator" then
     return {
       text = string.rep("─", total_width),
@@ -147,8 +177,16 @@ function M.format_item_line(item, total_width, hint_width, arrow_width)
   end
 
   local right = M.item_right_hint(item)
+  local check = M.item_checked(item) and checked_icon() or ""
   local arrow = item.kind == "submenu" and "›" or ""
-  local right_section_width = hint_width + (arrow_width > 0 and 1 + arrow_width or 0)
+  local check_section_width = check_width or vim.fn.strdisplaywidth(check)
+  local right_section_width = hint_width
+  if check_section_width > 0 then
+    right_section_width = right_section_width + 1 + check_section_width
+  end
+  if arrow_width > 0 then
+    right_section_width = right_section_width + 1 + arrow_width
+  end
   local gap = right_section_width > 0 and 2 or 0
   local available_label_width = math.max(total_width - right_section_width - gap, 1)
   local label = truncate_display(item.label, available_label_width)
@@ -161,7 +199,11 @@ function M.format_item_line(item, total_width, hint_width, arrow_width)
   if right_section_width > 0 then
     local right_width = vim.fn.strdisplaywidth(right)
     line = line .. string.rep(" ", gap)
-    local before_hint_width = vim.fn.strdisplaywidth(line)
+    if check_section_width > 0 then
+      line = line .. string.rep(" ", math.max(check_section_width - vim.fn.strdisplaywidth(check), 0))
+      line = line .. check
+      line = line .. " "
+    end
     line = line .. string.rep(" ", math.max(hint_width - right_width, 0))
     hint_start = vim.fn.strdisplaywidth(line)
     line = line .. right
@@ -188,8 +230,15 @@ function M.submenu_width(items)
   local width = state.config.submenu.min_width
   local hint_width = M.max_hint_width(items)
   local arrow_width = M.arrow_width(items)
+  local check_width = M.check_width(items)
   for _, item in ipairs(items or {}) do
-    local right_section_width = hint_width + (arrow_width > 0 and 1 + arrow_width or 0)
+    local right_section_width = hint_width
+    if check_width > 0 then
+      right_section_width = right_section_width + 1 + check_width
+    end
+    if arrow_width > 0 then
+      right_section_width = right_section_width + 1 + arrow_width
+    end
     local gap = right_section_width > 0 and 2 or 0
     width = math.max(width, vim.fn.strdisplaywidth(item.label) + gap + right_section_width)
   end

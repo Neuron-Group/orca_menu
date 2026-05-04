@@ -240,8 +240,18 @@ POPUP ITEM FIELDS ~
     action      Lua function callback.
     lua         Lua function or Lua string.
     items       Nested submenu items.
+    checked     Boolean or function returning whether the item is checked.
 
 Use { label = '-' } to insert a separator.
+
+When checked is true or returns a truthy value, the popup shows a right-side
+checkmark for that item.
+
+Example:
+
+>lua
+{ label = 'Toggle &Line Numbers', key = 'n', command = 'set number!', checked = function() return vim.wo.number end }
+<
 
 When lua is a string, Orca Menu compiles it with load() and executes it in the
 global Lua environment.
@@ -249,6 +259,8 @@ global Lua environment.
 KEY HINTS ~
 
 Popup items can display a right-aligned key hint column.
+
+Checked items share that right-side area and render a checkmark when active.
 
 Examples:
 

@@ -76,6 +76,32 @@ H.truthy(line.text:find("Tab", 1, true), "formatted line should include right-si
 H.truthy(line.text:find("›", 1, true), "formatted line should include submenu arrow")
 
 state.config = config.normalize({
+  menus = {
+    {
+      label = "&View",
+      items = {
+        {
+          label = "Toggle &Line Numbers",
+          key = "n",
+          checked = function()
+            return vim.wo.number
+          end,
+        },
+      },
+    },
+  },
+})
+
+vim.wo.number = true
+local checked_line = layout.format_item_line(state.config.menus[1].items[1], 30, 1, 0)
+H.truthy(checked_line.text:find("", 1, true), "checked items should render a checkmark")
+H.truthy(checked_line.text:find("n", 1, true), "checked items should keep their right-side key hint")
+
+vim.wo.number = false
+local unchecked_line = layout.format_item_line(state.config.menus[1].items[1], 30, 1, 0)
+H.falsy(unchecked_line.text:find("", 1, true), "unchecked items should not render a checkmark")
+
+state.config = config.normalize({
   submenu = {
     border = "rounded",
   },

@@ -401,6 +401,7 @@ Each popup item can define:
 ```lua
 { label = "&Save", key = "s", command = "write" }
 { label = "&Open", key = "oo", command = "edit" }
+{ label = "Toggle &Line Numbers", key = "n", command = "set number!", checked = function() return vim.wo.number end }
 { label = "&Terminal", key = "t", items = { ... } }
 { label = "&Tools", key = "tt", items = { ... } }
 ```
@@ -409,6 +410,7 @@ Each popup item can define:
 - explicit `key` may be a multi-key sequence such as `"oo"` or `"tt"`
 - if `key` is absent, the `&` accelerator is used as a fallback
 - `&` accelerators remain single-character only for popup items as well
+- checked items may show a right-side checkmark via `checked = true` or `checked = function() ... end`
 - right-side key hints are rendered in the popup
 
 Examples:
@@ -429,8 +431,17 @@ Each item may use:
 - `action`
 - `lua`
 - `items`
+- `checked`
 
 Use `{ label = "-" }` for a separator.
+
+When `checked` is `true` or returns a truthy value, the popup shows a checkmark for that item.
+
+Example:
+
+```lua
+{ label = "Toggle &Line Numbers", key = "n", command = "set number!", checked = function() return vim.wo.number end }
+```
 
 When `lua` is a string, it is compiled with `load(...)` and executed in the global Lua environment.
 

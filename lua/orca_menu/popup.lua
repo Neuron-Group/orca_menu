@@ -359,13 +359,14 @@ local function draw_level(level)
   local width = layout.submenu_width(entry.items)
   local max_hint_width = layout.max_hint_width(entry.items)
   local arrow_width = layout.arrow_width(entry.items)
+  local check_width = layout.check_width(entry.items)
   local lines = {}
   local rendered_lines = {}
   local scroll_top = entry.scroll_top or 1
   local visible_end = math.min(scroll_top + (entry.visible_height or #entry.items) - 1, #entry.items)
   for idx = scroll_top, visible_end do
     local item = entry.items[idx]
-    local rendered = layout.format_item_line(item, width, max_hint_width, arrow_width)
+    local rendered = layout.format_item_line(item, width, max_hint_width, arrow_width, check_width)
     table.insert(rendered_lines, rendered)
     table.insert(lines, rendered.text)
   end
