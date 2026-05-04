@@ -348,15 +348,18 @@ Each top-level menu can define:
 
 ```lua
 { label = "&File", key = "f", items = { ... } }
+{ label = "&Edit", key = "ee", items = { ... } }
 ```
 
 - explicit `key` opens that visible top menu
+- explicit `key` may be a multi-key sequence such as `"gm"`, `"ee"`, or `"<leader>mm"`
 - if `key` is absent, the `&` accelerator is used as a fallback
+- `&` accelerators stay single-character only; `label = "&File"` gives `f`, not `fi`
 
 Rendered labels look like:
 
 - `File(f)`
-- `Tools(t)`
+- `Edit(ee)`
 
 Top-bar key hints are customizable with `topbar.hint_format`:
 
@@ -397,11 +400,15 @@ Each popup item can define:
 
 ```lua
 { label = "&Save", key = "s", command = "write" }
+{ label = "&Open", key = "oo", command = "edit" }
 { label = "&Terminal", key = "t", items = { ... } }
+{ label = "&Tools", key = "tt", items = { ... } }
 ```
 
 - explicit `key` activates the visible item
+- explicit `key` may be a multi-key sequence such as `"oo"` or `"tt"`
 - if `key` is absent, the `&` accelerator is used as a fallback
+- `&` accelerators remain single-character only for popup items as well
 - right-side key hints are rendered in the popup
 
 Examples:
