@@ -5,6 +5,8 @@ local actions = require("orca_menu.actions")
 local M = {}
 local activate_item_at_level
 
+local SHADE_STEPS = { 0, 8, 14, 20, 26, 32 }
+
 local function sync_hydra_exit_if_needed()
   local hydra_mode = require("orca_menu.hydra_mode")
   if hydra_mode.is_active() then
@@ -120,7 +122,6 @@ end
 
 local function ensure_highlights()
   local normal_float = vim.api.nvim_get_hl(0, { name = state.config.highlights.menu, link = false })
-  local menu_fg = normal_float.fg
   local menu_bg = normal_float.bg
   local special = vim.api.nvim_get_hl(0, { name = "Special", link = false })
   local pink_fg = special.fg
@@ -137,6 +138,100 @@ local function ensure_highlights()
     bold = true,
     default = false,
   })
+end
+
+local function is_borderless_theme()
+  return state.config.submenu.border == "none"
+end
+
+local function clamp_channel(value)
+  return math.max(0, math.min(255, math.floor(value + 0.5)))
+end
+
+local function adjust_color(color, delta)
+  if type(color) ~= "number" then
+    return color
+  end
+
+  local red = bit.rshift(color, 16)
+  local green = bit.band(bit.rshift(color, 8), 0xFF)
+  local blue = bit.band(color, 0xFF)
+
+  return bit.lshift(clamp_channel(red + delta), 16)
+    + bit.lshift(clamp_channel(green + delta), 8)
+    + clamp_channel(blue + delta)
+end
+
+local function color_luma(color)
+  if type(color) ~= "number" then
+    return nil
+  end
+
+  local red = bit.rshift(color, 16)
+  local green = bit.band(bit.rshift(color, 8), 0xFF)
+  local blue = bit.band(color, 0xFF)
+  return (red * 0.299) + (green * 0.587) + (blue * 0.114)
+end
+
+local function shade_offset_for_level(level)
+  local step = SHADE_STEPS[math.min(level, #SHADE_STEPS)] or SHADE_STEPS[#SHADE_STEPS]
+  if step == 0 then
+    return 0
+  end
+
+  local menu_base = vim.api.nvim_get_hl(0, { name = state.config.highlights.menu, link = false })
+  local editor_base = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
+  local menu_luma = color_luma(menu_base.bg)
+  local editor_luma = color_luma(editor_base.bg)
+
+  if menu_luma ~= nil and editor_luma ~= nil then
+    if menu_luma > editor_luma then
+      return step
+    elseif menu_luma < editor_luma then
+      return -step
+    end
+  end
+
+  if menu_luma ~= nil and menu_luma >= 128 then
+    return step
+  end
+
+  return -step
+end
+
+local function level_highlight_names(level)
+  if not is_borderless_theme() then
+    return {
+      menu = state.config.highlights.menu,
+      menu_sel = state.config.highlights.menu_sel,
+      accelerator = state.config.highlights.accelerator,
+    }
+  end
+
+  return {
+    menu = "OrcaMenuLevel" .. level,
+    menu_sel = "OrcaMenuSelectedLevel" .. level,
+    accelerator = "OrcaMenuHintLevel" .. level,
+  }
+end
+
+local function ensure_level_highlights(level)
+  local names = level_highlight_names(level)
+  if not is_borderless_theme() then
+    return names
+  end
+
+  local menu_base = vim.api.nvim_get_hl(0, { name = state.config.highlights.menu, link = false })
+  local menu_sel_base = vim.api.nvim_get_hl(0, { name = state.config.highlights.menu_sel, link = false })
+  local accelerator_base = vim.api.nvim_get_hl(0, { name = state.config.highlights.accelerator, link = false })
+  local delta = shade_offset_for_level(level)
+  local bg = adjust_color(menu_base.bg, delta)
+
+  vim.api.nvim_set_hl(0, names.menu, vim.tbl_extend("force", menu_base, { bg = bg, default = false }))
+  vim.api.nvim_set_hl(0, names.menu_sel, vim.tbl_extend("force", menu_sel_base, { bg = bg, default = false }))
+  vim.api.nvim_set_hl(0, names.accelerator, vim.tbl_extend("force", accelerator_base, { bg = bg, default = false }))
+
+  return names
 end
 
 local function resolve_border_chars(border)
@@ -239,18 +334,19 @@ end
 
 local function highlight_entry(buf, entry)
   vim.api.nvim_buf_clear_namespace(buf, state.namespace, 0, -1)
+  local highlights = ensure_level_highlights(entry.level or 1)
   local scroll_top = entry.scroll_top or 1
   local visible_end = math.min(scroll_top + (entry.visible_height or #entry.items) - 1, #entry.items)
   for idx = scroll_top, visible_end do
     local item = entry.items[idx]
     local line_idx = idx - scroll_top
-    local hl = idx == (entry.selected or 1) and state.config.highlights.menu_sel or state.config.highlights.menu
+    local hl = idx == (entry.selected or 1) and highlights.menu_sel or highlights.menu
     vim.api.nvim_buf_add_highlight(buf, state.namespace, hl, line_idx, 0, -1)
     if entry.rendered_lines and entry.rendered_lines[line_idx + 1] and entry.rendered_lines[line_idx + 1].hint_start and entry.rendered_lines[line_idx + 1].hint_end then
       vim.api.nvim_buf_add_highlight(
         buf,
         state.namespace,
-        state.config.highlights.accelerator,
+        highlights.accelerator,
         line_idx,
         entry.rendered_lines[line_idx + 1].hint_start,
         entry.rendered_lines[line_idx + 1].hint_end
@@ -264,6 +360,8 @@ local function draw_level(level)
   if not entry then
     return
   end
+
+  entry.level = level
 
   ensure_scroll_visible(entry)
 
@@ -317,7 +415,8 @@ local function draw_level(level)
     zindex = 250 + level,
   })
   table.insert(state.windows, win)
-  vim.api.nvim_set_option_value("winhl", "Normal:" .. state.config.highlights.menu, { win = win })
+  local highlights = ensure_level_highlights(level)
+  vim.api.nvim_set_option_value("winhl", "Normal:" .. highlights.menu .. ",FloatBorder:" .. highlights.menu, { win = win })
 
   local screen_pos = vim.fn.win_screenpos(win)
   local cell_pos = vim.fn.screenpos(win, 1, 1)

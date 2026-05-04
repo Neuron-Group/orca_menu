@@ -80,12 +80,42 @@ state.config = config.normalize({
     border = "none",
   },
   menus = {
-    { label = "&File", items = { { label = "&Open" }, { label = "&Save" } } },
+    {
+      label = "&File",
+      items = {
+        { label = "&Open Recent", items = { { label = "&Project" }, { label = "&Session" } } },
+        { label = "&Save" },
+      },
+    },
   },
 })
 H.render_statusline()
 local none_anchor = layout.resolve_anchor(1, state.config.menus[1].items)
 
 H.eq(none_anchor.row, rounded_anchor.row, 'border = "none" should keep the same popup geometry as bordered popups')
+
+local popup = require("orca_menu.popup")
+popup.open_top(1)
+popup.activate_selected()
+
+H.eq(#state.menu_stack, 2, 'activating a submenu should open a child popup for border = "none"')
+
+local parent_winhl = vim.api.nvim_get_option_value("winhl", { win = state.menu_stack[1].win })
+local child_winhl = vim.api.nvim_get_option_value("winhl", { win = state.menu_stack[2].win })
+H.truthy(parent_winhl:find("OrcaMenuLevel1", 1, true), 'parent popup should use a level-specific highlight when border = "none"')
+H.truthy(child_winhl:find("OrcaMenuLevel2", 1, true), 'child popup should use a different level-specific highlight when border = "none"')
+H.truthy(child_winhl:find("FloatBorder:OrcaMenuLevel2", 1, true), 'borderless popup frame should reuse the same tinted highlight as the child menu body')
+
+local parent_hl = vim.api.nvim_get_hl(0, { name = "OrcaMenuLevel1", link = false })
+local child_hl = vim.api.nvim_get_hl(0, { name = "OrcaMenuLevel2", link = false })
+local editor_hl = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
+H.truthy(parent_hl.bg ~= nil, "parent popup highlight should define a background")
+H.truthy(child_hl.bg ~= nil, "child popup highlight should define a background")
+H.truthy(parent_hl.bg ~= child_hl.bg, "child popup background should differ slightly from its parent")
+if parent_hl.bg ~= nil and child_hl.bg ~= nil and editor_hl.bg ~= nil then
+  H.truthy(math.abs(child_hl.bg - editor_hl.bg) > math.abs(parent_hl.bg - editor_hl.bg), "child popup background should move farther away from the editor background")
+end
+
+popup.close_all()
 
 print("ok - tests/unit/config_layout.lua")
