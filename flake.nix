@@ -50,5 +50,6 @@
       })
     // {
       overlays.default = overlay;
+      nvfModules.default = import ./nix/nvf-module.nix;
     };
 }

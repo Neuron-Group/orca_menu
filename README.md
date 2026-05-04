@@ -93,6 +93,8 @@ This repository includes two Nix-oriented packaging entrypoints:
   - exposes `vimPlugins.orca-menu`
 - `nix/home-manager-module.nix`
   - small Home Manager helper module
+- `nix/nvf-module.nix`
+  - `nvf` module for Nix-native `orca_menu` configuration
 
 Example flake input:
 
@@ -118,6 +120,72 @@ Example plugin use with overlay output:
     };
 }
 ```
+
+## NVF Module
+
+This repository also exports an `nvf` module at `nvfModules.default`.
+
+Example flake use:
+
+```nix
+{
+  inputs.orca-menu.url = "github:your-name/orca_menu";
+
+  outputs = { self, nixpkgs, nvf, orca-menu, ... }:
+    let
+      system = "x86_64-linux";
+      pkgs = import nixpkgs { inherit system; };
+    in {
+      packages.${system}.default = nvf.lib.neovimConfiguration {
+        inherit pkgs;
+        modules = [
+          orca-menu.nvfModules.default
+          ({ lib, ... }: {
+            vim.orcaMenu = {
+              enable = true;
+              settings = {
+                keys.open = "<F12>";
+                menus = [
+                  {
+                    label = "&File";
+                    key = "f";
+                    items = [
+                      { label = "&Write"; key = "w"; command = "write"; }
+                    ];
+                  }
+                ];
+              };
+            };
+          })
+        ];
+      };
+    };
+}
+```
+
+Module options:
+
+- `vim.orcaMenu.enable` enables the plugin.
+- `vim.orcaMenu.settings` maps to `require("orca_menu").setup(...)`.
+- `vim.orcaMenu.installDependencies` also installs `hydra.nvim` and `lualine.nvim`.
+- `vim.orcaMenu.extraConfigLua` appends custom Lua after setup.
+
+For Lua callbacks inside Nix config, use `lib.generators.mkLuaInline`:
+
+```nix
+vim.orcaMenu.settings = {
+  topbar.hint_format = lib.generators.mkLuaInline ''
+    function(ctx)
+      return string.format("%s <%s>", ctx.label, ctx.hint)
+    end
+  '';
+};
+```
+
+There is a complete example module snippet at `tests/nvf/module-example.nix:1`.
+
+An advanced example with `lsp_overrides` and `lib.generators.mkLuaInline`
+callbacks is available at `tests/nvf/module-lsp-overrides-example.nix:1`.
 
 ## Setup
 

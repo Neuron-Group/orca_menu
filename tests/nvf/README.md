@@ -1,11 +1,12 @@
 # NVF Test Environment
 
-This subflake reuses the `nvf` configuration from `~/.config/home-manager/programs/nvf/` and swaps the `orca-menu` plugin source to this repository checkout.
+This subflake exercises the exported `nvf` module from this repository against your local `nvf` input versions.
 
 ## What it uses
 
-- `~/.config/home-manager/programs/nvf/default.nix`
-- `~/.config/home-manager/programs/nvf/orca-menu.nix`
+- `orca-menu.nvfModules.default`
+- `tests/nvf/module-example.nix`
+- `tests/nvf/module-lsp-overrides-example.nix`
 - your Home Manager flake inputs through `path:/home/neuron/.config/home-manager`
 
 ## Build
@@ -28,6 +29,8 @@ nix run ./tests/nvf#default
 
 ## Notes
 
-- the generated Neovim package comes from your existing `nvf` module
-- `inputs.orca-menu` is redirected to this repo so local plugin changes are tested
+- the generated Neovim package comes from `nvf.lib.neovimConfiguration`
+- `inputs.orca-menu` points at this repo so local module/plugin changes are tested
+- `module-example.nix` covers basic static config
+- `module-lsp-overrides-example.nix` shows `lsp_overrides` and inline Lua callbacks
 - if flakes need to refresh uncached inputs, you may need network access

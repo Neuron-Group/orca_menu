@@ -6,21 +6,26 @@
     nixpkgs.follows = "home-manager-config/nixpkgs";
     nvf.follows = "home-manager-config/nvf";
     orca-menu.url = "path:/home/neuron/Projects/orca_menu";
-    orca-menu.flake = false;
   };
 
-  outputs = inputs@{ self, nixpkgs, home-manager-config, orca-menu, ... }:
+  outputs = inputs@{ self, nixpkgs, nvf, orca-menu, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
-      hmNvf = import "${home-manager-config}/programs/nvf/default.nix" {
-        inherit system pkgs;
-        lib = pkgs.lib;
-        inputs = inputs // {
-          orca-menu = orca-menu;
-        };
+      customNeovim = nvf.lib.neovimConfiguration {
+        inherit pkgs;
+        modules = [
+          orca-menu.nvfModules.default
+          ./module-example.nix
+          {
+            config.vim = {
+              viAlias = true;
+              vimAlias = true;
+            };
+          }
+        ];
       };
-      neovimPkg = builtins.elemAt hmNvf.home.packages 0;
+      neovimPkg = customNeovim.neovim;
     in {
       packages.${system}.default = neovimPkg;
 
