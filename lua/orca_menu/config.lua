@@ -27,6 +27,7 @@ local defaults = {
     scroll_indicator_down = "↓",
     hover_select = false,
     hover_parent = "background",
+    hover_topbar = false,
   },
   highlights = {
     menu = "NormalFloat",

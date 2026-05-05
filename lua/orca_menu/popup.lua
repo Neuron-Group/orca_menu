@@ -922,4 +922,28 @@ function M.hover_at_mouse()
   return true
 end
 
+function M.hover_topbar_at_mouse()
+  if not M.is_open() then
+    return false
+  end
+
+  local mouse = vim.fn.getmousepos()
+  local screen_col = math.max((mouse.screencol or 1), 1)
+  local bar_index = layout.label_hit_at_col(screen_col)
+  if not bar_index then
+    return false
+  end
+
+  if not top_menu_enabled(state.config.menus[bar_index]) then
+    return true
+  end
+
+  if state.active_top == bar_index then
+    return true
+  end
+
+  M.open_top(bar_index)
+  return true
+end
+
 return M

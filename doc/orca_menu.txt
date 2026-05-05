@@ -304,6 +304,9 @@ enabled row. Hover never activates the row by itself.
 Set submenu.hover_parent = "background" to keep parent popups inert while a
 child is open, or "retarget" to let hover on a parent row close descendants and
 move selection immediately.
+Set submenu.hover_topbar = true to switch top-level popups by hovering the top
+bar while a popup is already open. Hovering the top bar while Orca is closed
+does nothing.
 The popup border shows ↑ or ↓ on the right side when more items are hidden.
 Those markers can be changed with submenu.scroll_indicator_up and
 submenu.scroll_indicator_down.

@@ -268,6 +268,9 @@ require("orca_menu").setup({
   is open. Use `"background"` to keep ancestors inert until you go back, or
   `"retarget"` to allow hover on an ancestor row to close descendants and move
   selection immediately. This defaults to `"background"`.
+- `submenu.hover_topbar` switches top-level menus by hovering the lualine top
+  bar, but only while a popup tree is already open. This accepts a boolean and
+  defaults to `false`.
 - `highlights.menu`, `highlights.menu_sel`, and `highlights.accelerator` let you
   reuse your own highlight groups. These accept highlight-group names.
 
@@ -355,6 +358,8 @@ Default keys:
 - with `submenu.hover_parent = "background"`, ancestor popups stay inert while
   a child popup is open; with `"retarget"`, hovering another ancestor row closes
   descendants and retargets selection immediately
+- with `submenu.hover_topbar = true`, hovering another top-bar item switches the
+  open popup tree, but hovering the top bar while Orca is closed does nothing
 - child submenus open beside the visible parent row and flip left if needed
 - `submenu.scroll_indicator_up` and `submenu.scroll_indicator_down` customize
   the border scroll markers
