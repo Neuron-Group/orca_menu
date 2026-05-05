@@ -3,26 +3,29 @@ local layout = require("orca_menu.layout")
 
 local M = {}
 
-local function topbar_disabled_highlight()
+local function to_hex(color)
+  if type(color) ~= "number" then
+    return color
+  end
+
+  return string.format("#%06x", color)
+end
+
+function M.topbar_disabled_color()
   local source = state.config.highlights.topbar_disabled or state.config.highlights.disabled
   local source_hl = vim.api.nvim_get_hl(0, { name = source, link = false })
-  local name = "OrcaMenuTopbarDisabled"
+  if source_hl and source_hl.fg ~= nil then
+    local gui = {}
+    if source_hl.bold then
+      table.insert(gui, "bold")
+    end
+    if source_hl.italic then
+      table.insert(gui, "italic")
+    end
+    return { fg = to_hex(source_hl.fg), gui = #gui > 0 and table.concat(gui, ",") or nil }
+  end
 
-  vim.api.nvim_set_hl(0, name, {
-    fg = source_hl.fg,
-    sp = source_hl.sp,
-    bold = source_hl.bold,
-    italic = source_hl.italic,
-    underline = source_hl.underline,
-    undercurl = source_hl.undercurl,
-    strikethrough = source_hl.strikethrough,
-    reverse = source_hl.reverse,
-    nocombine = source_hl.nocombine,
-    bg = nil,
-    default = false,
-  })
-
-  return name
+  return nil
 end
 
 local function trim_right_cell(text)
@@ -72,9 +75,10 @@ function M.visible_component_at(index)
   return string.format("%s%s%s", spacing, label, right_spacing)
 end
 
-local function make_component(fn)
+local function make_component(fn, color_fn)
   return {
     fn,
+    color = color_fn,
     padding = { left = 0, right = 0 },
     orca_menu_component = true,
   }
@@ -89,9 +93,6 @@ function M.component_at(index)
     return ""
   end
   local label, spacing, right_spacing = component_parts(menu, index)
-  if not layout.top_menu_enabled(menu) then
-    label = string.format("%%#%s#%s%%*", topbar_disabled_highlight(), label)
-  end
   if state.config.enable_mouse == false then
     return string.format("%s%s%s", spacing, label, right_spacing)
   end
@@ -128,6 +129,12 @@ function M.register()
   for index, _ in ipairs(state.config.menus) do
     table.insert(config.sections[section_name], make_component(function()
       return require("orca_menu").lualine_component_at(index)
+    end, function()
+      local menu = state.config and state.config.menus[index]
+      if menu and not layout.top_menu_enabled(menu) then
+        return require("orca_menu.lualine").topbar_disabled_color()
+      end
+      return nil
     end))
   end
 
