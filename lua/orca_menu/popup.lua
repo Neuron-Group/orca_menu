@@ -832,6 +832,10 @@ function M.handle_mouse()
   local bar_index = layout.label_hit_at_col(screen_col)
 
   if bar_index then
+    if not top_menu_enabled(state.config.menus[bar_index]) then
+      return
+    end
+
     if state.active_top == bar_index and M.is_open() then
       M.close_all()
     else
