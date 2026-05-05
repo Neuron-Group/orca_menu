@@ -886,8 +886,6 @@ function M.hover_at_mouse()
     return false
   end
 
-  trim_stack_to(level)
-
   local entry = state.menu_stack[level]
   if not entry then
     return false
@@ -899,6 +897,7 @@ function M.hover_at_mouse()
   end
 
   if entry.selected ~= row then
+    trim_stack_to(level)
     entry.selected = row
     M.redraw_all()
   end

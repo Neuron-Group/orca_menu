@@ -39,8 +39,28 @@ require("orca_menu").setup({
             {
               label = "&Nested",
               key = "n",
+              items = {
+                {
+                  label = "&Deep",
+                  key = "d",
+                  action = function()
+                    vim.g.orca_mouse_hover_action = vim.g.orca_mouse_hover_action + 10
+                  end,
+                },
+                {
+                  label = "Dee&p Two",
+                  key = "p",
+                  action = function()
+                    vim.g.orca_mouse_hover_action = vim.g.orca_mouse_hover_action + 30
+                  end,
+                },
+              },
+            },
+            {
+              label = "Ne&xted",
+              key = "x",
               action = function()
-                vim.g.orca_mouse_hover_action = vim.g.orca_mouse_hover_action + 10
+                vim.g.orca_mouse_hover_action = vim.g.orca_mouse_hover_action + 20
               end,
             },
           },
@@ -74,6 +94,13 @@ local function hover_row(level, row)
   hover_map.callback()
 end
 
+local function hover_frame(level)
+  local entry = state.menu_stack[level]
+  mouse.screenrow = entry.frame_row
+  mouse.screencol = entry.frame_col
+  hover_map.callback()
+end
+
 hover_row(1, 3)
 H.eq(state.menu_stack[1].selected, 3, "hovering an enabled row should move selection to it")
 H.eq(#state.menu_stack, 1, "hovering a submenu row should not auto-open children")
@@ -85,6 +112,36 @@ H.eq(vim.g.orca_mouse_hover_action, 0, "hovering a disabled row should not execu
 
 popup.activate_selected()
 H.eq(#state.menu_stack, 2, "activating the hovered submenu row should still open its child popup")
+
+hover_row(2, 1)
+H.eq(state.menu_stack[2].selected, 1, "hovering a second-level submenu row should move child selection to it")
+H.eq(#state.menu_stack, 2, "hovering a second-level submenu row should not auto-open a third popup")
+
+popup.activate_selected()
+H.eq(#state.menu_stack, 3, "activating the hovered second-level submenu row should open a third popup")
+
+hover_row(3, 2)
+H.eq(state.menu_stack[3].selected, 2, "hovering an enabled grandchild row should move grandchild selection")
+H.eq(#state.menu_stack, 3, "hovering within the grandchild popup should keep all three levels open")
+
+hover_row(2, 1)
+H.eq(#state.menu_stack, 3, "hovering back on the selected child row should keep the grandchild popup open")
+H.eq(state.menu_stack[2].selected, 1, "hovering back on the selected child row should preserve child selection")
+H.eq(state.menu_stack[3].selected, 2, "hovering back on the selected child row should preserve grandchild selection")
+
+hover_row(2, 2)
+H.eq(state.menu_stack[2].selected, 2, "hovering an enabled child row should move child selection")
+H.eq(#state.menu_stack, 2, "hovering within the child popup should keep the child popup open")
+
+hover_row(1, 3)
+H.eq(#state.menu_stack, 2, "hovering back on the selected parent row should keep the child popup open")
+H.eq(state.menu_stack[1].selected, 3, "hovering back on the selected parent row should preserve parent selection")
+H.eq(state.menu_stack[2].selected, 2, "hovering back on the selected parent row should preserve child selection")
+
+hover_frame(1)
+H.eq(#state.menu_stack, 2, "hovering the parent frame while a child is open should keep the child popup open")
+H.eq(state.menu_stack[1].selected, 3, "hovering the parent frame should preserve parent selection")
+H.eq(state.menu_stack[2].selected, 2, "hovering the parent frame should preserve child selection")
 
 hover_row(1, 1)
 H.eq(#state.menu_stack, 1, "hovering another parent row should collapse child popups")
