@@ -291,45 +291,47 @@ function M.popup_height(items)
 end
 
 local function evaluated_statusline()
-  state.collecting_label_positions = true
   local ok, evaluated = pcall(vim.api.nvim_eval_statusline, vim.wo.statusline, {
     winid = vim.api.nvim_get_current_win(),
     maxwidth = vim.o.columns,
     highlights = false,
     use_winbar = false,
   })
-  state.collecting_label_positions = false
   if not ok or not evaluated or type(evaluated.str) ~= "string" then
     return nil
   end
   return evaluated.str
 end
 
-local function strip_label_markers(text)
-  if type(text) ~= "string" or text == "" then
-    return text or ""
+local function refresh_from_topbar_block(rendered)
+  local lualine = require("orca_menu.lualine")
+  local spacing = state.config.lualine.spacing or " "
+  local block_widths = {}
+  local block = ""
+
+  for index, _ in ipairs(state.config.menus) do
+    local component = lualine.visible_component_at(index)
+    table.insert(block_widths, vim.fn.strdisplaywidth(component))
+    block = block .. component
   end
 
-  return (text:gsub("zzzom_label_%d+_E__", ""))
-end
+  if block == "" then
+    return false
+  end
 
-local function refresh_from_markers(rendered)
-  local lualine = require("orca_menu.lualine")
-  local search_from = 1
+  local start_byte = rendered:find(block, 1, true)
+  if not start_byte then
+    return false
+  end
+
   local found_any_label = false
+  local current_col = math.max(vim.fn.strdisplaywidth(rendered:sub(1, start_byte - 1)) + 1, 1)
 
   for index, menu in ipairs(state.config.menus) do
-    local end_marker = lualine.statusline_marker_text(index, true)
-    local label = M.top_bar_display_label(menu, index)
-    local end_byte = rendered:find(label .. end_marker, search_from, true)
-    if end_byte then
-      local label_start_byte = end_byte
-      local prefix = strip_label_markers(rendered:sub(1, label_start_byte - 1))
-      state.label_positions[index] = math.max(vim.fn.strdisplaywidth(prefix) + 1, 1)
-      state.visible_labels[index] = true
-      search_from = end_byte + #label + #end_marker
-      found_any_label = true
-    end
+    state.label_positions[index] = current_col + vim.fn.strdisplaywidth(spacing)
+    state.visible_labels[index] = true
+    current_col = current_col + block_widths[index]
+    found_any_label = true
   end
 
   state.label_visibility_known = found_any_label
@@ -364,7 +366,7 @@ function M.refresh_label_positions()
     return
   end
 
-  if not refresh_from_markers(rendered) then
+  if not refresh_from_topbar_block(rendered) then
     refresh_from_text_search(rendered)
   end
 end

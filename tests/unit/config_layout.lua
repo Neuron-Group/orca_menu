@@ -110,7 +110,7 @@ state.config = config.normalize({
   },
 })
 
-H.eq(require("orca_menu.lualine").component_at(1), "  %#Comment#File%*%{v:lua.orca_menu_statusline_marker(1,1)} ", "disabled top menu should trim one trailing pad cell even with custom spacing")
+H.eq(require("orca_menu.lualine").component_at(1), "  %#Comment#File%* ", "disabled top menu should trim one trailing pad cell even with custom spacing")
 
 state.config = config.normalize({
   enable_mouse = false,
@@ -129,7 +129,15 @@ vim.wo.statusline = table.concat({
 layout.refresh_label_positions()
 
 H.eq(state.label_positions[1], 8, "label discovery should ignore duplicate text earlier in the statusline")
-H.eq(state.label_positions[2], 14, "marker-based discovery should keep later labels aligned after duplicates")
+H.eq(state.label_positions[2], 14, "block-based discovery should keep later labels aligned after duplicates")
+
+local anchored_items = {
+  { label = "&Open" },
+  { label = "&Save" },
+}
+local anchored_width = layout.submenu_width(anchored_items)
+local anchored = layout.resolve_anchor(2, anchored_items)
+H.eq(anchored.col, math.max(14 + vim.fn.strdisplaywidth("View") - anchored_width - 3, 1), "anchor should still align to the visible label edge under normal layouts")
 
 local line = layout.format_item_line({ kind = "submenu", label = "Inspect", key = "<Tab>" }, 24, 3, 1)
 H.truthy(line.text:find("Tab", 1, true), "formatted line should include right-side key hint")

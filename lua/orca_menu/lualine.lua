@@ -2,7 +2,6 @@ local state = require("orca_menu.state")
 local layout = require("orca_menu.layout")
 
 local M = {}
-local marker_prefix = "zzzom_label_"
 
 local function trim_right_cell(text)
   if type(text) ~= "string" or text == "" then
@@ -28,20 +27,27 @@ local function trim_right_cell(text)
   return table.concat(out)
 end
 
-function M.statusline_marker_text(index, is_end)
-  return string.format("%s%d_%s__", marker_prefix, index, is_end and "E" or "S")
+local function component_parts(menu, index)
+  local label = layout.top_bar_display_label(menu, index)
+  local spacing = state.config.lualine.spacing or " "
+  local right_spacing = spacing
+  if not layout.top_menu_enabled(menu) then
+    right_spacing = trim_right_cell(spacing)
+  end
+  return label, spacing, right_spacing
 end
 
-function M.statusline_marker(index, is_end)
-  if not state.collecting_label_positions then
+function M.visible_component_at(index)
+  if not state.config then
+    return ""
+  end
+  local menu = state.config.menus[index]
+  if not menu then
     return ""
   end
 
-  return M.statusline_marker_text(index, is_end == 1)
-end
-
-_G.orca_menu_statusline_marker = function(index, is_end)
-  return require("orca_menu.lualine").statusline_marker(index, is_end)
+  local label, spacing, right_spacing = component_parts(menu, index)
+  return string.format("%s%s%s", spacing, label, right_spacing)
 end
 
 local function make_component(fn)
@@ -60,18 +66,14 @@ function M.component_at(index)
   if not menu then
     return ""
   end
-  local label = layout.top_bar_display_label(menu, index)
-  local spacing = state.config.lualine.spacing or " "
-  local right_spacing = spacing
-  local end_marker = string.format("%%{v:lua.orca_menu_statusline_marker(%d,1)}", index)
+  local label, spacing, right_spacing = component_parts(menu, index)
   if not layout.top_menu_enabled(menu) then
     label = string.format("%%#%s#%s%%*", state.config.highlights.disabled, label)
-    right_spacing = trim_right_cell(spacing)
   end
   if state.config.enable_mouse == false then
-    return string.format("%s%s%s", spacing, label, end_marker .. right_spacing)
+    return string.format("%s%s%s", spacing, label, right_spacing)
   end
-  return string.format("%s%%@v:lua.orca_menu_click_menu_%d@%s%%X%s%s", spacing, index, label, end_marker, right_spacing)
+  return string.format("%s%%@v:lua.orca_menu_click_menu_%d@%s%%X%s", spacing, index, label, right_spacing)
 end
 
 function M.anchor_component()
