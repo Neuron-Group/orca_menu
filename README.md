@@ -263,14 +263,14 @@ require("orca_menu").setup({
 - `submenu.scroll_indicator_up` and `submenu.scroll_indicator_down` change the
   overflow markers. Each should be a single-cell display character.
 - `submenu.hover_select` enables moving the popup selection by mouse hover while
-  a popup is open. This accepts a boolean and defaults to `false`.
+  a popup is open. This accepts a boolean and defaults to `true`.
 - `submenu.hover_parent` controls how ancestor popups react while a child popup
   is open. Use `"background"` to keep ancestors inert until you go back, or
   `"retarget"` to allow hover on an ancestor row to close descendants and move
   selection immediately. This defaults to `"background"`.
 - `submenu.hover_topbar` switches top-level menus by hovering the lualine top
   bar, but only while a popup tree is already open. This accepts a boolean and
-  defaults to `false`.
+  defaults to `true`.
 - `highlights.menu`, `highlights.menu_sel`, and `highlights.accelerator` let you
   reuse your own highlight groups. These accept highlight-group names.
 

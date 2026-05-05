@@ -12,6 +12,7 @@ require("orca_menu").setup({
   submenu = {
     hover_select = true,
     hover_parent = "background",
+    hover_topbar = false,
   },
   menus = {
     {
