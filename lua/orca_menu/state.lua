@@ -8,6 +8,8 @@ local M = {
   buffers = {},
   menu_stack = {},
   pending_action = nil,
+  pending_context = nil,
+  menu_context = nil,
   anchor = { row = nil, col = nil },
   label_positions = {},
   label_visibility_known = false,
@@ -17,6 +19,7 @@ local M = {
   keymaps_installed = false,
   current_open_key = nil,
   mouse_trace_path = nil,
+  selection_namespace = vim.api.nvim_create_namespace("orca_menu_selection"),
   namespace = vim.api.nvim_create_namespace("orca_menu"),
 }
 

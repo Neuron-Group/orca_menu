@@ -513,6 +513,21 @@ orca.refresh()
 When `lua` is a string, it is compiled with `load(...)` and executed in the
 global Lua environment.
 
+Function-based menu handlers can also accept an optional context argument:
+
+```lua
+{ label = "&Copy", key = "c", action = function(ctx)
+    local lines = ((ctx or {}).selection or {}).lines or {}
+    if #lines > 0 then
+      vim.fn.setreg('"', table.concat(lines, "\n"))
+    end
+  end }
+```
+
+When Orca is opened from visual mode, `ctx.selection` preserves the visual mode
+kind and selected lines while Orca keeps a temporary highlight over the source
+selection during menu navigation.
+
 ## Highlights
 
 Default popup highlights:

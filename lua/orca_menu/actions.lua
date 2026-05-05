@@ -3,13 +3,13 @@ local layout = require("orca_menu.layout")
 
 local M = {}
 
-function M.execute_item(item)
+function M.execute_item(item, context)
   if type(item.action) == "function" then
-    item.action()
+    item.action(context)
     return
   end
   if type(item.lua) == "function" then
-    item.lua()
+    item.lua(context)
     return
   end
   if type(item.lua) == "string" then
@@ -35,15 +35,17 @@ function M.run(item)
     return
   end
 
+  local context = state.menu_context
   require("orca_menu.popup").close_all()
   local hydra_mode = require("orca_menu.hydra_mode")
   if hydra_mode.is_active() then
     state.pending_action = item
+    state.pending_context = context
     hydra_mode.exit()
     return
   end
   vim.schedule(function()
-    M.execute_item(item)
+    M.execute_item(item, context)
   end)
 end
 

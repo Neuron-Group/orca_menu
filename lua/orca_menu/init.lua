@@ -94,7 +94,19 @@ function apply_open_key_binding()
   hydra_mode.reset()
   hydra_mode.setup()
 
-  vim.keymap.set({ "n", "x", "i" }, state.current_open_key, function()
+  vim.keymap.set("n", state.current_open_key, function()
+    mode.run_after_editor_mode(function()
+      hydra_mode.activate()
+    end, { preserve_visual = true })
+  end, { desc = "Enter Orca menu", silent = true })
+
+  vim.keymap.set("x", state.current_open_key, function()
+    mode.run_after_editor_mode(function()
+      hydra_mode.activate()
+    end, { preserve_visual = true })
+  end, { desc = "Enter Orca menu", silent = true })
+
+  vim.keymap.set("i", state.current_open_key, function()
     mode.run_after_editor_mode(function()
       hydra_mode.activate()
     end)
@@ -112,7 +124,7 @@ function M.open_menu(index, _use_mouse)
   if _use_mouse then
     mode.run_after_editor_mode(function()
       popup.open_top(target)
-    end)
+    end, { preserve_visual = true })
     return
   end
   popup.open_top(target)
@@ -130,7 +142,7 @@ function M.click(index)
     else
       popup.open_top(target)
     end
-  end)
+  end, { preserve_visual = true })
 end
 
 function M.toggle()

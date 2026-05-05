@@ -137,7 +137,9 @@ function M.setup()
       end,
       on_exit = function()
         local pending_action = state.pending_action
+        local pending_context = state.pending_context
         state.pending_action = nil
+        state.pending_context = nil
         hydra_exit_pending = false
         hydra_active = false
         if popup.is_open() or #state.menu_stack > 0 or state.menu_mode then
@@ -148,7 +150,7 @@ function M.setup()
         end
         if pending_action then
           vim.schedule(function()
-            actions.execute_item(pending_action)
+            actions.execute_item(pending_action, pending_context)
           end)
         elseif hydra_activate_pending then
           hydra_activate_pending = false

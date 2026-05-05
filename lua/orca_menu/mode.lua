@@ -1,4 +1,5 @@
 local M = {}
+local selection = require("orca_menu.selection")
 
 function M.current()
   return vim.fn.mode()
@@ -50,12 +51,17 @@ function M.wait_for_normal(fn, remaining_checks)
   end)
 end
 
-function M.run_after_editor_mode(fn)
+function M.run_after_editor_mode(fn, opts)
   local current_mode = M.current()
+  local context = selection.capture(opts)
   if M.is_visual(current_mode) or M.is_insert(current_mode) then
     M.leave_editor()
-    M.wait_for_normal(fn)
+    M.wait_for_normal(function()
+      selection.activate(context)
+      fn()
+    end)
   else
+    selection.activate(context)
     fn()
   end
 end

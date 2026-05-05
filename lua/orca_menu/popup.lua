@@ -372,6 +372,7 @@ function M.close_all()
   state.menu_mode = false
   require("orca_menu.input").disable_keys()
   require("orca_menu.input").disable_mouse()
+  require("orca_menu.selection").clear()
   sync_hydra_exit_if_needed()
 end
 
