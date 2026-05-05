@@ -34,6 +34,7 @@ run_suite tests/integration/mouse_passthrough.lua
 run_suite tests/integration/mouse_scope.lua
 run_suite tests/integration/editor_interaction_strict.lua
 run_suite tests/integration/visual_mode.lua
+run_suite tests/integration/visual_keys_copy.lua
 run_suite tests/integration/insert_mode.lua
 run_suite tests/integration/function_key_open.lua
 run_suite tests/integration/leader_open_key.lua

@@ -223,4 +223,30 @@ function M.activate(context)
   end
 end
 
+function M.reselect(context)
+  if not context or not context.selection then
+    return false
+  end
+
+  if not context.winid or not vim.api.nvim_win_is_valid(context.winid) then
+    return false
+  end
+
+  if not context.bufnr or not vim.api.nvim_buf_is_valid(context.bufnr) then
+    return false
+  end
+
+  if vim.api.nvim_win_get_buf(context.winid) ~= context.bufnr then
+    return false
+  end
+
+  local selection = context.selection
+  vim.api.nvim_set_current_win(context.winid)
+  vim.fn.setpos("'<", { 0, selection.start_row + 1, selection.start_col + 1, 0 })
+  vim.fn.setpos("'>", { 0, selection.end_row + 1, selection.end_col + 1, 0 })
+  vim.api.nvim_win_set_cursor(context.winid, { selection.end_row + 1, selection.end_col })
+  vim.cmd.normal({ args = { "gv" }, bang = true })
+  return true
+end
+
 return M

@@ -1,5 +1,6 @@
 local state = require("orca_menu.state")
 local layout = require("orca_menu.layout")
+local selection = require("orca_menu.selection")
 
 local M = {}
 
@@ -26,7 +27,11 @@ function M.execute_item(item, context)
     return
   end
   if item.keys then
-    vim.api.nvim_feedkeys(vim.keycode(item.keys), "n", false)
+    if selection.reselect(context) then
+      vim.api.nvim_feedkeys(vim.keycode(item.keys), "x", false)
+    else
+      vim.api.nvim_feedkeys(vim.keycode(item.keys), "n", false)
+    end
   end
 end
 
