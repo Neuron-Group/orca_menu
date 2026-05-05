@@ -543,7 +543,9 @@ Default popup highlights:
 - `disabled`
   - popup disabled-row highlight
 - `topbar_active`
-  - active top-bar text style while its popup is open; background stays with lualine
+  - active top-bar style while its popup is open
+- `topbar_active_preserve_bg`
+  - when `true`, active top-bar styling keeps the current lualine background
 - `topbar_disabled`
   - disabled top-bar text style; background stays with lualine
 
@@ -561,14 +563,19 @@ require("orca_menu").setup({
     checked = "DiagnosticOk",
     disabled = "Comment",
     topbar_active = "Special",
+    topbar_active_preserve_bg = true,
     topbar_disabled = "Comment",
   },
 })
 ```
 
-`topbar_active` is optional. When set, Orca Menu reuses that group’s text style
-for the active top-level label while its popup menu is open, while leaving the
-lualine background unchanged. By default it falls back to `menu_sel`.
+`topbar_active` is optional. When set, Orca Menu reuses that group’s style for
+the active top-level label while its popup menu is open. By default it falls
+back to `menu_sel`.
+
+`topbar_active_preserve_bg` defaults to `false`, so lualine also receives the
+source highlight background for the active top-level label. Set it to `true` to
+keep the existing lualine section background and only reuse the text style.
 
 `topbar_disabled` is optional. When set, Orca Menu reuses that group’s text
 style for disabled top-level labels while leaving the lualine background

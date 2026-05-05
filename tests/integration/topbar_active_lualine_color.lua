@@ -1,5 +1,11 @@
 local H = dofile(vim.fn.getcwd() .. "/tests/helpers.lua")
 
+vim.api.nvim_set_hl(0, "OrcaMenuTopbarActiveIT", {
+  fg = 0x123456,
+  bg = 0x654321,
+  bold = true,
+})
+
 require("orca_menu").setup({
   enable_mouse = true,
   lualine = {
@@ -10,7 +16,8 @@ require("orca_menu").setup({
     hint_format = "{hint}->{label}",
   },
   highlights = {
-    topbar_active = "Special",
+    topbar_active = "OrcaMenuTopbarActiveIT",
+    topbar_active_preserve_bg = false,
   },
   menus = {
     {
@@ -47,14 +54,15 @@ H.eq(#orca_components, 3, "orca should register anchor plus one component per to
 
 local tools_component = orca_components[2]
 local view_component = orca_components[3]
-local special_hl = vim.api.nvim_get_hl(0, { name = "Special", link = false })
+local active_hl = vim.api.nvim_get_hl(0, { name = "OrcaMenuTopbarActiveIT", link = false })
 
 H.eq(tools_component.color(), nil, "inactive top menu should not override lualine colors before popup opens")
 
 orca.open_menu(1)
 H.truthy(popup.is_open(), "opening a top menu should show popup")
-H.eq(tools_component.color().fg, string.format("#%06x", special_hl.fg), "active top menu should expose the configured active foreground to lualine")
-H.eq(tools_component.color().bg, nil, "active top menu should leave background unset so lualine keeps its section background")
+H.eq(tools_component.color().fg, string.format("#%06x", active_hl.fg), "active top menu should expose the configured active foreground to lualine")
+H.eq(tools_component.color().bg, string.format("#%06x", active_hl.bg), "active top menu should reuse the configured background when requested")
+H.eq(tools_component.color().gui, "bold", "active top menu should preserve gui attributes")
 H.eq(view_component.color(), nil, "inactive sibling top menu should keep lualine colors")
 
 popup.close_all()

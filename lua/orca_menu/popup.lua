@@ -55,6 +55,10 @@ local function sync_hydra_exit_if_needed()
   return false
 end
 
+local function refresh_topbar()
+  require("orca_menu.lualine").refresh()
+end
+
 local function available_content_height()
   local border = state.config.submenu.border
   local border_rows = (border ~= nil and border ~= false) and 2 or 0
@@ -374,6 +378,7 @@ function M.close_all()
   require("orca_menu.input").disable_mouse()
   require("orca_menu.selection").clear()
   sync_hydra_exit_if_needed()
+  refresh_topbar()
 end
 
 function M.is_open()
@@ -387,10 +392,12 @@ function M.enter_menu_mode(index)
     state.menu_stack = {}
     state.menu_mode = false
     require("orca_menu.input").disable_keys()
+    refresh_topbar()
     return
   end
   state.active_top = resolved
   state.menu_mode = true
+  refresh_topbar()
   if M.is_open() then
     require("orca_menu.input").enable_keys()
     return
@@ -566,6 +573,7 @@ function M.open_top(index)
   state.anchor = layout.resolve_anchor(state.active_top, items)
   state.menu_mode = true
   require("orca_menu.input").enable_keys()
+  refresh_topbar()
   state.menu_stack = {
     { items = items, selected = 1, scroll_top = 1 },
   }

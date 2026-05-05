@@ -11,9 +11,9 @@ local function to_hex(color)
   return string.format("#%06x", color)
 end
 
-local function topbar_text_color(source)
+local function topbar_text_color(source, preserve_bg)
   local source_hl = vim.api.nvim_get_hl(0, { name = source, link = false })
-  if source_hl and source_hl.fg ~= nil then
+  if source_hl and (source_hl.fg ~= nil or (not preserve_bg and source_hl.bg ~= nil)) then
     local gui = {}
     if source_hl.bold then
       table.insert(gui, "bold")
@@ -21,7 +21,24 @@ local function topbar_text_color(source)
     if source_hl.italic then
       table.insert(gui, "italic")
     end
-    return { fg = to_hex(source_hl.fg), gui = #gui > 0 and table.concat(gui, ",") or nil }
+    if source_hl.underline then
+      table.insert(gui, "underline")
+    end
+    if source_hl.undercurl then
+      table.insert(gui, "undercurl")
+    end
+    if source_hl.strikethrough then
+      table.insert(gui, "strikethrough")
+    end
+    local bg = nil
+    if not preserve_bg then
+      bg = to_hex(source_hl.bg)
+    end
+    return {
+      fg = to_hex(source_hl.fg),
+      bg = bg,
+      gui = #gui > 0 and table.concat(gui, ",") or nil,
+    }
   end
 
   return nil
@@ -29,12 +46,22 @@ end
 
 function M.topbar_disabled_color()
   local source = state.config.highlights.topbar_disabled or state.config.highlights.disabled
-  return topbar_text_color(source)
+  return topbar_text_color(source, true)
 end
 
 function M.topbar_active_color()
   local source = state.config.highlights.topbar_active or state.config.highlights.menu_sel
-  return topbar_text_color(source)
+  return topbar_text_color(source, state.config.highlights.topbar_active_preserve_bg ~= false)
+end
+
+function M.refresh()
+  local ok, lualine = pcall(require, "lualine")
+  if ok and type(lualine.refresh) == "function" then
+    pcall(lualine.refresh, { place = { "statusline" } })
+    return
+  end
+
+  pcall(vim.cmd, "redrawstatus")
 end
 
 local function trim_right_cell(text)

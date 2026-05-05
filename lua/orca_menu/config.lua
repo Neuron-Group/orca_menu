@@ -34,6 +34,7 @@ local defaults = {
     disabled = "OrcaMenuDisabled",
     topbar_disabled = nil,
     topbar_active = nil,
+    topbar_active_preserve_bg = false,
   },
   menus = {
     { label = "&File", items = {} },

@@ -136,10 +136,17 @@ topbar_disabled_hl = require("orca_menu.lualine").topbar_disabled_color()
 local special_hl = vim.api.nvim_get_hl(0, { name = "Special", link = false })
 H.eq(topbar_disabled_hl.fg, string.format("#%06x", special_hl.fg), "topbar disabled highlight should allow a separate source group")
 
+vim.api.nvim_set_hl(0, "OrcaMenuTopbarActiveTest", {
+  fg = 0x112233,
+  bg = 0x445566,
+  bold = true,
+  italic = true,
+})
+
 state.config = config.normalize({
   enable_mouse = false,
   highlights = {
-    topbar_active = "Special",
+    topbar_active = "OrcaMenuTopbarActiveTest",
   },
   menus = {
     {
@@ -154,8 +161,29 @@ state.config = config.normalize({
 state.active_top = 1
 state.menu_mode = true
 local topbar_active_hl = require("orca_menu.lualine").topbar_active_color()
-H.eq(topbar_active_hl.fg, string.format("#%06x", special_hl.fg), "topbar active highlight should allow a separate source group")
-H.eq(topbar_active_hl.bg, nil, "topbar active highlight should leave background unset for lualine")
+H.eq(topbar_active_hl.fg, "#112233", "topbar active highlight should allow a separate source group")
+H.eq(topbar_active_hl.bg, "#445566", "topbar active highlight should reuse source background by default")
+H.eq(topbar_active_hl.gui, "bold,italic", "topbar active highlight should preserve source gui attributes")
+
+state.config = config.normalize({
+  enable_mouse = false,
+  highlights = {
+    topbar_active = "OrcaMenuTopbarActiveTest",
+    topbar_active_preserve_bg = true,
+  },
+  menus = {
+    {
+      label = "&File",
+      items = {
+        { label = "&Open" },
+      },
+    },
+  },
+})
+
+topbar_active_hl = require("orca_menu.lualine").topbar_active_color()
+H.eq(topbar_active_hl.fg, "#112233", "topbar active highlight should still reuse source foreground when preserving background")
+H.eq(topbar_active_hl.bg, nil, "topbar active highlight should leave background unset when configured to preserve lualine bg")
 state.menu_mode = false
 
 state.config = config.normalize({
