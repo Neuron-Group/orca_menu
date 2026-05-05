@@ -198,6 +198,11 @@ function M.clear()
 end
 
 function M.activate(context)
+  local existing_context = state.menu_context
+  if context and not context.selection and state.menu_mode and existing_context and existing_context.selection then
+    return
+  end
+
   M.clear()
 
   if not context or not context.selection then
