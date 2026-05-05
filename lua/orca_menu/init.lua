@@ -148,7 +148,7 @@ function M.click(index)
     else
       popup.open_top(target)
     end
-  end, { preserve_visual = true })
+  end)
 end
 
 function M.toggle()
