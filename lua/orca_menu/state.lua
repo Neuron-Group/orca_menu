@@ -11,6 +11,7 @@ local M = {
   anchor = { row = nil, col = nil },
   label_positions = {},
   label_visibility_known = false,
+  collecting_label_positions = false,
   menu_mode = false,
   global_mouse_installed = false,
   keymaps_installed = false,

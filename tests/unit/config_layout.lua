@@ -93,6 +93,44 @@ H.eq(layout.display_key_hint("<C-x>"), "Ctrl+x", "modifier key hint should be fo
 H.eq(layout.display_key_hint("<Down>"), "↓", "named key hint should be formatted")
 H.eq(layout.top_bar_display_label(state.config.menus[1], 1), "Ctrl+x->File", "topbar hint format should be applied")
 
+state.config = config.normalize({
+  enable_mouse = false,
+  lualine = {
+    spacing = "  ",
+  },
+  highlights = {
+    disabled = "Comment",
+  },
+  menus = {
+    {
+      label = "&File",
+      enabled = false,
+      items = {},
+    },
+  },
+})
+
+H.eq(require("orca_menu.lualine").component_at(1), "  %#Comment#File%*%{v:lua.orca_menu_statusline_marker(1,1)} ", "disabled top menu should trim one trailing pad cell even with custom spacing")
+
+state.config = config.normalize({
+  enable_mouse = false,
+  menus = {
+    { label = "&File", items = { { label = "&Open" } } },
+    { label = "&View", items = { { label = "&Tree" } } },
+  },
+})
+
+vim.o.laststatus = 2
+vim.wo.statusline = table.concat({
+  " File ",
+  require("orca_menu.lualine").component_at(1),
+  require("orca_menu.lualine").component_at(2),
+}, "")
+layout.refresh_label_positions()
+
+H.eq(state.label_positions[1], 8, "label discovery should ignore duplicate text earlier in the statusline")
+H.eq(state.label_positions[2], 14, "marker-based discovery should keep later labels aligned after duplicates")
+
 local line = layout.format_item_line({ kind = "submenu", label = "Inspect", key = "<Tab>" }, 24, 3, 1)
 H.truthy(line.text:find("Tab", 1, true), "formatted line should include right-side key hint")
 H.truthy(line.text:find("›", 1, true), "formatted line should include submenu arrow")

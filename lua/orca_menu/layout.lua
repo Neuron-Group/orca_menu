@@ -291,28 +291,52 @@ function M.popup_height(items)
 end
 
 local function evaluated_statusline()
+  state.collecting_label_positions = true
   local ok, evaluated = pcall(vim.api.nvim_eval_statusline, vim.wo.statusline, {
     winid = vim.api.nvim_get_current_win(),
     maxwidth = vim.o.columns,
     highlights = false,
     use_winbar = false,
   })
+  state.collecting_label_positions = false
   if not ok or not evaluated or type(evaluated.str) ~= "string" then
     return nil
   end
   return evaluated.str
 end
 
-function M.refresh_label_positions()
-  state.label_positions = {}
-  state.visible_labels = {}
-  state.label_visibility_known = false
-
-  local rendered = evaluated_statusline()
-  if not rendered then
-    return
+local function strip_label_markers(text)
+  if type(text) ~= "string" or text == "" then
+    return text or ""
   end
 
+  return (text:gsub("zzzom_label_%d+_E__", ""))
+end
+
+local function refresh_from_markers(rendered)
+  local lualine = require("orca_menu.lualine")
+  local search_from = 1
+  local found_any_label = false
+
+  for index, menu in ipairs(state.config.menus) do
+    local end_marker = lualine.statusline_marker_text(index, true)
+    local label = M.top_bar_display_label(menu, index)
+    local end_byte = rendered:find(label .. end_marker, search_from, true)
+    if end_byte then
+      local label_start_byte = end_byte
+      local prefix = strip_label_markers(rendered:sub(1, label_start_byte - 1))
+      state.label_positions[index] = math.max(vim.fn.strdisplaywidth(prefix) + 1, 1)
+      state.visible_labels[index] = true
+      search_from = end_byte + #label + #end_marker
+      found_any_label = true
+    end
+  end
+
+  state.label_visibility_known = found_any_label
+  return found_any_label
+end
+
+local function refresh_from_text_search(rendered)
   local search_from = 1
   local found_any_label = false
   for index, menu in ipairs(state.config.menus) do
@@ -327,6 +351,22 @@ function M.refresh_label_positions()
   end
 
   state.label_visibility_known = found_any_label
+  return found_any_label
+end
+
+function M.refresh_label_positions()
+  state.label_positions = {}
+  state.visible_labels = {}
+  state.label_visibility_known = false
+
+  local rendered = evaluated_statusline()
+  if not rendered then
+    return
+  end
+
+  if not refresh_from_markers(rendered) then
+    refresh_from_text_search(rendered)
+  end
 end
 
 function M.is_top_visible(index)
