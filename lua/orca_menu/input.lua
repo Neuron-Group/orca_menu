@@ -126,18 +126,21 @@ end
 
 local function handle_mousemove()
   trace_mouse("<MouseMove>", { phase = "start" })
-  mode.run_after_editor_mode(function()
-    local handled = false
-    if hover_select_enabled() then
-      handled = popup.hover_at_mouse()
-    end
-    if not handled and hover_topbar_enabled() then
-      handled = popup.hover_topbar_at_mouse()
-    end
-    if handled then
-      trace_mouse("<MouseMove>", { phase = "handled_popup" })
-    end
-  end)
+  if mode.is_insert() then
+    trace_mouse("<MouseMove>", { phase = "ignored_insert" })
+    return
+  end
+
+  local handled = false
+  if hover_select_enabled() then
+    handled = popup.hover_at_mouse()
+  end
+  if not handled and hover_topbar_enabled() then
+    handled = popup.hover_topbar_at_mouse()
+  end
+  if handled then
+    trace_mouse("<MouseMove>", { phase = "handled_popup" })
+  end
 end
 
 local function should_install_mousemove()

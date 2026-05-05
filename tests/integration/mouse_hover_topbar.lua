@@ -39,6 +39,7 @@ require("orca_menu").setup({
 local state = require("orca_menu.state")
 local popup = require("orca_menu.popup")
 local layout = require("orca_menu.layout")
+local mode = require("orca_menu.mode")
 
 H.render_statusline()
 layout.refresh_label_positions()
@@ -65,10 +66,38 @@ local function hover_top(index)
   hover_map.callback()
 end
 
+local function hover_top_insert(index)
+  mouse.screenrow = statusline_row()
+  mouse.screencol = top_col(index)
+  local hover_map = vim.fn.maparg("<MouseMove>", "i", false, true)
+  H.truthy(hover_map.callback, "insert-mode hover test expects hover mouse mapping to be installed")
+  vim.api.nvim_input(vim.keycode("<MouseMove>"))
+end
+
 H.falsy(popup.is_open(), "popup should start closed")
 hover_top(2)
 H.falsy(popup.is_open(), "hovering top bar while popup is closed should not open a popup")
 H.eq(state.active_top, 1, "hovering top bar while popup is closed should not retarget active_top")
+
+local original_is_insert = mode.is_insert
+local original_run_after_editor_mode = mode.run_after_editor_mode
+local handoff_called = false
+mode.is_insert = function()
+  return true
+end
+mode.run_after_editor_mode = function(fn)
+  handoff_called = true
+  if fn then
+    fn()
+  end
+end
+hover_top_insert(2)
+H.flush()
+H.falsy(handoff_called, "hovering in insert mode should not invoke editor-mode handoff")
+H.falsy(popup.is_open(), "hovering top bar in insert mode should not open a popup")
+H.eq(state.active_top, 1, "hovering top bar in insert mode should not retarget active_top")
+mode.is_insert = original_is_insert
+mode.run_after_editor_mode = original_run_after_editor_mode
 
 popup.open_top(1)
 H.truthy(popup.is_open(), "popup should be open after opening File")
