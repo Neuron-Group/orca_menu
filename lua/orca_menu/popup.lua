@@ -704,6 +704,19 @@ local function hover_select_enabled()
     and state.config.submenu.hover_select == true
 end
 
+local function hover_parent_mode()
+  if not (state.config and state.config.submenu) then
+    return "background"
+  end
+
+  local mode = state.config.submenu.hover_parent
+  if mode == "retarget" then
+    return "retarget"
+  end
+
+  return "background"
+end
+
 local function content_hit_level_at(screen_row, screen_col)
   for idx = #state.menu_stack, 1, -1 do
     local entry = state.menu_stack[idx]
@@ -884,6 +897,10 @@ function M.hover_at_mouse()
 
   if not level then
     return false
+  end
+
+  if level < #state.menu_stack and hover_parent_mode() == "background" then
+    return true
   end
 
   local entry = state.menu_stack[level]

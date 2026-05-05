@@ -26,6 +26,7 @@ local defaults = {
     scroll_indicator_up = "↑",
     scroll_indicator_down = "↓",
     hover_select = false,
+    hover_parent = "background",
   },
   highlights = {
     menu = "NormalFloat",

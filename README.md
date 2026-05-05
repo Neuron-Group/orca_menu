@@ -264,6 +264,10 @@ require("orca_menu").setup({
   overflow markers. Each should be a single-cell display character.
 - `submenu.hover_select` enables moving the popup selection by mouse hover while
   a popup is open. This accepts a boolean and defaults to `false`.
+- `submenu.hover_parent` controls how ancestor popups react while a child popup
+  is open. Use `"background"` to keep ancestors inert until you go back, or
+  `"retarget"` to allow hover on an ancestor row to close descendants and move
+  selection immediately. This defaults to `"background"`.
 - `highlights.menu`, `highlights.menu_sel`, and `highlights.accelerator` let you
   reuse your own highlight groups. These accept highlight-group names.
 
@@ -348,6 +352,9 @@ Default keys:
   scrolled
 - with `submenu.hover_select = true`, hovering an enabled popup row moves the
   current selection without activating it
+- with `submenu.hover_parent = "background"`, ancestor popups stay inert while
+  a child popup is open; with `"retarget"`, hovering another ancestor row closes
+  descendants and retargets selection immediately
 - child submenus open beside the visible parent row and flip left if needed
 - `submenu.scroll_indicator_up` and `submenu.scroll_indicator_down` customize
   the border scroll markers
