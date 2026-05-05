@@ -26,7 +26,6 @@ local mouse_keys = {
   "<ScrollWheelDown>",
 }
 local mouse_key_lookup = {}
-
 for _, key in ipairs(mouse_keys) do
   mouse_key_lookup[key] = true
 end
@@ -89,6 +88,26 @@ local function replay_mouse(key)
   vim.schedule(function()
     M.install_mouse()
   end)
+end
+
+local function restore_mousemoveevent()
+  if state.mousemoveevent_was_enabled == nil then
+    return
+  end
+
+  vim.o.mousemoveevent = state.mousemoveevent_was_enabled
+  state.mousemoveevent_was_enabled = nil
+end
+
+local function enable_mousemoveevent()
+  if state.mousemoveevent_was_enabled ~= nil then
+    return
+  end
+
+  state.mousemoveevent_was_enabled = vim.o.mousemoveevent
+  if not vim.o.mousemoveevent then
+    vim.o.mousemoveevent = true
+  end
 end
 
 local function all_keys()
@@ -205,11 +224,16 @@ function M.disable_keys()
 end
 
 function M.disable_mouse()
+  restore_mousemoveevent()
+
   for _, key in ipairs(mouse_keys) do
     pcall(vim.keymap.del, "n", key)
     pcall(vim.keymap.del, "x", key)
     pcall(vim.keymap.del, "i", key)
   end
+
+  pcall(vim.keymap.del, "n", "<MouseMove>")
+  pcall(vim.keymap.del, "i", "<MouseMove>")
 
   state.global_mouse_installed = false
 end
@@ -226,6 +250,21 @@ function M.install_mouse()
   end
 
   if state.global_mouse_installed then
+    if state.config and state.config.submenu and state.config.submenu.hover_select then
+      enable_mousemoveevent()
+      vim.keymap.set({ "n", "i" }, "<MouseMove>", function()
+        trace_mouse("<MouseMove>", { phase = "start" })
+        mode.run_after_editor_mode(function()
+          if popup.hover_at_mouse() then
+            trace_mouse("<MouseMove>", { phase = "handled_popup" })
+          end
+        end)
+      end, { silent = true })
+    else
+      pcall(vim.keymap.del, "n", "<MouseMove>")
+      pcall(vim.keymap.del, "i", "<MouseMove>")
+      restore_mousemoveevent()
+    end
     return
   end
 
@@ -335,6 +374,19 @@ function M.install_mouse()
       end
     end)
   end, { silent = true })
+
+  if state.config and state.config.submenu and state.config.submenu.hover_select then
+    enable_mousemoveevent()
+
+    vim.keymap.set({ "n", "i" }, "<MouseMove>", function()
+      trace_mouse("<MouseMove>", { phase = "start" })
+      mode.run_after_editor_mode(function()
+        if popup.hover_at_mouse() then
+          trace_mouse("<MouseMove>", { phase = "handled_popup" })
+        end
+      end)
+    end, { silent = true })
+  end
 
   for _, key in ipairs({ "<2-LeftMouse>", "<3-LeftMouse>", "<4-LeftMouse>" }) do
     pcall(vim.keymap.del, "x", key)

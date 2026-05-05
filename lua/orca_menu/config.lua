@@ -25,6 +25,7 @@ local defaults = {
     min_width = 18,
     scroll_indicator_up = "↑",
     scroll_indicator_down = "↓",
+    hover_select = false,
   },
   highlights = {
     menu = "NormalFloat",

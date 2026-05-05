@@ -262,6 +262,8 @@ require("orca_menu").setup({
 - `submenu.min_width` controls the minimum popup width. This accepts a number.
 - `submenu.scroll_indicator_up` and `submenu.scroll_indicator_down` change the
   overflow markers. Each should be a single-cell display character.
+- `submenu.hover_select` enables moving the popup selection by mouse hover while
+  a popup is open. This accepts a boolean and defaults to `false`.
 - `highlights.menu`, `highlights.menu_sel`, and `highlights.accelerator` let you
   reuse your own highlight groups. These accept highlight-group names.
 
@@ -344,6 +346,8 @@ Default keys:
 - resizing the editor or windows closes all popups and exits menu mode
 - when a popup is taller than the screen, selection keeps the visible window
   scrolled
+- with `submenu.hover_select = true`, hovering an enabled popup row moves the
+  current selection without activating it
 - child submenus open beside the visible parent row and flip left if needed
 - `submenu.scroll_indicator_up` and `submenu.scroll_indicator_down` customize
   the border scroll markers

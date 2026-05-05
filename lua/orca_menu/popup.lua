@@ -697,6 +697,13 @@ local function trim_stack_to(level)
   end
 end
 
+local function hover_select_enabled()
+  return state.config
+    and state.config.enable_mouse ~= false
+    and state.config.submenu
+    and state.config.submenu.hover_select == true
+end
+
 local function content_hit_level_at(screen_row, screen_col)
   for idx = #state.menu_stack, 1, -1 do
     local entry = state.menu_stack[idx]
@@ -863,6 +870,40 @@ function M.handle_mouse()
   end
 
   activate_item_at_level(clicked_level, row)
+end
+
+function M.hover_at_mouse()
+  if not M.is_open() or #state.menu_stack == 0 or not hover_select_enabled() then
+    return false
+  end
+
+  local mouse = vim.fn.getmousepos()
+  local screen_row = math.max((mouse.screenrow or 1), 1)
+  local screen_col = math.max((mouse.screencol or 1), 1)
+  local level = content_hit_level_at(screen_row, screen_col)
+
+  if not level then
+    return false
+  end
+
+  trim_stack_to(level)
+
+  local entry = state.menu_stack[level]
+  if not entry then
+    return false
+  end
+
+  local item, row = item_at_level_row(level, screen_row)
+  if not item or not item_selectable(item) then
+    return true
+  end
+
+  if entry.selected ~= row then
+    entry.selected = row
+    M.redraw_all()
+  end
+
+  return true
 end
 
 return M
