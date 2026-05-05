@@ -39,6 +39,8 @@ require("orca_menu").setup({
 
 local orca = require("orca_menu")
 local popup = require("orca_menu.popup")
+local layout = require("orca_menu.layout")
+local state = require("orca_menu.state")
 local lualine = require("lualine")
 local config = lualine.get_config()
 local section = config.sections.lualine_y
@@ -58,12 +60,23 @@ local active_hl = vim.api.nvim_get_hl(0, { name = "OrcaMenuTopbarActiveIT", link
 
 H.eq(tools_component.color(), nil, "inactive top menu should not override lualine colors before popup opens")
 
+popup.enter_menu_mode(1)
+H.falsy(popup.is_open(), "entering menu mode alone should not open popup")
+H.eq(tools_component.color(), nil, "top menu should not highlight until its popup is actually open")
+
 orca.open_menu(1)
 H.truthy(popup.is_open(), "opening a top menu should show popup")
 H.eq(tools_component.color().fg, string.format("#%06x", active_hl.fg), "active top menu should expose the configured active foreground to lualine")
 H.eq(tools_component.color().bg, string.format("#%06x", active_hl.bg), "active top menu should reuse the configured background when requested")
 H.eq(tools_component.color().gui, "bold", "active top menu should preserve gui attributes")
 H.eq(view_component.color(), nil, "inactive sibling top menu should keep lualine colors")
+
+H.render_statusline()
+layout.refresh_label_positions()
+local popup_width = layout.submenu_width(state.config.menus[1].items)
+local component_width = vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(1))
+local block_start = state.label_positions[1] - vim.fn.strdisplaywidth(state.config.lualine.spacing)
+H.eq(state.anchor.col, math.max(block_start + component_width - popup_width - 2, 1), "first popup open should already align to the highlighted component width")
 
 popup.close_all()
 H.eq(tools_component.color(), nil, "closing popup should clear active top menu color override")

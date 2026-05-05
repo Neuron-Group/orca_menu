@@ -3,6 +3,11 @@ local layout = require("orca_menu.layout")
 
 local M = {}
 
+local function active_top_is_open(index, menu)
+  local popup = require("orca_menu.popup")
+  return popup.is_open() and state.active_top == index and layout.top_menu_enabled(menu)
+end
+
 local function to_hex(color)
   if type(color) ~= "number" then
     return color
@@ -139,7 +144,7 @@ function M.register()
       return require("orca_menu").lualine_component_at(index)
     end, function()
       local menu = state.config and state.config.menus[index]
-      if state.menu_mode and state.active_top == index and layout.top_menu_enabled(menu) then
+      if active_top_is_open(index, menu) then
         return require("orca_menu.lualine").topbar_active_color()
       end
       if menu and not layout.top_menu_enabled(menu) then

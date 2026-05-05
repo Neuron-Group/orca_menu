@@ -569,9 +569,9 @@ function M.open_top(index)
     return
   end
   state.active_top = resolved
+  state.menu_mode = true
   local items = actions.current_items()
   state.anchor = layout.resolve_anchor(state.active_top, items)
-  state.menu_mode = true
   require("orca_menu.input").enable_keys()
   refresh_topbar()
   state.menu_stack = {
