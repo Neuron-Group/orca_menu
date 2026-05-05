@@ -64,38 +64,10 @@ function M.refresh()
   pcall(vim.cmd, "redrawstatus")
 end
 
-local function trim_right_cell(text)
-  if type(text) ~= "string" or text == "" then
-    return ""
-  end
-
-  local target_width = vim.fn.strdisplaywidth(text) - 1
-  if target_width <= 0 then
-    return ""
-  end
-
-  local out = {}
-  local width = 0
-  for _, char in ipairs(vim.fn.split(text, [[\zs]])) do
-    local char_width = vim.fn.strdisplaywidth(char)
-    if width + char_width > target_width then
-      break
-    end
-    table.insert(out, char)
-    width = width + char_width
-  end
-
-  return table.concat(out)
-end
-
 local function component_parts(menu, index)
   local label = layout.top_bar_display_label(menu, index)
   local spacing = state.config.lualine.spacing or " "
-  local right_spacing = spacing
-  if not layout.top_menu_enabled(menu) then
-    right_spacing = trim_right_cell(spacing)
-  end
-  return label, spacing, right_spacing
+  return label, spacing, spacing
 end
 
 function M.visible_component_at(index)

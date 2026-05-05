@@ -410,7 +410,21 @@ function M.resolve_anchor(index, items)
   local col
 
   if start_col then
-    local right_aligned_col = start_col + label_width - popup_width
+    local right_anchor = start_col + label_width - 1
+    local highlight_extends_right = state.menu_mode
+      and state.active_top == index
+      and state.config
+      and state.config.highlights
+      and state.config.highlights.topbar_active_preserve_bg == false
+
+    if highlight_extends_right then
+      local component = require("orca_menu.lualine").visible_component_at(index)
+      local component_width = vim.fn.strdisplaywidth(component)
+      local block_start = start_col - vim.fn.strdisplaywidth(state.config.lualine.spacing or " ")
+      right_anchor = block_start + component_width - 1
+    end
+
+    local right_aligned_col = right_anchor - popup_width + 1
     col = math.max(math.min(right_aligned_col - 3, vim.o.columns - popup_width + 1), 1)
   else
     col = math.max(state.anchor.col or 1, 1)

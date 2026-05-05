@@ -110,7 +110,7 @@ state.config = config.normalize({
   },
 })
 
-H.eq(require("orca_menu.lualine").component_at(1), "  File ", "disabled top menu should trim one trailing pad cell even with custom spacing")
+H.eq(require("orca_menu.lualine").component_at(1), "  File  ", "disabled top menu should keep the same trailing padding as other top menus")
 local topbar_disabled_hl = require("orca_menu.lualine").topbar_disabled_color()
 local comment_hl = vim.api.nvim_get_hl(0, { name = "Comment", link = false })
 H.eq(topbar_disabled_hl.fg, string.format("#%06x", comment_hl.fg), "topbar disabled highlight should reuse the configured disabled foreground")
@@ -212,6 +212,30 @@ local anchored_items = {
 local anchored_width = layout.submenu_width(anchored_items)
 local anchored = layout.resolve_anchor(2, anchored_items)
 H.eq(anchored.col, math.max(14 + vim.fn.strdisplaywidth("View") - anchored_width - 3, 1), "anchor should still align to the visible label edge under normal layouts")
+
+state.config = config.normalize({
+  lualine = {
+    spacing = " ",
+  },
+  highlights = {
+    topbar_active = "OrcaMenuTopbarActiveTest",
+    topbar_active_preserve_bg = false,
+  },
+  menus = {
+    { label = "&File", items = { { label = "&Open" } } },
+    { label = "&View", items = { { label = "&Tree" }, { label = "&Zoom" } } },
+  },
+})
+
+state.active_top = 2
+state.menu_mode = true
+H.render_statusline()
+local active_popup_width = layout.submenu_width(state.config.menus[2].items)
+local active_anchor = layout.resolve_anchor(2, state.config.menus[2].items)
+local component_width = vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(2))
+local block_start = state.label_positions[2] - vim.fn.strdisplaywidth(state.config.lualine.spacing)
+H.eq(active_anchor.col, math.max(block_start + component_width - active_popup_width - 2, 1), "active popup should align to the right edge of the full highlighted topbar component when background is overridden")
+state.menu_mode = false
 
 local line = layout.format_item_line({ kind = "submenu", label = "Inspect", key = "<Tab>" }, 24, 3, 1)
 H.truthy(line.text:find("Tab", 1, true), "formatted line should include right-side key hint")
