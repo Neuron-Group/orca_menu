@@ -3,6 +3,28 @@ local layout = require("orca_menu.layout")
 
 local M = {}
 
+local function topbar_disabled_highlight()
+  local source = state.config.highlights.topbar_disabled or state.config.highlights.disabled
+  local source_hl = vim.api.nvim_get_hl(0, { name = source, link = false })
+  local name = "OrcaMenuTopbarDisabled"
+
+  vim.api.nvim_set_hl(0, name, {
+    fg = source_hl.fg,
+    sp = source_hl.sp,
+    bold = source_hl.bold,
+    italic = source_hl.italic,
+    underline = source_hl.underline,
+    undercurl = source_hl.undercurl,
+    strikethrough = source_hl.strikethrough,
+    reverse = source_hl.reverse,
+    nocombine = source_hl.nocombine,
+    bg = nil,
+    default = false,
+  })
+
+  return name
+end
+
 local function trim_right_cell(text)
   if type(text) ~= "string" or text == "" then
     return ""
@@ -68,7 +90,7 @@ function M.component_at(index)
   end
   local label, spacing, right_spacing = component_parts(menu, index)
   if not layout.top_menu_enabled(menu) then
-    label = string.format("%%#%s#%s%%*", state.config.highlights.disabled, label)
+    label = string.format("%%#%s#%s%%*", topbar_disabled_highlight(), label)
   end
   if state.config.enable_mouse == false then
     return string.format("%s%s%s", spacing, label, right_spacing)

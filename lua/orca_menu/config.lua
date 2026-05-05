@@ -32,6 +32,7 @@ local defaults = {
     accelerator = "OrcaMenuHint",
     checked = "OrcaMenuChecked",
     disabled = "OrcaMenuDisabled",
+    topbar_disabled = nil,
   },
   menus = {
     { label = "&File", items = {} },

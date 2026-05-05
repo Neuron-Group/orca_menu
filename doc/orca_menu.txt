@@ -44,6 +44,7 @@ require('orca_menu').setup({
     menu = 'NormalFloat',
     menu_sel = 'OrcaMenuSelected',
     accelerator = 'OrcaMenuHint',
+    topbar_disabled = 'Comment',
   },
   menus = {
     {
@@ -103,6 +104,8 @@ require('orca_menu').setup({
                                 Each should be a single-cell display
                                 character.
     highlights.*                Reuse your own highlight groups.
+    highlights.topbar_disabled  Style disabled top-level labels without
+                                replacing the lualine background.
                                 Accepts highlight-group names.
 
 topbar.hint_format may also be a function for custom rendering:

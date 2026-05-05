@@ -110,7 +110,31 @@ state.config = config.normalize({
   },
 })
 
-H.eq(require("orca_menu.lualine").component_at(1), "  %#Comment#File%* ", "disabled top menu should trim one trailing pad cell even with custom spacing")
+H.eq(require("orca_menu.lualine").component_at(1), "  %#OrcaMenuTopbarDisabled#File%* ", "disabled top menu should trim one trailing pad cell even with custom spacing")
+local topbar_disabled_hl = vim.api.nvim_get_hl(0, { name = "OrcaMenuTopbarDisabled", link = false })
+local comment_hl = vim.api.nvim_get_hl(0, { name = "Comment", link = false })
+H.eq(topbar_disabled_hl.fg, comment_hl.fg, "topbar disabled highlight should reuse the configured disabled foreground")
+H.eq(topbar_disabled_hl.bg, nil, "topbar disabled highlight should leave background unset for lualine")
+
+state.config = config.normalize({
+  enable_mouse = false,
+  highlights = {
+    disabled = "Comment",
+    topbar_disabled = "Special",
+  },
+  menus = {
+    {
+      label = "&File",
+      enabled = false,
+      items = {},
+    },
+  },
+})
+
+require("orca_menu.lualine").component_at(1)
+topbar_disabled_hl = vim.api.nvim_get_hl(0, { name = "OrcaMenuTopbarDisabled", link = false })
+local special_hl = vim.api.nvim_get_hl(0, { name = "Special", link = false })
+H.eq(topbar_disabled_hl.fg, special_hl.fg, "topbar disabled highlight should allow a separate source group")
 
 state.config = config.normalize({
   enable_mouse = false,
