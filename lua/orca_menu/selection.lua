@@ -130,41 +130,11 @@ local function selection_lines(bufnr, regions)
   return lines
 end
 
-function M.capture(opts)
-  local options = opts or {}
-  local mode = vim.fn.mode()
-  local context = {
-    source_mode = mode,
-    bufnr = vim.api.nvim_get_current_buf(),
-    winid = vim.api.nvim_get_current_win(),
-  }
-
-  local selection_mode = mode
-  local anchor
-  local cursor
-
-  if mode == "v" or mode == "V" or mode == "\22" then
-    anchor = vim.fn.getpos("v")
-    cursor = vim.fn.getpos(".")
-  elseif options.preserve_visual then
-    local start_mark = vim.fn.getpos("'<")
-    local last_visual_mode = vim.fn.visualmode()
-    selection_mode = last_visual_mode == "" and "v" or last_visual_mode
-    local end_mark = furthest_position(start_mark, {
-      vim.fn.getpos("'>"),
-      vim.fn.getpos("."),
-      vim.fn.getpos("v"),
-    })
-    if valid_position(start_mark) and valid_position(end_mark) then
-      context.source_mode = selection_mode
-      anchor = start_mark
-      cursor = end_mark
-    end
-  end
-
+local function build_selection_context(context, selection_mode, anchor, cursor)
   if not anchor or not cursor then
     return context
   end
+
   local start_row, start_col, end_row, end_col = ordered_visual_positions(anchor, cursor)
   local regions
 
@@ -187,6 +157,101 @@ function M.capture(opts)
   }
 
   return context
+end
+
+local function capture_from_visual_marks(context)
+  local selection_mode = vim.fn.visualmode()
+  if selection_mode == "" then
+    selection_mode = "v"
+  end
+
+  local start_mark = vim.fn.getpos("'<")
+  local end_mark = furthest_position(start_mark, {
+    vim.fn.getpos("'>"),
+    vim.fn.getpos("."),
+    vim.fn.getpos("v"),
+  })
+
+  if not (valid_position(start_mark) and valid_position(end_mark)) then
+    return context
+  end
+
+  context.source_mode = selection_mode
+  return build_selection_context(context, selection_mode, start_mark, end_mark)
+end
+
+function M.capture_last_visual()
+  local context = {
+    source_mode = vim.fn.mode(),
+    bufnr = vim.api.nvim_get_current_buf(),
+    winid = vim.api.nvim_get_current_win(),
+  }
+
+  return capture_from_visual_marks(context)
+end
+
+function M.recent_visual_context(max_age_ms)
+  local age_ms = max_age_ms or 0
+  local last_context = state.last_visual_context
+  local last_exit_ns = state.last_visual_exit_ns or 0
+
+  if not last_context or last_exit_ns <= 0 then
+    return nil
+  end
+
+  local elapsed_ms = (vim.loop.hrtime() - last_exit_ns) / 1000000
+  if elapsed_ms > age_ms then
+    return nil
+  end
+
+  return vim.deepcopy(last_context)
+end
+
+local function recent_visual_exit(max_age_ms)
+  local last_exit_ns = state.last_visual_exit_ns or 0
+  if last_exit_ns <= 0 then
+    return false
+  end
+
+  local elapsed_ms = (vim.loop.hrtime() - last_exit_ns) / 1000000
+  return elapsed_ms <= (max_age_ms or 0)
+end
+
+function M.capture(opts)
+  local options = opts or {}
+  local mode = vim.fn.mode()
+  local context = {
+    source_mode = mode,
+    bufnr = vim.api.nvim_get_current_buf(),
+    winid = vim.api.nvim_get_current_win(),
+  }
+
+  local selection_mode = mode
+  local anchor
+  local cursor
+
+  if mode == "v" or mode == "V" or mode == "\22" then
+    anchor = vim.fn.getpos("v")
+    cursor = vim.fn.getpos(".")
+  elseif options.preserve_visual then
+    local preserve_visual_timeout_ms = options.preserve_visual_timeout_ms or 25
+    if recent_visual_exit(preserve_visual_timeout_ms) then
+      local preserved_context = capture_from_visual_marks(vim.deepcopy(context))
+      if preserved_context.selection then
+        return preserved_context
+      end
+    end
+
+    local recent_context = M.recent_visual_context(preserve_visual_timeout_ms)
+    if recent_context and recent_context.selection then
+      return recent_context
+    end
+  end
+
+  if not anchor or not cursor then
+    return context
+  end
+  return build_selection_context(context, selection_mode, anchor, cursor)
 end
 
 function M.clear()

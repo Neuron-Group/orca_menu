@@ -1,5 +1,7 @@
 local state = require("orca_menu.state")
+local mode = require("orca_menu.mode")
 local popup = require("orca_menu.popup")
+local selection = require("orca_menu.selection")
 
 local M = {}
 
@@ -37,6 +39,38 @@ function M.install_user_commands(api)
 end
 
 function M.install_autocmds(augroup, refresh)
+  vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+    group = augroup,
+    callback = function()
+      if not mode.is_visual() then
+        return
+      end
+
+      local context = selection.capture()
+      if context and context.selection then
+        state.last_visual_context = context
+      end
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("ModeChanged", {
+    group = augroup,
+    pattern = { "*:v", "*:V", "*:\22", "v:*", "V:*", "\22:*" },
+    callback = function()
+      if mode.is_visual() then
+        local context = selection.capture()
+        if context and context.selection then
+          state.last_visual_context = context
+        end
+        return
+      end
+
+      if state.last_visual_context and state.last_visual_context.selection then
+        state.last_visual_exit_ns = vim.loop.hrtime()
+      end
+    end,
+  })
+
   vim.api.nvim_create_autocmd("VimResized", {
     group = augroup,
     callback = function()

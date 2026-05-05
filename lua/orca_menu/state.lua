@@ -10,6 +10,8 @@ local M = {
   pending_action = nil,
   pending_context = nil,
   menu_context = nil,
+  last_visual_context = nil,
+  last_visual_exit_ns = 0,
   anchor = { row = nil, col = nil },
   label_positions = {},
   label_visibility_known = false,
