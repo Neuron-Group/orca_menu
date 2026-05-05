@@ -1,0 +1,60 @@
+/-!
+Synthetic visual-selection fixture for `orca_menu` tests.
+
+This file is intentionally fake sample content, not real project code.
+Use it as an experimental subject for manual mouse-open testing from Visual mode.
+-/
+
+namespace OrcaMenuSample01
+
+def introLine : String := "visual selection sample"
+
+-- `VISUAL TEST 01`: short ascii words for single-line checks
+-- alpha beta gamma delta epsilon
+
+-- `VISUAL TEST 02`: punctuation
+-- !@#$%^&*()[]{}<>/\\|`~;:'",.?
+
+-- `VISUAL TEST 03`: unicode
+-- λ → ∀ ∃ ℕ ℝ café résumé naïve 漢字
+
+-- `VISUAL TEST 04`: spaced words to test mid-line starts and ends
+-- one two three four five six seven eight nine ten
+
+-- `VISUAL TEST 05`: long line near the right side of the window to exercise selections that start or end far from the left margin without relying on wrap behavior during manual testing
+
+-- `VISUAL TEST 06`: repeated tokens
+-- alpha alpha alpha beta beta gamma gamma delta
+
+-- `VISUAL TEST 07`: indentation
+def indentedBlock : List String :=
+  [ "level-0",
+    "  level-1",
+    "    level-2",
+    "  back-to-level-1" ]
+
+-- `VISUAL TEST 08`: block-shape friendly columns
+-- colA colB colC colD colE colF colG
+-- 1111 2222 3333 4444 5555 6666 7777
+-- aaaa bbbb cccc dddd eeee ffff gggg
+
+-- `VISUAL TEST 09`: Lean-style operators
+theorem operatorLine : True := by
+  have h₁ : (1 : Nat) = 1 := rfl
+  have h₂ : True ∧ True := And.intro trivial trivial
+  have h₃ : True → True := fun x => x
+  have h₄ : (True ↔ True) := Iff.intro (fun x => x) (fun x => x)
+  trivial
+
+-- `VISUAL TEST 10`: mixed numbers
+def fibish : List Nat := [0, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+
+-- `VISUAL TEST 11`: end-of-line probe
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+-- `VISUAL TEST 12`: short trailing lines
+def tailA := "tail-a"
+def tailB := "tail-b"
+def tailC := "tail-c"
+
+end OrcaMenuSample01
