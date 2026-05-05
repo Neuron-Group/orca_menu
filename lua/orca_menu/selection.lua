@@ -193,6 +193,8 @@ function M.clear()
   local context = state.menu_context
   if context and context.selection and context.bufnr and vim.api.nvim_buf_is_valid(context.bufnr) then
     vim.api.nvim_buf_clear_namespace(context.bufnr, state.selection_namespace, 0, -1)
+    pcall(vim.fn.setpos, "'<", { 0, 0, 0, 0 })
+    pcall(vim.fn.setpos, "'>", { 0, 0, 0, 0 })
   end
   state.menu_context = nil
 end

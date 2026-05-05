@@ -97,5 +97,23 @@ H.truthy(#selection_marks() > 0, "switching top-bar menu should preserve the tem
 popup.close_all()
 H.eq(selection_marks(), {}, "closing the menu should clear the temporary selection overlay")
 
+vim.cmd("normal! gg0v$")
+vim.fn.feedkeys(vim.keycode("<F15>"), "xt")
+H.flush()
+H.flush()
+H.truthy(state.menu_mode, "reopening from visual mode should still work")
+popup.close_all()
+
+H.eq(vim.fn.mode(), "n", "closing the menu should leave the editor in normal mode")
+H.falsy(state.menu_mode, "closing the menu should leave menu mode inactive")
+
+H.render_statusline()
+layout.refresh_label_positions()
+vim.cmd("normal! gg0")
+vim.fn.feedkeys(vim.keycode("<F15>"), "xt")
+H.flush()
+H.flush()
+H.falsy(state.menu_context and state.menu_context.selection, "reopening from normal mode after a canceled visual session should not resurrect stale selection context")
+
 H.finish()
 print("ok - tests/integration/visual_selection_lifecycle.lua")
