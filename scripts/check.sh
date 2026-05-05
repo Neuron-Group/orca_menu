@@ -32,6 +32,7 @@ run_suite tests/integration/mouse_strict.lua
 run_suite tests/integration/mouse_toggle.lua
 run_suite tests/integration/mouse_passthrough.lua
 run_suite tests/integration/mouse_scope.lua
+run_suite tests/integration/topbar_active_lualine_color.lua
 run_suite tests/integration/editor_interaction_strict.lua
 run_suite tests/integration/visual_mode.lua
 run_suite tests/integration/visual_selection_lifecycle.lua

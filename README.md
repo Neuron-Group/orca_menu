@@ -542,6 +542,8 @@ Default popup highlights:
   - popup checked-state highlight
 - `disabled`
   - popup disabled-row highlight
+- `topbar_active`
+  - active top-bar text style while its popup is open; background stays with lualine
 - `topbar_disabled`
   - disabled top-bar text style; background stays with lualine
 
@@ -558,10 +560,15 @@ require("orca_menu").setup({
   highlights = {
     checked = "DiagnosticOk",
     disabled = "Comment",
+    topbar_active = "Special",
     topbar_disabled = "Comment",
   },
 })
 ```
+
+`topbar_active` is optional. When set, Orca Menu reuses that group’s text style
+for the active top-level label while its popup menu is open, while leaving the
+lualine background unchanged. By default it falls back to `menu_sel`.
 
 `topbar_disabled` is optional. When set, Orca Menu reuses that group’s text
 style for disabled top-level labels while leaving the lualine background

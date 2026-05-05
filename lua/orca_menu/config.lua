@@ -33,6 +33,7 @@ local defaults = {
     checked = "OrcaMenuChecked",
     disabled = "OrcaMenuDisabled",
     topbar_disabled = nil,
+    topbar_active = nil,
   },
   menus = {
     { label = "&File", items = {} },

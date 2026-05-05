@@ -138,6 +138,28 @@ H.eq(topbar_disabled_hl.fg, string.format("#%06x", special_hl.fg), "topbar disab
 
 state.config = config.normalize({
   enable_mouse = false,
+  highlights = {
+    topbar_active = "Special",
+  },
+  menus = {
+    {
+      label = "&File",
+      items = {
+        { label = "&Open" },
+      },
+    },
+  },
+})
+
+state.active_top = 1
+state.menu_mode = true
+local topbar_active_hl = require("orca_menu.lualine").topbar_active_color()
+H.eq(topbar_active_hl.fg, string.format("#%06x", special_hl.fg), "topbar active highlight should allow a separate source group")
+H.eq(topbar_active_hl.bg, nil, "topbar active highlight should leave background unset for lualine")
+state.menu_mode = false
+
+state.config = config.normalize({
+  enable_mouse = false,
   menus = {
     { label = "&File", items = { { label = "&Open" } } },
     { label = "&View", items = { { label = "&Tree" } } },

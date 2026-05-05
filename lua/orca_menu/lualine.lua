@@ -11,8 +11,7 @@ local function to_hex(color)
   return string.format("#%06x", color)
 end
 
-function M.topbar_disabled_color()
-  local source = state.config.highlights.topbar_disabled or state.config.highlights.disabled
+local function topbar_text_color(source)
   local source_hl = vim.api.nvim_get_hl(0, { name = source, link = false })
   if source_hl and source_hl.fg ~= nil then
     local gui = {}
@@ -26,6 +25,16 @@ function M.topbar_disabled_color()
   end
 
   return nil
+end
+
+function M.topbar_disabled_color()
+  local source = state.config.highlights.topbar_disabled or state.config.highlights.disabled
+  return topbar_text_color(source)
+end
+
+function M.topbar_active_color()
+  local source = state.config.highlights.topbar_active or state.config.highlights.menu_sel
+  return topbar_text_color(source)
 end
 
 local function trim_right_cell(text)
@@ -131,6 +140,9 @@ function M.register()
       return require("orca_menu").lualine_component_at(index)
     end, function()
       local menu = state.config and state.config.menus[index]
+      if state.menu_mode and state.active_top == index and layout.top_menu_enabled(menu) then
+        return require("orca_menu.lualine").topbar_active_color()
+      end
       if menu and not layout.top_menu_enabled(menu) then
         return require("orca_menu.lualine").topbar_disabled_color()
       end
