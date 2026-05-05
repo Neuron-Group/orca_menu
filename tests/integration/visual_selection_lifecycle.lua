@@ -86,6 +86,13 @@ H.render_statusline()
 layout.refresh_label_positions()
 local click_edit = _G.orca_menu_click_menu_2
 H.truthy(click_edit, "top-bar click handler should exist for Edit")
+local function top_col(index)
+  layout.refresh_label_positions()
+  return state.label_positions[index] + 1
+end
+
+local mouse = { screenrow = vim.o.lines - vim.o.cmdheight, screencol = top_col(2) }
+local restore_mouse = H.stub_mouse(mouse)
 click_edit()
 H.flush()
 H.flush()
@@ -115,5 +122,6 @@ H.flush()
 H.flush()
 H.falsy(state.menu_context and state.menu_context.selection, "reopening from normal mode after a canceled visual session should not resurrect stale selection context")
 
+restore_mouse()
 H.finish()
 print("ok - tests/integration/visual_selection_lifecycle.lua")

@@ -51,6 +51,15 @@ local layout = require("orca_menu.layout")
 H.render_statusline()
 layout.refresh_label_positions()
 
+local mouse = { screenrow = vim.o.lines - vim.o.cmdheight, screencol = 1 }
+local restore_mouse = H.stub_mouse(mouse)
+
+local function top_col(index)
+  local start_col = state.label_positions[index]
+  local width = vim.fn.strdisplaywidth(layout.top_bar_display_label(state.config.menus[index], index))
+  return start_col + math.floor(width / 2)
+end
+
 H.falsy(popup.activate_top_key("f"), "disabled explicit top key should not activate")
 H.falsy(popup.activate_top_key("e"), "disabled dynamic top key should not activate")
 H.truthy(popup.activate_top_key("v"), "enabled top key should still activate")
@@ -77,14 +86,17 @@ H.truthy(click_file, "disabled top menu should still have a click handler")
 H.truthy(click_edit, "dynamic top menu should still have a click handler")
 H.truthy(click_view, "enabled top menu should still have a click handler")
 
+mouse.screencol = top_col(1)
 click_file()
 H.falsy(popup.is_open(), "clicking a disabled top menu should do nothing")
 H.falsy(state.menu_mode, "clicking a disabled top menu should not enter menu mode")
 
+mouse.screencol = top_col(2)
 click_edit()
 H.falsy(popup.is_open(), "clicking a dynamically disabled top menu should do nothing")
 H.falsy(state.menu_mode, "clicking a dynamically disabled top menu should not enter menu mode")
 
+mouse.screencol = top_col(3)
 click_view()
 H.truthy(popup.is_open(), "clicking an enabled top menu should open popup")
 H.eq(state.active_top, 3, "clicking enabled top menu should activate it")
@@ -100,5 +112,6 @@ popup.close_all()
 H.truthy(popup.activate_top_key("e"), "enabled top key should activate once predicate flips")
 H.eq(state.active_top, 2, "enabled top key should target Edit after predicate flips")
 
+restore_mouse()
 H.finish()
 print("ok - tests/integration/disabled_top_menus.lua")

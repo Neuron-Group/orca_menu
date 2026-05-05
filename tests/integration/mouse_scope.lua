@@ -30,6 +30,15 @@ local layout = require("orca_menu.layout")
 H.render_statusline()
 layout.refresh_label_positions()
 
+local mouse = { screenrow = vim.o.lines - vim.o.cmdheight, screencol = 1 }
+local restore_mouse = H.stub_mouse(mouse)
+
+local function top_col(index)
+  local start_col = state.label_positions[index]
+  local width = vim.fn.strdisplaywidth(layout.top_bar_display_label(state.config.menus[index], index))
+  return start_col + math.floor(width / 2)
+end
+
 for _, mode in ipairs({ "n", "x", "i" }) do
   H.eq(vim.fn.maparg("<LeftMouse>", mode, false, true), {}, "inactive left mouse should stay native in mode " .. mode)
 end
@@ -45,6 +54,7 @@ for _, mode in ipairs({ "n", "i" }) do
 end
 
 H.truthy(_G.orca_menu_click_menu_1, "top-bar click handler should exist")
+mouse.screencol = top_col(1)
 _G.orca_menu_click_menu_1()
 H.flush()
 H.truthy(state.menu_mode, "top-bar click handler should enable menu mode")
@@ -78,5 +88,6 @@ for _, mode in ipairs({ "n", "i" }) do
   H.eq(vim.fn.maparg("<ScrollWheelUp>", mode, false, true), {}, "wheel up should be removed after popup closes in mode " .. mode)
 end
 
+restore_mouse()
 H.finish()
 print("ok - tests/integration/mouse_scope.lua")
