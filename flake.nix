@@ -41,6 +41,7 @@
             export XDG_STATE_HOME="$TMPDIR/state"
             export XDG_DATA_HOME="$TMPDIR/data"
             export XDG_CACHE_HOME="$TMPDIR/cache"
+            export ORCA_TEST_EXTRA_RTP="${pkgs.vimPlugins.lualine-nvim}"
             mkdir -p "$HOME" "$XDG_STATE_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME"
             cd ${src}
             bash ${src}/scripts/check.sh
