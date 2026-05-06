@@ -132,23 +132,29 @@ H.eq(state.menu_stack[2].selected, 1, "hovering back on the selected child row s
 H.eq(state.menu_stack[3].selected, 2, "hovering back on the selected child row should preserve grandchild selection")
 
 hover_row(2, 2)
-H.eq(state.menu_stack[2].selected, 2, "hovering an enabled child row should move child selection")
-H.eq(#state.menu_stack, 2, "hovering within the child popup should keep the child popup open")
+H.eq(state.menu_stack[2].selected, 1, "hovering an ancestor child row while a grandchild is open should not retarget child selection")
+H.eq(#state.menu_stack, 3, "hovering an ancestor child row while a grandchild is open should keep descendants open")
+H.eq(state.menu_stack[3].selected, 2, "hovering an ancestor child row should preserve grandchild selection")
 
 hover_row(1, 3)
-H.eq(#state.menu_stack, 2, "hovering back on the selected parent row should keep the child popup open")
+H.eq(#state.menu_stack, 3, "hovering back on the selected parent row should keep descendants open")
 H.eq(state.menu_stack[1].selected, 3, "hovering back on the selected parent row should preserve parent selection")
-H.eq(state.menu_stack[2].selected, 2, "hovering back on the selected parent row should preserve child selection")
+H.eq(state.menu_stack[2].selected, 1, "hovering back on the selected parent row should preserve child selection")
+H.eq(state.menu_stack[3].selected, 2, "hovering back on the selected parent row should preserve grandchild selection")
+
+popup.go_back()
+H.eq(#state.menu_stack, 2, "go_back should close the grandchild popup before parent-hover checks")
 
 hover_frame(1)
 H.eq(#state.menu_stack, 2, "hovering the parent frame while a child is open should keep the child popup open")
 H.eq(state.menu_stack[1].selected, 3, "hovering the parent frame should preserve parent selection")
-H.eq(state.menu_stack[2].selected, 2, "hovering the parent frame should preserve child selection")
+H.eq(state.menu_stack[2].selected, 1, "hovering the parent frame should preserve child selection")
 
 hover_row(1, 1)
-H.eq(#state.menu_stack, 1, "hovering another parent row should collapse child popups")
-H.eq(state.menu_stack[1].selected, 1, "hovering another parent row should retarget selection")
-H.eq(vim.g.orca_mouse_hover_action, 0, "collapsing child popups by hover should not execute actions")
+H.eq(#state.menu_stack, 2, "hovering another parent row should keep the child popup open even when hover_parent is set to retarget")
+H.eq(state.menu_stack[1].selected, 3, "hovering another parent row should not retarget parent selection")
+H.eq(state.menu_stack[2].selected, 1, "hovering another parent row should preserve child selection")
+H.eq(vim.g.orca_mouse_hover_action, 0, "hovering a parent row should not execute actions")
 
 popup.close_all()
 H.eq(vim.fn.maparg("<MouseMove>", "n", false, true), {}, "closing popups should remove mouse-move handling")

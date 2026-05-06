@@ -61,10 +61,9 @@ local restore_item = H.stub_mouse({
 
 popup.handle_mouse()
 H.flush()
-H.eq(vim.g.orca_mouse_action, 1, "mouse click on popup item should execute its action")
+H.eq(vim.g.orca_mouse_action, 1, "mouse click on a deepest popup item should execute its action")
 H.falsy(popup.is_open(), "mouse item activation should close popup tree")
 
 restore_item()
 H.finish()
 print("ok - tests/integration/mouse_smoke.lua")
-

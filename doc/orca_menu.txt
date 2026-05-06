@@ -301,9 +301,8 @@ Left click works on the top bar and on visible popup entries.
 Mouse wheel scrolls the hovered open popup menu by nearly a full page.
 Set submenu.hover_select = true to move the popup selection by hovering an
 enabled row. Hover never activates the row by itself.
-Set submenu.hover_parent = "background" to keep parent popups inert while a
-child is open, or "retarget" to let hover on a parent row close descendants and
-move selection immediately.
+While a child submenu is open, hover only affects the deepest visible popup.
+Hovering ancestor popups does not move selection or close descendants.
 Set submenu.hover_topbar = true to switch top-level popups by hovering the top
 bar while a popup is already open. Hovering the top bar while Orca is closed
 does nothing.
@@ -317,8 +316,9 @@ navigation, and closing it via mouse exits menu mode.
     top bar, same item      Close the open popup tree.
     top bar, other item     Switch to that popup.
     outside all popups      Close the whole popup tree.
-    popup item, no child    Run the item and close all popups.
-    popup item, has child   Open its child popup.
+    deepest popup action    Run the item and close all popups.
+    deepest popup submenu   Open its child popup.
+    ancestor submenu item   Retarget submenu state without executing actions.
 
 LUALINE ~
 

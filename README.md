@@ -264,10 +264,8 @@ require("orca_menu").setup({
   overflow markers. Each should be a single-cell display character.
 - `submenu.hover_select` enables moving the popup selection by mouse hover while
   a popup is open. This accepts a boolean and defaults to `true`.
-- `submenu.hover_parent` controls how ancestor popups react while a child popup
-  is open. Use `"background"` to keep ancestors inert until you go back, or
-  `"retarget"` to allow hover on an ancestor row to close descendants and move
-  selection immediately. This defaults to `"background"`.
+- while a child popup is open, mouse hover only affects the deepest visible
+  popup; ancestor popups stay inert until you go back or click them.
 - `submenu.hover_topbar` switches top-level menus by hovering the lualine top
   bar, but only while a popup tree is already open. This accepts a boolean and
   defaults to `true`.
@@ -355,9 +353,8 @@ Default keys:
   scrolled
 - with `submenu.hover_select = true`, hovering an enabled popup row moves the
   current selection without activating it
-- with `submenu.hover_parent = "background"`, ancestor popups stay inert while
-  a child popup is open; with `"retarget"`, hovering another ancestor row closes
-  descendants and retargets selection immediately
+- while a child popup is open, hovering an ancestor popup does not move
+  selection or close descendants
 - with `submenu.hover_topbar = true`, hovering another top-bar item switches the
   open popup tree, but hovering the top bar while Orca is closed does nothing
 - child submenus open beside the visible parent row and flip left if needed

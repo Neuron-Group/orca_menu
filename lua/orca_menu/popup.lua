@@ -704,19 +704,6 @@ local function hover_select_enabled()
     and state.config.submenu.hover_select == true
 end
 
-local function hover_parent_mode()
-  if not (state.config and state.config.submenu) then
-    return "background"
-  end
-
-  local mode = state.config.submenu.hover_parent
-  if mode == "retarget" then
-    return "retarget"
-  end
-
-  return "background"
-end
-
 local function content_hit_level_at(screen_row, screen_col)
   for idx = #state.menu_stack, 1, -1 do
     local entry = state.menu_stack[idx]
@@ -833,6 +820,12 @@ activate_item_at_level = function(level, row)
     return
   end
 
+  if had_children then
+    trim_stack_to(level)
+    M.redraw_all()
+    return
+  end
+
   trim_stack_to(level)
   actions.run(item)
 end
@@ -899,7 +892,7 @@ function M.hover_at_mouse()
     return false
   end
 
-  if level < #state.menu_stack and hover_parent_mode() == "background" then
+  if level < #state.menu_stack then
     return true
   end
 

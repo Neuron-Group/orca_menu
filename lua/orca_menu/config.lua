@@ -26,7 +26,6 @@ local defaults = {
     scroll_indicator_up = "↑",
     scroll_indicator_down = "↓",
     hover_select = true,
-    hover_parent = "background",
     hover_topbar = true,
   },
   highlights = {

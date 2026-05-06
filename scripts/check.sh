@@ -34,6 +34,7 @@ run_suite tests/integration/mouse_strict.lua
 run_suite tests/integration/mouse_toggle.lua
 run_suite tests/integration/mouse_passthrough.lua
 run_suite tests/integration/mouse_scope.lua
+run_suite tests/integration/mouse_parent_click_policy.lua
 run_suite tests/integration/mouse_hover_select.lua
 run_suite tests/integration/mouse_hover_background.lua
 run_suite tests/integration/mouse_hover_topbar.lua
