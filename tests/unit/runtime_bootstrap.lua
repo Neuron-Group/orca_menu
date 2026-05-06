@@ -38,7 +38,7 @@ state.mouse_trace_path = nil
 vim.cmd("OrcaMenuMouseTrace off")
 H.eq(state.mouse_trace_path, nil, "mouse trace off should clear the path")
 
-local trace_path = vim.fn.getcwd() .. "/.tmp-orca-bootstrap-trace.log"
+local trace_path = vim.fn.tempname() .. "-orca-bootstrap-trace.log"
 vim.cmd("OrcaMenuMouseTrace " .. vim.fn.fnameescape(trace_path))
 H.eq(state.mouse_trace_path, trace_path, "mouse trace command should store the selected path")
 H.truthy(vim.fn.filereadable(trace_path) == 1, "mouse trace command should create the trace file")
