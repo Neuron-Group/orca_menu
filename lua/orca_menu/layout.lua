@@ -391,7 +391,8 @@ function M.label_hit_at_col(col)
   for index, menu in ipairs(state.config.menus) do
     local start_col = state.label_positions[index]
     if start_col then
-      local label_width = vim.fn.strdisplaywidth(M.top_bar_display_label(menu, index))
+      local display_label = M.top_bar_display_label(menu, index)
+      local label_width = vim.fn.strdisplaywidth(display_label)
       local end_col = start_col + label_width - 1
       if col >= start_col and col <= end_col then
         return index
@@ -405,7 +406,8 @@ function M.resolve_anchor(index, items)
   M.refresh_label_positions()
   local start_col = state.label_positions[index]
   local menu = state.config.menus[index]
-  local label_width = vim.fn.strdisplaywidth(M.top_bar_display_label(menu, index))
+  local display_label = M.top_bar_display_label(menu, index)
+  local label_width = vim.fn.strdisplaywidth(display_label)
   local popup_width = M.submenu_width(items)
   local col
 

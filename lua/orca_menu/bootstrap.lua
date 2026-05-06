@@ -83,21 +83,23 @@ function M.install_autocmds(augroup, refresh)
   vim.api.nvim_create_autocmd("LspAttach", {
     group = augroup,
     callback = function()
-      refresh()
+      refresh({ source = "LspAttach" })
     end,
   })
 
   vim.api.nvim_create_autocmd("LspDetach", {
     group = augroup,
     callback = function()
-      vim.schedule(refresh)
+      vim.schedule(function()
+        refresh({ source = "LspDetach" })
+      end)
     end,
   })
 
   vim.api.nvim_create_autocmd("BufEnter", {
     group = augroup,
     callback = function()
-      refresh()
+      refresh({ source = "BufEnter" })
     end,
   })
 end

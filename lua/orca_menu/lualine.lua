@@ -2,6 +2,7 @@ local state = require("orca_menu.state")
 local layout = require("orca_menu.layout")
 
 local M = {}
+local last_register_signature = nil
 
 local function active_top_is_open(index, menu)
   local popup = require("orca_menu.popup")
@@ -97,6 +98,14 @@ local function make_component(fn, color_fn)
   }
 end
 
+local function register_signature()
+  return vim.json.encode({
+    section = state.config and state.config.lualine and state.config.lualine.section or "y",
+    enable_mouse = state.config and state.config.enable_mouse ~= false or false,
+    menu_count = state.config and state.config.menus and #state.config.menus or 0,
+  })
+end
+
 function M.component_at(index)
   if not state.config then
     return ""
@@ -121,19 +130,26 @@ function M.register()
   if not ok then
     return
   end
-  local config = lualine.get_config()
-  config.sections = config.sections or {}
-  local section_name = "lualine_" .. (state.config.lualine.section or "y")
-  local section = config.sections[section_name] or {}
-  local preserved = {}
 
-  for _, component in ipairs(section) do
-    if type(component) ~= "table" or component.orca_menu_component ~= true then
-      table.insert(preserved, component)
-    end
+  local signature = register_signature()
+  if signature == last_register_signature then
+    return
   end
 
-  config.sections[section_name] = preserved
+  local config = lualine.get_config()
+  config.sections = config.sections or {}
+  for section_name, section in pairs(config.sections) do
+    local preserved = {}
+    for _, component in ipairs(section or {}) do
+      if type(component) ~= "table" or component.orca_menu_component ~= true then
+        table.insert(preserved, component)
+      end
+    end
+    config.sections[section_name] = preserved
+  end
+
+  local section_name = "lualine_" .. (state.config.lualine.section or "y")
+  config.sections[section_name] = config.sections[section_name] or {}
 
   table.insert(config.sections[section_name], make_component(function()
     return require("orca_menu.lualine").anchor_component()
@@ -155,6 +171,7 @@ function M.register()
   end
 
   lualine.setup(config)
+  last_register_signature = signature
 end
 
 return M

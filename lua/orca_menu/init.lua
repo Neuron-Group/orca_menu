@@ -27,6 +27,26 @@ local function active_lsp_names()
   return names
 end
 
+local function sorted_client_names()
+  local names = active_lsp_names()
+  table.sort(names)
+  return names
+end
+
+local function refresh_signature()
+  return vim.json.encode({
+    lsp_clients = sorted_client_names(),
+  })
+end
+
+local function lualine_structure_signature(resolved_config)
+  return vim.json.encode({
+    section = resolved_config and resolved_config.lualine and resolved_config.lualine.section or "y",
+    enable_mouse = resolved_config and resolved_config.enable_mouse ~= false or false,
+    menu_count = resolved_config and resolved_config.menus and #resolved_config.menus or 0,
+  })
+end
+
 local function build_config()
   local resolved = config.resolve(state.base_config or {}, active_lsp_names())
   resolved.menus = runtime_menus.append_to(resolved.menus)
@@ -46,12 +66,21 @@ local function capture_ui_state()
 end
 
 local function apply_resolved_config()
+  local previous_structure_signature = state.config and lualine_structure_signature(state.config) or nil
+
   state.config = build_config()
+  local next_structure_signature = lualine_structure_signature(state.config)
+
   state.active_top = bounded_top_index(state.active_top)
   rebuild_click_handlers()
   apply_open_key_binding()
   input.install_mouse()
-  lualine.register()
+
+  if previous_structure_signature ~= next_structure_signature then
+    lualine.register()
+  else
+    lualine.refresh()
+  end
 end
 
 local function restore_ui_state(snapshot)
@@ -79,44 +108,60 @@ function rebuild_click_handlers()
 end
 
 function apply_open_key_binding()
-  if state.current_open_key and state.current_open_key ~= "" then
-    pcall(vim.keymap.del, "n", state.current_open_key)
-    pcall(vim.keymap.del, "x", state.current_open_key)
-    pcall(vim.keymap.del, "i", state.current_open_key)
+  local desired_open_key = state.config.keys.open
+  local current_open_key = state.current_open_key
+
+  if current_open_key == desired_open_key then
+    return
   end
 
-  state.current_open_key = state.config.keys.open
+  if current_open_key and current_open_key ~= "" then
+    pcall(vim.keymap.del, "n", current_open_key)
+    pcall(vim.keymap.del, "x", current_open_key)
+    pcall(vim.keymap.del, "i", current_open_key)
+  end
 
-  if not state.current_open_key or state.current_open_key == "" then
+  state.current_open_key = desired_open_key
+
+  if not desired_open_key or desired_open_key == "" then
+    hydra_mode.reset()
     return
   end
 
   hydra_mode.reset()
   hydra_mode.setup()
 
-  vim.keymap.set("n", state.current_open_key, function()
+  vim.keymap.set("n", desired_open_key, function()
     mode.run_after_editor_mode(function()
       hydra_mode.activate()
     end, { preserve_visual = true })
   end, { desc = "Enter Orca menu", silent = true })
 
-  vim.keymap.set("x", state.current_open_key, function()
+  vim.keymap.set("x", desired_open_key, function()
     mode.run_after_editor_mode(function()
       hydra_mode.activate()
     end, { preserve_visual = true })
   end, { desc = "Enter Orca menu", silent = true })
 
-  vim.keymap.set("i", state.current_open_key, function()
+  vim.keymap.set("i", desired_open_key, function()
     mode.run_after_editor_mode(function()
       hydra_mode.activate()
     end)
   end, { desc = "Enter Orca menu", silent = true })
 end
 
-function refresh_config()
+function refresh_config(opts)
+  opts = opts or {}
+  local signature = refresh_signature()
+  if not opts.force and state.last_refresh_signature == signature then
+    return false
+  end
+
   local snapshot = capture_ui_state()
   apply_resolved_config()
+  state.last_refresh_signature = signature
   restore_ui_state(snapshot)
+  return true
 end
 
 function M.open_menu(index, _use_mouse)
@@ -176,17 +221,17 @@ function M.register_lualine()
 end
 
 function M.refresh()
-  refresh_config()
+  refresh_config({ source = "api.refresh", force = true })
 end
 
 function M.register_menu(id, menu)
   runtime_menus.register(id, menu)
-  refresh_config()
+  refresh_config({ source = "api.register_menu", force = true })
 end
 
 function M.update_menu(id, menu)
   runtime_menus.update(id, menu)
-  refresh_config()
+  refresh_config({ source = "api.update_menu", force = true })
 end
 
 function M.unregister_menu(id)
@@ -195,7 +240,7 @@ function M.unregister_menu(id)
     return false
   end
 
-  refresh_config()
+  refresh_config({ source = "api.unregister_menu", force = true })
   return true
 end
 
@@ -204,6 +249,7 @@ function M.setup(user_config)
   runtime_menus.reset()
   state.mouse_trace_path = vim.env.ORCA_MENU_MOUSE_TRACE
   apply_resolved_config()
+  state.last_refresh_signature = refresh_signature()
   bootstrap.install_user_commands(M)
   bootstrap.install_autocmds(augroup, refresh_config)
 end
