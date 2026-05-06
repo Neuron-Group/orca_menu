@@ -661,3 +661,28 @@ Or for the repeat-biased suite:
 ORCA_MENU_REPLAY='top_file_click,submenu_key_toggle,top_file_release' \
   nvim --headless -u tests/minimal_init.lua -l tests/integration/randomized_repeat_bias.lua
 ```
+
+## TLA+ Spec
+
+An initial TLA+ formalization of the mouse popup interaction rules lives in:
+
+- `doc/OrcaMenuMouse.tla`
+- `doc/OrcaMenuMouse.cfg`
+- `doc/tla_formalization.md`
+
+It models the submenu-tree behavior around hover, ancestor clicks, deepest
+action execution, outside clicks, and back navigation.
+
+If `tla2tools.jar` is available locally, one common way to run TLC is:
+
+```bash
+java -cp tla2tools.jar tlc2.TLC doc/OrcaMenuMouse.tla -config doc/OrcaMenuMouse.cfg
+```
+
+To dump a TLC state graph and render it as SVG with Graphviz:
+
+```bash
+bash scripts/gen_tla_graph.sh
+```
+
+That generates both a full TLC graph and a more readable compact projection.
