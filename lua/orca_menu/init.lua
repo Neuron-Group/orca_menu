@@ -53,6 +53,21 @@ local function build_config()
   return resolved
 end
 
+local function base_menu_count()
+  local resolved = config.resolve(state.base_config or {}, active_lsp_names())
+  return #(resolved.menus or {})
+end
+
+local function runtime_menu_index(id)
+  local base_count = base_menu_count()
+  for offset, existing_id in ipairs(state.dynamic_menu_order or {}) do
+    if existing_id == id then
+      return base_count + offset
+    end
+  end
+  return nil
+end
+
 local function bounded_top_index(index)
   return math.min(math.max(index or 1, 1), math.max(#(state.config.menus or {}), 1))
 end
@@ -235,6 +250,15 @@ function M.update_menu(id, menu)
 end
 
 function M.unregister_menu(id)
+  local removed_index = runtime_menu_index(id)
+  local removed_menu_was_active = removed_index ~= nil
+    and state.active_top == removed_index
+    and (popup.is_open() or state.menu_mode)
+
+  if removed_menu_was_active then
+    popup.close_all()
+  end
+
   local removed = runtime_menus.unregister(id)
   if not removed then
     return false

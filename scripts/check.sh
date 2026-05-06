@@ -23,6 +23,7 @@ run_suite tests/unit/runtime_registry.lua
 run_suite tests/unit/runtime_bootstrap.lua
 run_suite tests/integration/menu_flow.lua
 run_suite tests/integration/dynamic_runtime_api.lua
+run_suite tests/integration/lsp_runtime_refresh.lua
 run_suite tests/integration/disabled_items.lua
 run_suite tests/integration/disabled_top_menus.lua
 run_suite tests/integration/notify_dismiss_regression.lua
@@ -55,6 +56,18 @@ run_suite tests/integration/mode_shift.lua
 run_suite tests/integration/lua_action.lua
 echo "==> tests/terminal/run_open_hotkey_terminal.py"
 python3 tests/terminal/run_open_hotkey_terminal.py
+echo "==> tests/terminal/run_runtime_reindex_terminal.py"
+python3 tests/terminal/run_runtime_reindex_terminal.py
+echo "==> tests/terminal/run_lsp_runtime_terminal.py"
+python3 tests/terminal/run_lsp_runtime_terminal.py
+echo "==> tests/terminal/run_dynamic_refresh_terminal.py"
+python3 tests/terminal/run_dynamic_refresh_terminal.py
+echo "==> tests/terminal/run_dynamic_register_terminal.py"
+python3 tests/terminal/run_dynamic_register_terminal.py
+echo "==> tests/terminal/run_dynamic_unregister_open_terminal.py"
+python3 tests/terminal/run_dynamic_unregister_open_terminal.py
+echo "==> tests/terminal/run_dynamic_multi_update_terminal.py"
+python3 tests/terminal/run_dynamic_multi_update_terminal.py
 run_suite tests/integration/mixed_input.lua
 run_suite tests/integration/mixed_fuzz.lua
 run_suite tests/integration/randomized_stress.lua

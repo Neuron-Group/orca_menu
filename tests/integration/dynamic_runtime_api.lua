@@ -85,10 +85,30 @@ H.eq(#state.config.menus, 2, "manual refresh should keep registered runtime menu
 H.truthy(popup.activate_top_key("t"), "runtime menu should survive explicit refresh")
 popup.close_all()
 
+orca.register_menu("view", {
+  label = "&View",
+  key = "v",
+  items = {
+    { label = "&Zoom", key = "z", action = function() end },
+  },
+})
+
+H.eq(#state.config.menus, 3, "registering a second runtime menu should append after existing runtime menus")
+H.truthy(_G.orca_menu_click_menu_2, "first runtime menu click handler should still exist before unregister")
+H.truthy(_G.orca_menu_click_menu_3, "second runtime menu click handler should exist before unregister")
+
 H.truthy(orca.unregister_menu("tools"), "unregistering an installed menu should report success")
-H.eq(#state.config.menus, 1, "unregistering should remove the runtime menu")
-H.falsy(_G.orca_menu_click_menu_2, "unregistering should rebuild click handlers and remove stale entries")
+H.eq(#state.config.menus, 2, "unregistering one runtime menu should preserve remaining runtime menus")
+H.eq(state.config.menus[2].label, "View", "remaining runtime menus should shift into compact indices")
+H.truthy(_G.orca_menu_click_menu_2, "remaining runtime menus should receive rebuilt click handlers")
+H.falsy(_G.orca_menu_click_menu_3, "unregistering should remove stale higher-index click handlers")
 H.falsy(popup.activate_top_key("t"), "removed menu key should no longer activate")
+H.eq(state.config.menus[2].items[1].label, "Zoom", "shifted runtime menu should preserve its items after reindex")
+
+H.truthy(orca.unregister_menu("view"), "unregistering the remaining runtime menu should report success")
+H.eq(#state.config.menus, 1, "unregistering all runtime menus should restore the base menu list")
+H.falsy(_G.orca_menu_click_menu_2, "removing the final runtime menu should clear rebuilt click handlers")
+H.falsy(popup.activate_top_key("v"), "removed second runtime menu key should no longer activate")
 H.falsy(orca.unregister_menu("tools"), "unregistering a missing menu should report failure")
 
 H.finish()
