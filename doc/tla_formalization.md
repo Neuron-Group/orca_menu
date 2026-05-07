@@ -5,6 +5,11 @@ This repo now includes an initial TLA+ model for the mouse interaction rules in 
 - `doc/OrcaMenuMouse.tla`
 - `doc/OrcaMenuMouse.cfg`
 
+It also includes a focused mode-handoff model:
+
+- `doc/OrcaMenuMode.tla`
+- `doc/OrcaMenuMode.cfg`
+
 ## Scope
 
 The current model focuses on the popup-tree interaction rules that are easiest to regress:
@@ -26,13 +31,27 @@ The current model focuses on the popup-tree interaction rules that are easiest t
 - outside click closes the whole tree
 - back closes one submenu level or the whole tree at the root
 
+The mode-handoff model focuses on editor-mode preservation and Orca entry/exit:
+
+- open key always enters Orca and normalizes editor mode
+- actionable top-bar click enters Orca and normalizes editor mode
+- disabled or missed top-bar click is inert and must not force editor-mode exit
+- visual selection context is preserved only while Orca is actually active
+- Orca exit clears preserved visual context
+
 The model is intentionally abstract. It does not try to represent:
 
 - screen coordinates
 - floating window borders
 - lualine rendering
-- keyboard-mode handoff
 - Hydra lifecycle details
+
+The mode-handoff model is intentionally abstract too. It does not try to represent:
+
+- exact visual marks and buffer contents
+- popup-tree structure
+- asynchronous scheduling between keymaps and Hydra
+- lualine hitbox geometry
 
 Those remain implementation- and integration-test concerns.
 
@@ -42,9 +61,10 @@ If `tla2tools.jar` is available locally, one common command is:
 
 ```bash
 java -cp tla2tools.jar tlc2.TLC doc/OrcaMenuMouse.tla -config doc/OrcaMenuMouse.cfg
+java -cp tla2tools.jar tlc2.TLC doc/OrcaMenuMode.tla -config doc/OrcaMenuMode.cfg
 ```
 
-Or open the spec in the TLA+ Toolbox and use `doc/OrcaMenuMouse.cfg` as the model configuration.
+Or open either spec in the TLA+ Toolbox and use its matching `.cfg` file.
 
 To generate a state graph directly from TLC and render it with Graphviz:
 
@@ -77,12 +97,22 @@ That writes full and compact DOT files and, if `dot` is installed, matching SVG 
 
 ## Intended Use
 
-Use this model as a behavioral source of truth for mouse popup logic.
+Use these models as behavioral sources of truth for popup logic and mode handoff.
+
+The mode-handoff model is now backed by explicit regressions for inert top-bar
+clicks from visual mode:
+
+- `tests/integration/visual_disabled_top_click.lua`
+- `tests/integration/visual_miss_top_click.lua`
+- `tests/integration/visual_clipped_top_click.lua`
+
+These cover the contract that disabled, missed, or clipped lualine clicks must
+not force editor-mode exit or create Orca selection context.
 
 When UI behavior changes, update in this order:
 
 1. TLA+ state transition or invariant
-2. Lua implementation in `lua/orca_menu/popup.lua`
+2. Lua implementation in `lua/orca_menu/input.lua`, `lua/orca_menu/mode.lua`, or `lua/orca_menu/popup.lua`
 3. integration tests in `tests/integration/*.lua`
 
 That keeps the mathematical model, the runtime behavior, and the test suite aligned.
@@ -92,3 +122,4 @@ That keeps the mathematical model, the runtime behavior, and the test suite alig
 - add wheel-scrolling invariants
 - model keyboard activation separately from mouse activation
 - connect randomized test traces to abstract TLA+ event sequences
+- compose popup-tree and mode-handoff models into one larger state machine

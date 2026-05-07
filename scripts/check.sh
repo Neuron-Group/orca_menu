@@ -44,6 +44,9 @@ run_suite tests/integration/topbar_active_lualine_color.lua
 run_suite tests/integration/editor_interaction_strict.lua
 run_suite tests/integration/visual_mode.lua
 run_suite tests/integration/visual_selection_lifecycle.lua
+run_suite tests/integration/visual_disabled_top_click.lua
+run_suite tests/integration/visual_miss_top_click.lua
+run_suite tests/integration/visual_clipped_top_click.lua
 run_suite tests/integration/visual_mouse_randomized.lua
 run_suite tests/integration/visual_keys_copy.lua
 run_suite tests/integration/insert_mode.lua

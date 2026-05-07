@@ -192,17 +192,17 @@ end
 
 function M.click(index)
   local target = index or state.active_top
+  local mouse = vim.fn.getmousepos()
+  local hit = require("orca_menu.layout").label_hit_at_col(math.max((mouse.screencol or 1), 1))
+  if hit ~= target then
+    return
+  end
+
+  if not require("orca_menu.layout").top_menu_enabled(state.config.menus[target]) then
+    return
+  end
+
   mode.run_after_editor_mode(function()
-    local mouse = vim.fn.getmousepos()
-    local hit = require("orca_menu.layout").label_hit_at_col(math.max((mouse.screencol or 1), 1))
-    if hit ~= target then
-      return
-    end
-
-    if not require("orca_menu.layout").top_menu_enabled(state.config.menus[target]) then
-      return
-    end
-
     if popup.is_open() and state.active_top == target then
       popup.close_all()
     else
