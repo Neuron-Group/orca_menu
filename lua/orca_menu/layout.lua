@@ -339,6 +339,16 @@ local function refresh_from_topbar_block(rendered)
 end
 
 local function refresh_from_text_search(rendered)
+  if rendered == "" then
+    state.label_visibility_known = false
+    return false
+  end
+
+  if rendered:match("^%s*$") then
+    state.label_visibility_known = true
+    return false
+  end
+
   local search_from = 1
   local found_any_label = false
   for index, menu in ipairs(state.config.menus) do
@@ -352,7 +362,7 @@ local function refresh_from_text_search(rendered)
     end
   end
 
-  state.label_visibility_known = found_any_label
+  state.label_visibility_known = true
   return found_any_label
 end
 
@@ -379,10 +389,14 @@ function M.is_top_visible(index)
   return state.visible_labels and state.visible_labels[index] == true
 end
 
+function M.is_statusline_row(row)
+  local statusline_row = vim.o.lines - vim.o.cmdheight
+  return (row or 0) == statusline_row
+end
+
 function M.label_hit_at_col(col)
   local mouse = vim.fn.getmousepos()
-  local statusline_row = vim.o.lines - vim.o.cmdheight - 1
-  if (mouse.screenrow or 0) ~= (statusline_row + 1) then
+  if not M.is_statusline_row(mouse.screenrow) then
     return nil
   end
 

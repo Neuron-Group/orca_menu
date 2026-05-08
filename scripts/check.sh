@@ -30,6 +30,7 @@ run_suite tests/integration/notify_dismiss_regression.lua
 run_suite tests/integration/mouse_smoke.lua
 run_suite tests/integration/mouse_disabled_top_click.lua
 run_suite tests/integration/clipped_topbar_mouse.lua
+run_suite tests/integration/extreme_narrow_topbar_activation.lua
 run_suite tests/integration/topbar_blink.lua
 run_suite tests/integration/mouse_strict.lua
 run_suite tests/integration/mouse_toggle.lua
