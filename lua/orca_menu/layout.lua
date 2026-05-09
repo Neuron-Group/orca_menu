@@ -290,9 +290,11 @@ function M.popup_height(items)
   return math.max(math.min(#(items or {}), max_height), 1)
 end
 
-local function evaluated_statusline()
-  local ok, evaluated = pcall(vim.api.nvim_eval_statusline, vim.wo.statusline, {
-    winid = vim.api.nvim_get_current_win(),
+local function evaluated_statusline(winid)
+  local target_win = winid or vim.api.nvim_get_current_win()
+  local statusline = vim.api.nvim_get_option_value("statusline", { win = target_win })
+  local ok, evaluated = pcall(vim.api.nvim_eval_statusline, statusline, {
+    winid = target_win,
     maxwidth = vim.o.columns,
     highlights = false,
     use_winbar = false,
@@ -301,6 +303,28 @@ local function evaluated_statusline()
     return nil
   end
   return evaluated.str
+end
+
+local function is_normal_window(winid)
+  local ok, win_config = pcall(vim.api.nvim_win_get_config, winid)
+  return ok and win_config and win_config.relative == ""
+end
+
+local function candidate_statuslines()
+  local wins = {}
+  local current_win = vim.api.nvim_get_current_win()
+
+  if is_normal_window(current_win) then
+    table.insert(wins, current_win)
+  end
+
+  for _, winid in ipairs(vim.api.nvim_list_wins()) do
+    if winid ~= current_win and is_normal_window(winid) then
+      table.insert(wins, winid)
+    end
+  end
+
+  return wins
 end
 
 local function refresh_from_topbar_block(rendered)
@@ -371,13 +395,18 @@ function M.refresh_label_positions()
   state.visible_labels = {}
   state.label_visibility_known = false
 
-  local rendered = evaluated_statusline()
-  if not rendered then
-    return
+  for _, winid in ipairs(candidate_statuslines()) do
+    local rendered = evaluated_statusline(winid)
+    if rendered and (refresh_from_topbar_block(rendered) or refresh_from_text_search(rendered)) then
+      return
+    end
   end
 
-  if not refresh_from_topbar_block(rendered) then
-    refresh_from_text_search(rendered)
+  local rendered = evaluated_statusline()
+  if rendered then
+    if not refresh_from_topbar_block(rendered) then
+      refresh_from_text_search(rendered)
+    end
   end
 end
 
