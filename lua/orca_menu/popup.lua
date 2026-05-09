@@ -673,7 +673,10 @@ function M.activate_top_key(key)
 
   local lowered_key = key:lower()
   for index, menu in ipairs(state.config.menus or {}) do
-    if layout.is_top_visible(index) and top_menu_enabled(menu) and type(menu.key) == "string" and menu.key:lower() == lowered_key then
+    if top_menu_enabled(menu) and type(menu.key) == "string" and menu.key:lower() == lowered_key then
+      if not layout.is_top_visible(index) then
+        return false
+      end
       state.active_top = index
       M.open_top(index)
       return true
@@ -681,7 +684,10 @@ function M.activate_top_key(key)
   end
 
   for index, menu in ipairs(state.config.menus or {}) do
-    if layout.is_top_visible(index) and top_menu_enabled(menu) and menu.accelerator == lowered_key then
+    if top_menu_enabled(menu) and menu.accelerator == lowered_key then
+      if not layout.is_top_visible(index) then
+        return false
+      end
       state.active_top = index
       M.open_top(index)
       return true

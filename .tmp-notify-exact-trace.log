@@ -1,0 +1,8 @@
+{"extra":{"index":1},"tag":"popup.open_top_before","windows":0,"stack":0,"t":28780727374028,"curwin":1003}
+{"extra":{"statusline":"","raw":"%#lualine_transparent#"},"tag":"layout.refresh_before","windows":0,"stack":0,"t":28780728398196,"curwin":1003}
+{"extra":{"known":false,"positions":[],"visible":[]},"tag":"layout.refresh_after","windows":0,"stack":0,"t":28780729106832,"curwin":1003}
+{"extra":{"statusline":"","raw":"%#lualine_transparent#"},"tag":"layout.refresh_before","windows":0,"stack":0,"t":28780729718849,"curwin":1003}
+{"extra":{"known":false,"positions":[],"visible":[]},"tag":"layout.refresh_after","windows":0,"stack":0,"t":28780730266178,"curwin":1003}
+{"menu_mode":true,"extra":{"statusline":"","raw":"%#lualine_transparent#"},"tag":"layout.refresh_before","windows":0,"stack":0,"t":28780730853867,"curwin":1003}
+{"menu_mode":true,"extra":{"known":false,"positions":[],"visible":[]},"tag":"layout.refresh_after","windows":0,"stack":0,"t":28780731644757,"curwin":1003}
+{"menu_mode":true,"extra":{"index":1},"tag":"popup.open_top_after","windows":1,"stack":1,"t":28780732792482,"curwin":1003}
