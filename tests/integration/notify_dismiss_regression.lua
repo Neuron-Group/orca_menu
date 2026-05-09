@@ -1,6 +1,7 @@
 local H = dofile(vim.fn.getcwd() .. "/tests/helpers.lua")
 
 vim.g.orca_notify_regression_count = 0
+vim.g.orca_notify_win = nil
 
 require("orca_menu").setup({
   enable_mouse = true,
@@ -39,6 +40,8 @@ require("orca_menu").setup({
               border = "rounded",
             })
 
+            vim.g.orca_notify_win = notify_win
+
             vim.defer_fn(function()
               if vim.api.nvim_win_is_valid(notify_win) then
                 vim.api.nvim_win_close(notify_win, true)
@@ -65,7 +68,12 @@ H.flush()
 H.eq(vim.g.orca_notify_regression_count, 1, "notify-like action should run once")
 H.falsy(popup.is_open(), "action execution should close the original menu")
 
-H.flush()
+vim.wait(200, function()
+  local notify_win = vim.g.orca_notify_win
+  return notify_win ~= nil and vim.api.nvim_win_is_valid(notify_win)
+end, 5)
+
+H.truthy(vim.g.orca_notify_win ~= nil and vim.api.nvim_win_is_valid(vim.g.orca_notify_win), "transient notify should exist before reopening the menu")
 
 require("orca_menu").open_menu(1)
 H.truthy(popup.is_open(), "menu should reopen before the transient notify closes")
