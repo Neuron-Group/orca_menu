@@ -194,6 +194,9 @@ TOP MENU FIELDS ~
     key         Optional direct key for the visible top menu.
     items       Top-level popup entries.
 
+Use non-operator keys for immediate single-key activation in normal mode.
+Keys such as "y", "d", "c", or "g" may pause while Vim waits for more input.
+
 TOP BAR HINT FORMAT ~
 
 Top-bar key hints can be customized with topbar.hint_format.

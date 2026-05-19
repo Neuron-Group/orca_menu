@@ -390,6 +390,9 @@ Each top-level menu can define:
   `fi`
 - `enabled = false` or `enabled = function() ... end` also works on top-level
   menus
+- avoid normal-mode operator or prefix keys such as `"y"`, `"d"`, `"c"`, or
+  `"g"` for single-key menu activation when you want immediate response; Vim may
+  wait for more input before resolving those keys
 
 Rendered labels look like:
 
@@ -450,6 +453,8 @@ Each popup item can define:
   `checked = function() ... end`
 - `enabled = false` or `enabled = function() ... end` disables a row dynamically
 - right-side key hints are rendered in the popup
+- for single-key popup actions in normal mode, avoid operator or prefix keys
+  when low-latency activation matters for the same reason
 
 Examples:
 
