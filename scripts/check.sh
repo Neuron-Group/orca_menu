@@ -79,5 +79,7 @@ run_suite tests/integration/randomized_repeat_bias.lua
 run_suite tests/integration/repeat_activation.lua
 run_suite tests/integration/scroll_and_border.lua
 run_suite tests/integration/hydra_flow.lua
+run_suite tests/integration/hydra_lsp_override_refresh.lua
+run_suite tests/integration/hydra_runtime_menu_refresh.lua
 
 echo "All checks passed"

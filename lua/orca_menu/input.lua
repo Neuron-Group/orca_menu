@@ -148,11 +148,11 @@ local function should_install_mousemove()
     return false
   end
 
-  if hover_topbar_enabled() then
-    return true
+  if not popup.is_open() then
+    return false
   end
 
-  return popup.is_open() and hover_select_enabled()
+  return hover_select_enabled() or hover_topbar_enabled()
 end
 
 local function install_mousemove_binding()

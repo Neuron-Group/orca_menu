@@ -75,9 +75,14 @@ local function hover_top_insert(index)
 end
 
 H.falsy(popup.is_open(), "popup should start closed")
-hover_top(2)
-H.falsy(popup.is_open(), "hovering top bar while popup is closed should not open a popup")
-H.eq(state.active_top, 1, "hovering top bar while popup is closed should not retarget active_top")
+H.eq(vim.fn.maparg("<MouseMove>", "n", false, true), {}, "idle normal-mode mousemove should stay native while popup is closed")
+H.eq(vim.fn.maparg("<MouseMove>", "i", false, true), {}, "idle insert-mode mousemove should stay native while popup is closed")
+
+popup.open_top(1)
+H.truthy(popup.is_open(), "popup should be open after opening File")
+H.eq(state.active_top, 1, "opening File should target File")
+H.truthy(vim.fn.maparg("<MouseMove>", "n", false, true).callback, "open popup should install normal-mode mousemove handling")
+H.truthy(vim.fn.maparg("<MouseMove>", "i", false, true).callback, "open popup should install insert-mode mousemove handling")
 
 local original_is_insert = mode.is_insert
 local original_run_after_editor_mode = mode.run_after_editor_mode
@@ -94,14 +99,9 @@ end
 hover_top_insert(2)
 H.flush()
 H.falsy(handoff_called, "hovering in insert mode should not invoke editor-mode handoff")
-H.falsy(popup.is_open(), "hovering top bar in insert mode should not open a popup")
 H.eq(state.active_top, 1, "hovering top bar in insert mode should not retarget active_top")
 mode.is_insert = original_is_insert
 mode.run_after_editor_mode = original_run_after_editor_mode
-
-popup.open_top(1)
-H.truthy(popup.is_open(), "popup should be open after opening File")
-H.eq(state.active_top, 1, "opening File should target File")
 
 hover_top(2)
 H.truthy(popup.is_open(), "hovering another top item while popup is open should keep a popup open")
@@ -111,6 +111,10 @@ H.eq(#state.menu_stack, 1, "hovering another top item while popup is open should
 hover_top(3)
 H.eq(state.active_top, 3, "hovering a third top item while popup is open should keep switching active_top")
 H.eq(#state.menu_stack, 1, "top-bar hover switching should keep exactly one top-level popup")
+
+popup.close_all()
+H.eq(vim.fn.maparg("<MouseMove>", "n", false, true), {}, "closing popup should remove normal-mode mousemove handling again")
+H.eq(vim.fn.maparg("<MouseMove>", "i", false, true), {}, "closing popup should remove insert-mode mousemove handling again")
 
 restore_mouse()
 H.finish()

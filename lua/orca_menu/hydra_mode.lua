@@ -9,6 +9,17 @@ local M = {
 local hydra_exit_pending = false
 local hydra_active = false
 local hydra_activate_pending = false
+local hydra_signature = nil
+local collect_dynamic_keys
+
+local function current_signature()
+  local keys = collect_dynamic_keys()
+  table.sort(keys)
+  return vim.json.encode({
+    body = state.config and state.config.keys and state.config.keys.open or nil,
+    keys = keys,
+  })
+end
 
 local function close_hydra_mode()
   popup.close_all()
@@ -51,7 +62,7 @@ local function hydra_activate_item_key(key)
   return activated
 end
 
-local function collect_dynamic_keys()
+collect_dynamic_keys = function()
   local seen = {}
   local keys = {}
 
@@ -80,9 +91,12 @@ local function collect_dynamic_keys()
 end
 
 function M.setup()
-  if M.hydra then
+  local signature = current_signature()
+  if M.hydra and hydra_signature == signature then
     return M.hydra
   end
+
+  M.hydra = nil
 
   local ok, Hydra = pcall(require, "hydra")
   if not ok then
@@ -162,6 +176,8 @@ function M.setup()
     },
   })
 
+  hydra_signature = signature
+
   return M.hydra
 end
 
@@ -215,6 +231,7 @@ function M.reset()
     M.exit()
   end
   M.hydra = nil
+  hydra_signature = nil
   hydra_exit_pending = false
   hydra_active = false
   hydra_activate_pending = false
