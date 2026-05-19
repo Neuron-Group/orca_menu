@@ -293,7 +293,7 @@ end
 local function evaluated_statusline(winid)
   local target_win = winid or vim.api.nvim_get_current_win()
   local statusline = vim.api.nvim_get_option_value("statusline", { win = target_win })
-  local maxwidth = vim.api.nvim_win_get_width(target_win)
+  local maxwidth = vim.o.laststatus == 3 and vim.o.columns or vim.api.nvim_win_get_width(target_win)
   local ok, evaluated = pcall(vim.api.nvim_eval_statusline, statusline, {
     winid = target_win,
     maxwidth = maxwidth,
