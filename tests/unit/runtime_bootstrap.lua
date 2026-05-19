@@ -54,12 +54,15 @@ end)
 vim.api.nvim_exec_autocmds("BufEnter", { group = augroup, buffer = 0 })
 H.eq(refreshes, 1, "BufEnter should trigger refresh")
 
+vim.api.nvim_exec_autocmds("WinEnter", { group = augroup })
+H.eq(refreshes, 2, "WinEnter should trigger a forced refresh")
+
 vim.api.nvim_exec_autocmds("LspAttach", { group = augroup, buffer = 0, data = { client_id = 1 } })
-H.eq(refreshes, 2, "LspAttach should trigger refresh")
+H.eq(refreshes, 3, "LspAttach should trigger refresh")
 
 vim.api.nvim_exec_autocmds("LspDetach", { group = augroup, buffer = 0, data = { client_id = 1 } })
 H.flush()
-H.eq(refreshes, 3, "LspDetach should trigger scheduled refresh")
+H.eq(refreshes, 4, "LspDetach should trigger scheduled refresh")
 
 local original_is_open = popup.is_open
 local original_close_all = popup.close_all

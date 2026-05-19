@@ -102,6 +102,13 @@ function M.install_autocmds(augroup, refresh)
       refresh({ source = "BufEnter" })
     end,
   })
+
+  vim.api.nvim_create_autocmd({ "WinEnter", "TermEnter" }, {
+    group = augroup,
+    callback = function()
+      refresh({ source = "WindowEnter", force = true })
+    end,
+  })
 end
 
 return M
