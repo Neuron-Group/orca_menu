@@ -85,9 +85,22 @@ state.menu_mode = true
 vim.api.nvim_exec_autocmds("VimResized", { group = augroup })
 H.eq(closed, 1, "VimResized should close when menu mode is active")
 
+state.menu_mode = true
+state.menu_stack = { { items = {} } }
+state.menu_owner_win = vim.api.nvim_get_current_win()
+vim.api.nvim_exec_autocmds("BufEnter", { group = augroup, buffer = 0 })
+H.eq(closed, 1, "BufEnter should not close when staying in the menu owner window")
+
+state.menu_mode = true
+state.menu_stack = { { items = {} } }
+state.menu_owner_win = -1
+vim.api.nvim_exec_autocmds("WinEnter", { group = augroup })
+H.eq(closed, 2, "WinEnter should close after switching away from the menu owner window")
+
 popup.is_open = original_is_open
 popup.close_all = original_close_all
 state.menu_mode = false
 state.menu_stack = {}
+state.menu_owner_win = nil
 
 print("ok - tests/unit/runtime_bootstrap.lua")

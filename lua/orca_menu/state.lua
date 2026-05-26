@@ -12,6 +12,7 @@ local M = {
   menu_context = nil,
   last_visual_context = nil,
   last_visual_exit_ns = 0,
+  menu_owner_win = nil,
   anchor = { row = nil, col = nil },
   label_positions = {},
   label_visibility_known = false,

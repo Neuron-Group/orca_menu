@@ -370,10 +370,20 @@ local function destroy_windows_only()
   state.buffers = {}
 end
 
+local function remember_menu_owner_win()
+  local current_win = vim.api.nvim_get_current_win()
+  local config = vim.api.nvim_win_get_config(current_win)
+  if config and config.relative and config.relative ~= "" then
+    return
+  end
+  state.menu_owner_win = current_win
+end
+
 function M.close_all()
   destroy_windows_only()
   state.menu_stack = {}
   state.menu_mode = false
+  state.menu_owner_win = nil
   require("orca_menu.input").disable_keys()
   require("orca_menu.input").disable_mouse()
   require("orca_menu.selection").clear()
@@ -397,6 +407,7 @@ function M.enter_menu_mode(index)
   end
   state.active_top = resolved
   state.menu_mode = true
+  remember_menu_owner_win()
   refresh_topbar()
   if M.is_open() then
     require("orca_menu.input").enable_keys()
@@ -570,6 +581,7 @@ function M.open_top(index)
   end
   state.active_top = resolved
   state.menu_mode = true
+  remember_menu_owner_win()
   local items = actions.current_items()
   state.anchor = layout.resolve_anchor(state.active_top, items)
   require("orca_menu.input").enable_keys()

@@ -39,6 +39,28 @@ function M.install_user_commands(api)
 end
 
 function M.install_autocmds(augroup, refresh)
+  local function menu_ui_active()
+    return state.menu_mode or popup.is_open() or #state.menu_stack > 0
+  end
+
+  local function current_window_is_floating()
+    local current_win = vim.api.nvim_get_current_win()
+    local config = vim.api.nvim_win_get_config(current_win)
+    return config and config.relative and config.relative ~= ""
+  end
+
+  local function should_close_menu_for_context_change()
+    if not menu_ui_active() then
+      return false
+    end
+
+    if current_window_is_floating() then
+      return false
+    end
+
+    return state.menu_owner_win ~= nil and state.menu_owner_win ~= vim.api.nvim_get_current_win()
+  end
+
   vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
     group = augroup,
     callback = function()
@@ -74,7 +96,7 @@ function M.install_autocmds(augroup, refresh)
   vim.api.nvim_create_autocmd("VimResized", {
     group = augroup,
     callback = function()
-      if state.menu_mode or popup.is_open() or #state.menu_stack > 0 then
+      if menu_ui_active() then
         popup.close_all()
       end
     end,
@@ -99,6 +121,9 @@ function M.install_autocmds(augroup, refresh)
   vim.api.nvim_create_autocmd("BufEnter", {
     group = augroup,
     callback = function()
+      if should_close_menu_for_context_change() then
+        popup.close_all()
+      end
       refresh({ source = "BufEnter" })
     end,
   })
@@ -106,6 +131,9 @@ function M.install_autocmds(augroup, refresh)
   vim.api.nvim_create_autocmd({ "WinEnter", "TermEnter" }, {
     group = augroup,
     callback = function()
+      if should_close_menu_for_context_change() then
+        popup.close_all()
+      end
       refresh({ source = "WindowEnter", force = true })
     end,
   })
