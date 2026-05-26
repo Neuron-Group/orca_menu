@@ -27,6 +27,7 @@ run_suite tests/integration/lsp_runtime_refresh.lua
 run_suite tests/integration/disabled_items.lua
 run_suite tests/integration/disabled_top_menus.lua
 run_suite tests/integration/notify_dismiss_regression.lua
+run_suite tests/integration/side_window_close_regression.lua
 run_suite tests/integration/mouse_smoke.lua
 run_suite tests/integration/mouse_disabled_top_click.lua
 run_suite tests/integration/clipped_topbar_mouse.lua
