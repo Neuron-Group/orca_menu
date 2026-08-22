@@ -52,6 +52,18 @@ popup.handle_mouse()
 H.falsy(popup.is_open(), "clicking the same top label should close the popup tree")
 restore()
 
+for index, position in pairs(state.component_positions) do
+  local restore_component_edge = H.stub_mouse({
+    screenrow = statusline_row,
+    screencol = position.screen.end_col,
+  })
+  popup.handle_mouse()
+  H.truthy(popup.is_open(), "the right edge of a lualine component should open its menu")
+  H.eq(state.active_top, index, "the right edge should target its lualine menu")
+  popup.close_all()
+  restore_component_edge()
+end
+
 local native_clicks = 0
 local trace_path = vim.fn.tempname() .. "-orca-mouse-map.jsonl"
 vim.fn.writefile({}, trace_path)
@@ -62,7 +74,7 @@ end, { buffer = 0 })
 
 local restore_statusline_mouse = H.stub_mouse({
   screenrow = statusline_row,
-  screencol = state.label_positions[1],
+  screencol = state.component_positions[1].screen.end_col,
 })
 vim.fn.feedkeys(vim.keycode("<LeftMouse>"), "xt")
 H.flush()

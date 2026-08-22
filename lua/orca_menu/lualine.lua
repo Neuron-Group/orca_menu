@@ -119,7 +119,13 @@ function M.component_at(index)
   if state.config.enable_mouse == false then
     return string.format("%s%s%s", spacing, label, right_spacing)
   end
-  return string.format("%s%%@v:lua.orca_menu_click_menu_%d@%s%%X%s", spacing, index, label, right_spacing)
+  return string.format(
+    "%%@v:lua.orca_menu_click_menu_%d@%s%s%s%%X",
+    index,
+    spacing,
+    label,
+    right_spacing
+  )
 end
 
 function M.anchor_component()

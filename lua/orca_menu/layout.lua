@@ -363,7 +363,13 @@ function M.label_hit_at_col(col)
     local label_width = vim.fn.strdisplaywidth(display_label)
     local end_col = start_col and start_col + label_width - 1 or nil
     local row_match = position and position.screen and position.screen.row == mouse.screenrow or false
-    local col_match = start_col and end_col and col >= start_col and col <= end_col or false
+    local component_start_col = position and position.screen and position.screen.start_col
+    local component_end_col = position and position.screen and position.screen.end_col
+    local col_match = component_start_col
+      and component_end_col
+      and col >= component_start_col
+      and col <= component_end_col
+      or false
     local candidate = {
       index = index,
       start_col = start_col,
@@ -371,7 +377,8 @@ function M.label_hit_at_col(col)
       label_width = label_width,
       row_match = row_match,
       col_match = col_match,
-      hit = start_col ~= nil and position ~= nil and position.screen ~= nil and statusline_hit and col_match or false,
+      hit = start_col ~= nil and position ~= nil and position.screen ~= nil and statusline_hit and row_match and col_match
+        or false,
     }
     if position and position.screen then
       candidate.component_row = position.screen.row
