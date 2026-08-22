@@ -39,16 +39,14 @@ function M.stub_mouse(mouse)
 end
 
 function M.render_statusline()
-  local state = require("orca_menu.state")
   local layout = require("orca_menu.layout")
-  local labels = {}
-
-  for index, menu in ipairs(state.config.menus or {}) do
-    table.insert(labels, layout.top_bar_display_label(menu, index))
-  end
+  local lualine = require("lualine")
 
   vim.o.laststatus = 2
-  vim.wo.statusline = " " .. table.concat(labels, " ") .. " "
+  local lualine_config = lualine.get_config()
+  if lualine_config and lualine_config.options then
+    lualine.refresh({ force = true, scope = "window", place = { "statusline" } })
+  end
   layout.refresh_label_positions()
 end
 
@@ -60,4 +58,3 @@ function M.finish()
 end
 
 return M
-

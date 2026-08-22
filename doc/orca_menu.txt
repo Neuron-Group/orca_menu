@@ -11,7 +11,7 @@ submenus open next to the visible parent row.
 REQUIREMENTS ~
 
     Neovim 0.9+
-    lualine.nvim
+    lualine.nvim with get_component_positions() support
     hydra.nvim        Required for Orca Menu mode.
 
 COMMANDS ~
@@ -90,6 +90,9 @@ require('orca_menu').setup({
                                 Built-in choices: 'a' 'b' 'c' 'x' 'y' 'z'.
     lualine.spacing             Adjust padding around top-level labels.
                                 Accepts any string.
+                                Orca requires lualine's
+                                get_component_positions() API for top-bar
+                                hit testing and popup alignment.
     topbar.hint_format          Change how labels and key hints are rendered.
                                 Accepts a string with {label} and {hint},
                                 or a function.

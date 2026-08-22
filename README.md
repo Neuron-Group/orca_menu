@@ -25,7 +25,7 @@ configurable in Lua.
 ## Requirements
 
 - Neovim `>= 0.9`
-- `nvim-lualine/lualine.nvim`
+- `nvim-lualine/lualine.nvim` with the `get_component_positions()` API
 - `anuvyklack/hydra.nvim`
 
 ## Installation
@@ -254,6 +254,9 @@ require("orca_menu").setup({
   `"a"`, `"b"`, `"c"`, `"x"`, `"y"`, and `"z"`.
 - `lualine.spacing` adjusts padding around each top-level label. This accepts
   any string.
+- Orca uses lualine's `get_component_positions()` API for top-bar hit testing
+  and popup alignment. Lualine must expose final screen spans for components;
+  Orca does not parse rendered statusline text as a fallback.
 - `topbar.hint_format` customizes how menu labels and key hints are shown. It
   accepts a string template with `{label}` and `{hint}`, or a function.
 - `submenu.border` controls the floating-window border. Built-in choices are

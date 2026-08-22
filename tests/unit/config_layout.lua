@@ -186,57 +186,6 @@ H.eq(topbar_active_hl.fg, "#112233", "topbar active highlight should still reuse
 H.eq(topbar_active_hl.bg, nil, "topbar active highlight should leave background unset when configured to preserve lualine bg")
 state.menu_mode = false
 
-state.config = config.normalize({
-  enable_mouse = false,
-  menus = {
-    { label = "&File", items = { { label = "&Open" } } },
-    { label = "&View", items = { { label = "&Tree" } } },
-  },
-})
-
-vim.o.laststatus = 2
-vim.wo.statusline = table.concat({
-  " File ",
-  require("orca_menu.lualine").component_at(1),
-  require("orca_menu.lualine").component_at(2),
-}, "")
-layout.refresh_label_positions()
-
-H.eq(state.label_positions[1], 8, "label discovery should ignore duplicate text earlier in the statusline")
-H.eq(state.label_positions[2], 14, "block-based discovery should keep later labels aligned after duplicates")
-
-local anchored_items = {
-  { label = "&Open" },
-  { label = "&Save" },
-}
-local anchored_width = layout.submenu_width(anchored_items)
-local anchored = layout.resolve_anchor(2, anchored_items)
-H.eq(anchored.col, math.max(14 + vim.fn.strdisplaywidth("View") - anchored_width - 3, 1), "anchor should still align to the visible label edge under normal layouts")
-
-state.config = config.normalize({
-  lualine = {
-    spacing = " ",
-  },
-  highlights = {
-    topbar_active = "OrcaMenuTopbarActiveTest",
-    topbar_active_preserve_bg = false,
-  },
-  menus = {
-    { label = "&File", items = { { label = "&Open" } } },
-    { label = "&View", items = { { label = "&Tree" }, { label = "&Zoom" } } },
-  },
-})
-
-state.active_top = 2
-state.menu_mode = true
-H.render_statusline()
-local active_popup_width = layout.submenu_width(state.config.menus[2].items)
-local active_anchor = layout.resolve_anchor(2, state.config.menus[2].items)
-local component_width = vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(2))
-local block_start = state.label_positions[2] - vim.fn.strdisplaywidth(state.config.lualine.spacing)
-H.eq(active_anchor.col, math.max(block_start + component_width - active_popup_width - 2, 1), "active popup should align to the right edge of the full highlighted topbar component when background is overridden")
-state.menu_mode = false
-
 local line = layout.format_item_line({ kind = "submenu", label = "Inspect", key = "<Tab>" }, 24, 3, 1)
 H.truthy(line.text:find("Tab", 1, true), "formatted line should include right-side key hint")
 H.truthy(line.text:find("›", 1, true), "formatted line should include submenu arrow")
@@ -318,6 +267,11 @@ state.config = config.normalize({
   },
 })
 
+local original_is_top_visible = layout.is_top_visible
+layout.is_top_visible = function()
+  return true
+end
+
 popup.open_top(1)
 local checked_popup_buf = state.menu_stack[1].buf
 local checked_popup_line = vim.api.nvim_buf_get_lines(checked_popup_buf, 0, 1, false)[1]
@@ -390,7 +344,6 @@ state.config = config.normalize({
     { label = "&File", items = { { label = "&Open" }, { label = "&Save" } } },
   },
 })
-H.render_statusline()
 local rounded_anchor = layout.resolve_anchor(1, state.config.menus[1].items)
 
 state.config = config.normalize({
@@ -407,7 +360,6 @@ state.config = config.normalize({
     },
   },
 })
-H.render_statusline()
 local none_anchor = layout.resolve_anchor(1, state.config.menus[1].items)
 
 H.eq(none_anchor.row, rounded_anchor.row, 'border = "none" should keep the same popup geometry as bordered popups')
@@ -445,5 +397,6 @@ else
 end
 
 popup.close_all()
+layout.is_top_visible = original_is_top_visible
 
 print("ok - tests/unit/config_layout.lua")

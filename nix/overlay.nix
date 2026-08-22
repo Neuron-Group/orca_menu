@@ -11,7 +11,10 @@ let
         && baseName != ".nvimlog"
         && baseName != ".tmp-orca-bootstrap-trace.log"
         && baseName != ".tmp-notify-exact-trace.log"
-        && baseName != ".tmp-data";
+        && baseName != ".tmp-data"
+        && baseName != "debug_click.lua"
+        && baseName != "debug_clipped.lua"
+        && baseName != "debug_sequence.lua";
   };
 in
 final: prev: {

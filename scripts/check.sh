@@ -44,6 +44,7 @@ run_suite tests/integration/mouse_hover_background.lua
 run_suite tests/integration/mouse_hover_topbar.lua
 run_suite tests/integration/mouse_hover_disabled.lua
 run_suite tests/integration/topbar_active_lualine_color.lua
+run_suite tests/integration/lualine_component_positions.lua
 run_suite tests/integration/editor_interaction_strict.lua
 run_suite tests/integration/visual_mode.lua
 run_suite tests/integration/visual_selection_lifecycle.lua

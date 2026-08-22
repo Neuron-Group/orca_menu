@@ -290,122 +290,72 @@ function M.popup_height(items)
   return math.max(math.min(#(items or {}), max_height), 1)
 end
 
-local function evaluated_statusline(winid)
-  local target_win = winid or vim.api.nvim_get_current_win()
-  local statusline = vim.api.nvim_get_option_value("statusline", { win = target_win })
-  local maxwidth = vim.o.laststatus == 3 and vim.o.columns or vim.api.nvim_win_get_width(target_win)
-  local ok, evaluated = pcall(vim.api.nvim_eval_statusline, statusline, {
-    winid = target_win,
-    maxwidth = maxwidth,
-    highlights = false,
-    use_winbar = false,
-  })
-  if not ok or not evaluated or type(evaluated.str) ~= "string" then
-    return nil
+local function position_window(winid)
+  if winid and vim.api.nvim_win_is_valid(winid) then
+    return winid
   end
-  return evaluated.str
+  if state.menu_owner_win and vim.api.nvim_win_is_valid(state.menu_owner_win) then
+    return state.menu_owner_win
+  end
+  return vim.api.nvim_get_current_win()
 end
 
-local function refresh_from_topbar_block(rendered)
-  local lualine = require("orca_menu.lualine")
-  local spacing = state.config.lualine.spacing or " "
-  local block_widths = {}
-  local block = ""
-
-  for index, _ in ipairs(state.config.menus) do
-    local component = lualine.visible_component_at(index)
-    table.insert(block_widths, vim.fn.strdisplaywidth(component))
-    block = block .. component
-  end
-
-  if block == "" then
-    return false
-  end
-
-  local start_byte = rendered:find(block, 1, true)
-  if not start_byte then
-    return false
-  end
-
-  local found_any_label = false
-  local current_col = math.max(vim.fn.strdisplaywidth(rendered:sub(1, start_byte - 1)) + 1, 1)
-
-  for index, menu in ipairs(state.config.menus) do
-    state.label_positions[index] = current_col + vim.fn.strdisplaywidth(spacing)
-    state.visible_labels[index] = true
-    current_col = current_col + block_widths[index]
-    found_any_label = true
-  end
-
-  state.label_visibility_known = found_any_label
-  return found_any_label
+local function position_id(index)
+  return "orca_menu:" .. index
 end
 
-local function refresh_from_text_search(rendered)
-  if rendered == "" then
-    state.label_visibility_known = false
-    return false
-  end
-
-  if rendered:match("^%s*$") then
-    state.label_visibility_known = true
-    return false
-  end
-
-  local search_from = 1
-  local found_any_label = false
-  for index, menu in ipairs(state.config.menus) do
-    local label = M.top_bar_display_label(menu, index)
-    local start_byte = rendered:find(label, search_from, true)
-    if start_byte then
-      state.label_positions[index] = math.max(vim.fn.strdisplaywidth(rendered:sub(1, start_byte - 1)) + 1, 1)
-      state.visible_labels[index] = true
-      search_from = start_byte + #label
-      found_any_label = true
-    end
-  end
-
-  state.label_visibility_known = true
-  return found_any_label
-end
-
-function M.refresh_label_positions()
+function M.refresh_label_positions(winid)
+  winid = position_window(winid)
   state.label_positions = {}
+  state.component_positions = {}
   state.visible_labels = {}
-  state.label_visibility_known = false
 
-  local rendered = evaluated_statusline()
-  if rendered then
-    if not refresh_from_topbar_block(rendered) then
-      refresh_from_text_search(rendered)
+  local lualine = require("lualine")
+  local positions = lualine.get_component_positions({
+    place = "statusline",
+    winid = winid,
+  }) or {}
+  local spacing = state.config.lualine.spacing or " "
+  local spacing_width = vim.fn.strdisplaywidth(spacing)
+
+  for index, menu in ipairs(state.config.menus or {}) do
+    local position = positions[position_id(index)]
+    if position and position.visible and position.screen then
+      local label = M.top_bar_display_label(menu, index)
+      local label_start = position.screen.start_col + spacing_width
+      local label_width = vim.fn.strdisplaywidth(label)
+      local label_end = label_start + label_width - 1
+      if label_width > 0 and label_end <= position.screen.end_col then
+        state.label_positions[index] = label_start
+        state.component_positions[index] = position
+        state.visible_labels[index] = true
+      end
     end
   end
 end
 
 function M.is_top_visible(index)
   M.refresh_label_positions()
-  if not state.label_visibility_known then
-    return true
-  end
   return state.visible_labels and state.visible_labels[index] == true
 end
 
 function M.is_statusline_row(row)
-  local statusline_row = vim.o.lines - vim.o.cmdheight
-  return (row or 0) == statusline_row
+  for _, position in pairs(state.component_positions or {}) do
+    if position.screen and position.screen.row == row then
+      return true
+    end
+  end
+  return false
 end
 
 function M.label_hit_at_col(col)
   local mouse = vim.fn.getmousepos()
-  if not M.is_statusline_row(mouse.screenrow) then
-    return nil
-  end
-
-  M.refresh_label_positions()
+  M.refresh_label_positions(mouse.winid)
 
   for index, menu in ipairs(state.config.menus) do
     local start_col = state.label_positions[index]
-    if start_col then
+    local position = state.component_positions[index]
+    if start_col and position and position.screen and M.is_statusline_row(mouse.screenrow) then
       local display_label = M.top_bar_display_label(menu, index)
       local label_width = vim.fn.strdisplaywidth(display_label)
       local end_col = start_col + label_width - 1
@@ -418,8 +368,10 @@ function M.label_hit_at_col(col)
 end
 
 function M.resolve_anchor(index, items)
-  M.refresh_label_positions()
+  local winid = position_window()
+  M.refresh_label_positions(winid)
   local start_col = state.label_positions[index]
+  local component_position = state.component_positions[index]
   local menu = state.config.menus[index]
   local display_label = M.top_bar_display_label(menu, index)
   local label_width = vim.fn.strdisplaywidth(display_label)
@@ -434,15 +386,21 @@ function M.resolve_anchor(index, items)
       and state.config.highlights
       and state.config.highlights.topbar_active_preserve_bg == false
 
-    if highlight_extends_right then
-      local component = require("orca_menu.lualine").visible_component_at(index)
-      local component_width = vim.fn.strdisplaywidth(component)
-      local block_start = start_col - vim.fn.strdisplaywidth(state.config.lualine.spacing or " ")
-      right_anchor = block_start + component_width - 1
+    if highlight_extends_right and component_position.screen then
+      right_anchor = component_position.screen.end_col
     end
 
     local right_aligned_col = right_anchor - popup_width + 1
-    col = math.max(math.min(right_aligned_col - 3, vim.o.columns - popup_width + 1), 1)
+    local screen_origin = 1
+    if vim.o.laststatus ~= 3 then
+      local ok, screen_pos = pcall(vim.fn.win_screenpos, winid)
+      if ok and screen_pos and screen_pos[2] then
+        screen_origin = screen_pos[2]
+      end
+    end
+    local relative_col = right_aligned_col - screen_origin + 1
+    local available_width = vim.o.laststatus == 3 and vim.o.columns or vim.api.nvim_win_get_width(winid)
+    col = math.max(math.min(relative_col - 3, available_width - popup_width + 1), 1)
   else
     col = math.max(state.anchor.col or 1, 1)
   end

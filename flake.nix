@@ -4,9 +4,13 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    lualine = {
+      url = "git+file:./lualine.nvim";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, lualine }:
     let
       src = builtins.path {
         path = ./.;
@@ -20,7 +24,11 @@
             && baseName != ".nvimlog"
             && baseName != ".tmp-orca-bootstrap-trace.log"
             && baseName != ".tmp-notify-exact-trace.log"
-            && baseName != ".tmp-data";
+            && baseName != ".tmp-data"
+            && baseName != "debug_click.lua"
+            && baseName != "debug_clipped.lua"
+            && baseName != "debug_sequence.lua"
+            && baseName != "lualine.nvim";
       };
       overlay = final: prev: {
         vimPlugins = prev.vimPlugins // {
@@ -39,6 +47,17 @@
           overlays = [ overlay ];
         };
         pluginPackage = pkgs.vimPlugins.orca-menu;
+        lualinePackage = pkgs.vimUtils.buildVimPlugin {
+          pname = "lualine-nvim-local";
+          version = "dev";
+          src = lualine;
+          dontUnpack = true;
+          postInstall = ''
+            rm -rf $out
+            mkdir -p $out
+            cp -r ${lualine}/. $out/
+          '';
+        };
       in {
         packages.default = pluginPackage;
 
@@ -51,7 +70,7 @@
             export XDG_STATE_HOME="$TMPDIR/state"
             export XDG_DATA_HOME="$TMPDIR/data"
             export XDG_CACHE_HOME="$TMPDIR/cache"
-            export ORCA_TEST_EXTRA_RTP="${pkgs.vimPlugins.lualine-nvim}"
+            export ORCA_TEST_EXTRA_RTP="${lualinePackage}"
             mkdir -p "$HOME" "$XDG_STATE_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME"
             cd ${src}
             bash ${src}/scripts/check.sh

@@ -24,48 +24,41 @@ require("orca_menu").setup({
   },
 })
 
+vim.cmd("set columns=140")
+
 local layout = require("orca_menu.layout")
 local state = require("orca_menu.state")
-local lualine = require("orca_menu.lualine")
+local lualine = require("lualine")
 
 local left_win = vim.api.nvim_get_current_win()
 vim.cmd("vsplit")
 local right_win = vim.api.nvim_get_current_win()
 
-vim.api.nvim_win_set_width(left_win, 28)
-vim.api.nvim_win_set_width(right_win, 90)
+local total_width = vim.api.nvim_win_get_width(left_win) + vim.api.nvim_win_get_width(right_win) + 1
+local left_width = math.max(math.floor(total_width / 2), 28)
+vim.api.nvim_win_set_width(left_win, left_width)
+vim.api.nvim_win_set_width(right_win, math.max(total_width - left_width - 1, 1))
 
-local function set_window_statusline(winid)
-  vim.api.nvim_set_current_win(winid)
-  vim.wo.statusline = table.concat({
-    "%=",
-    lualine.component_at(1),
-    lualine.component_at(2),
-  }, "")
-end
-
-set_window_statusline(left_win)
-set_window_statusline(right_win)
+vim.api.nvim_set_current_win(right_win)
+lualine.refresh({ force = true, scope = "all", place = { "statusline" } })
 
 vim.api.nvim_set_current_win(left_win)
 layout.refresh_label_positions()
 
-local rendered = vim.api.nvim_eval_statusline(vim.wo.statusline, {
-  winid = left_win,
-  maxwidth = vim.api.nvim_win_get_width(left_win),
-  highlights = false,
-  use_winbar = false,
-}).str
-
 local search_label = layout.top_bar_display_label(state.config.menus[2], 2)
-local expected_col = assert(rendered:find(search_label, 1, true), "expected Search label in left split statusline")
+local positions = lualine.get_component_positions({ winid = left_win })
+local position = assert(positions["orca_menu:2"], "expected Search component position in left split statusline")
+H.truthy(position.screen, "expected Search component to be visible in the left split statusline")
+local expected_col = position.screen.start_col + vim.fn.strdisplaywidth(state.config.lualine.spacing or " ")
 
 H.eq(state.label_positions[2], expected_col, "label positions should be computed against the current window width")
 
 local popup_width = layout.submenu_width(state.config.menus[2].items)
 local anchor = layout.resolve_anchor(2, state.config.menus[2].items)
 H.truthy(anchor.col <= vim.api.nvim_win_get_width(left_win), "popup anchor should stay within the narrow current window")
-H.eq(anchor.col, math.max(expected_col + vim.fn.strdisplaywidth(search_label) - popup_width - 3, 1), "popup anchor should follow the label rendered in the active narrow split")
+local screen_pos = vim.fn.win_screenpos(left_win)
+local relative_label_col = expected_col - screen_pos[2] + 1
+H.eq(anchor.col, math.max(relative_label_col + vim.fn.strdisplaywidth(search_label) - popup_width - 3, 1), "popup anchor should follow the label rendered in the active narrow split")
 
 H.finish()
 print("ok - tests/integration/window_local_statusline_anchor.lua")

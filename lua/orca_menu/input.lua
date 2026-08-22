@@ -349,7 +349,7 @@ function M.install_mouse()
     else
       local mouse = vim.fn.getmousepos()
       local layout = require("orca_menu.layout")
-      local bar_index = layout.label_hit_at_col(math.max((mouse.screencol or 1) - 1, 0))
+      local bar_index = layout.label_hit_at_col(math.max((mouse.screencol or 1), 1))
       if bar_index then
         mode.run_after_editor_mode(function()
           popup.open_top(bar_index)

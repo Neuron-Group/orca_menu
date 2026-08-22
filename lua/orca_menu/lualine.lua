@@ -89,12 +89,13 @@ function M.visible_component_at(index)
   return string.format("%s%s%s", spacing, label, right_spacing)
 end
 
-local function make_component(fn, color_fn)
+local function make_component(fn, color_fn, component_id)
   return {
     fn,
     color = color_fn,
     padding = { left = 0, right = 0 },
     orca_menu_component = true,
+    component_id = component_id,
   }
 end
 
@@ -130,6 +131,9 @@ function M.register()
   if not ok then
     return
   end
+  if type(lualine.get_component_positions) ~= "function" then
+    error("orca_menu requires lualine.nvim with get_component_positions support")
+  end
 
   local signature = register_signature()
   if signature == last_register_signature then
@@ -147,28 +151,43 @@ function M.register()
     end
     config.sections[section_name] = preserved
   end
+  config.inactive_sections = config.inactive_sections or {}
+  for section_name, section in pairs(config.inactive_sections) do
+    local preserved = {}
+    for _, component in ipairs(section or {}) do
+      if type(component) ~= "table" or component.orca_menu_component ~= true then
+        table.insert(preserved, component)
+      end
+    end
+    config.inactive_sections[section_name] = preserved
+  end
 
   local section_name = "lualine_" .. (state.config.lualine.section or "y")
-  config.sections[section_name] = config.sections[section_name] or {}
+  local function append_components(section_group)
+    section_group[section_name] = section_group[section_name] or {}
 
-  table.insert(config.sections[section_name], make_component(function()
-    return require("orca_menu.lualine").anchor_component()
-  end))
-
-  for index, _ in ipairs(state.config.menus) do
-    table.insert(config.sections[section_name], make_component(function()
-      return require("orca_menu").lualine_component_at(index)
-    end, function()
-      local menu = state.config and state.config.menus[index]
-      if active_top_is_open(index, menu) then
-        return require("orca_menu.lualine").topbar_active_color()
-      end
-      if menu and not layout.top_menu_enabled(menu) then
-        return require("orca_menu.lualine").topbar_disabled_color()
-      end
-      return nil
+    table.insert(section_group[section_name], make_component(function()
+      return require("orca_menu.lualine").anchor_component()
     end))
+
+    for index, _ in ipairs(state.config.menus) do
+      table.insert(section_group[section_name], make_component(function()
+        return require("orca_menu").lualine_component_at(index)
+      end, function()
+        local menu = state.config and state.config.menus[index]
+        if active_top_is_open(index, menu) then
+          return require("orca_menu.lualine").topbar_active_color()
+        end
+        if menu and not layout.top_menu_enabled(menu) then
+          return require("orca_menu.lualine").topbar_disabled_color()
+        end
+        return nil
+      end, "orca_menu:" .. index))
+    end
   end
+
+  append_components(config.sections)
+  append_components(config.inactive_sections)
 
   lualine.setup(config)
   last_register_signature = signature

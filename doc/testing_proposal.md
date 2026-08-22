@@ -243,11 +243,11 @@ Reserve rendered-text assertions for a smaller number of layout tests, such as:
 
 ## Notes on Mouse Simulation
 
-True mouse testing in headless Neovim can be awkward because the plugin reads `vim.fn.getmousepos()` and also relies on layout derived from lualine-rendered labels.
+True mouse testing in headless Neovim can be awkward because the plugin reads `vim.fn.getmousepos()` and relies on lualine's component-position metadata.
 
 Because of that, the most reliable approach is:
 
-- keep layout deterministic with a fake `lualine` module in tests
+- render the configured lualine statusline and assert its component-position metadata
 - test pure hit-mapping with controlled screen geometry
 - use `nvim_input_mouse()` for end-to-end coverage where available
 - stub `vim.fn.getmousepos()` only for cases that are hard to trigger consistently in headless mode

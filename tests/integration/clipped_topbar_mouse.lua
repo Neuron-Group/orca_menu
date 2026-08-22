@@ -59,40 +59,20 @@ local popup = require("orca_menu.popup")
 local layout = require("orca_menu.layout")
 
 vim.o.laststatus = 2
+vim.cmd("set columns=25")
+H.render_statusline()
 
 local mouse = { screenrow = vim.o.lines - vim.o.cmdheight, screencol = 1 }
 local restore_mouse = H.stub_mouse(mouse)
 
-local function render_clipped_topbar()
-  local view_label = layout.top_bar_display_label(state.config.menus[2], 2)
-  local search_label = layout.top_bar_display_label(state.config.menus[3], 3)
-  local clipped_view = view_label:sub(2)
-
-  vim.wo.statusline = string.format(" %s %s ", clipped_view, search_label)
-  layout.refresh_label_positions()
-
-  local rendered = vim.api.nvim_eval_statusline(vim.wo.statusline, {
-    winid = vim.api.nvim_get_current_win(),
-    maxwidth = vim.o.columns,
-    highlights = false,
-    use_winbar = false,
-  }).str
-
-  local clipped_col = assert(rendered:find(clipped_view, 1, true), "expected clipped View fragment in statusline") + 1
-  local search_col = assert(rendered:find(search_label, 1, true), "expected Search label in statusline") + 1
-  return clipped_col, search_col
-end
-
-local clipped_col, search_col = render_clipped_topbar()
-
-mouse.screencol = clipped_col
+mouse.screencol = 1
 _G.orca_menu_click_menu_2()
 H.flush()
-H.falsy(popup.is_open(), "clicking a clipped visible fragment should not open its menu")
-H.falsy(state.menu_mode, "clicking a clipped visible fragment should not enter menu mode")
+H.falsy(popup.is_open(), "clicking a hidden top component should not open its menu")
+H.falsy(state.menu_mode, "clicking a hidden top component should not enter menu mode")
 
-clipped_col, search_col = render_clipped_topbar()
-mouse.screencol = search_col
+layout.refresh_label_positions()
+mouse.screencol = state.label_positions[3] + 1
 _G.orca_menu_click_menu_3()
 H.flush()
 H.truthy(popup.is_open(), "clicking a fully visible top label should still open its menu")
@@ -102,17 +82,17 @@ H.flush()
 
 vim.g.orca_clipped_view_enabled = false
 require("orca_menu").refresh()
-clipped_col, search_col = render_clipped_topbar()
+H.render_statusline()
 
-mouse.screencol = clipped_col
+mouse.screencol = 1
 _G.orca_menu_click_menu_2()
 H.flush()
 H.falsy(popup.is_open(), "clicking a clipped disabled label should do nothing")
 H.falsy(state.menu_mode, "clipped disabled labels should not enter menu mode")
 H.eq(vim.g.orca_clipped_topbar_action, 0, "clipped disabled label clicks should not trigger any action behind them")
 
-clipped_col, search_col = render_clipped_topbar()
-mouse.screencol = search_col
+layout.refresh_label_positions()
+mouse.screencol = state.label_positions[3] + 1
 _G.orca_menu_click_menu_3()
 H.flush()
 H.truthy(popup.is_open(), "visible labels should remain clickable after disabled clipping")
