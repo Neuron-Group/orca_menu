@@ -97,7 +97,7 @@ local restore_item = H.stub_mouse({
   screencol = entry.content_col,
 })
 
-popup.handle_mouse()
+vim.fn.feedkeys(vim.keycode("<LeftMouse>"), "xt")
 H.flush()
 H.eq(vim.g.orca_mouse_action, 1, "mouse click on a deepest popup item should execute its action")
 H.falsy(popup.is_open(), "mouse item activation should close popup tree")
