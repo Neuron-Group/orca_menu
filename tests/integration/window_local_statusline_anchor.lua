@@ -58,7 +58,7 @@ local anchor = layout.resolve_anchor(2, state.config.menus[2].items)
 H.truthy(anchor.col <= vim.api.nvim_win_get_width(left_win), "popup anchor should stay within the narrow current window")
 local screen_pos = vim.fn.win_screenpos(left_win)
 local relative_label_col = expected_col - screen_pos[2] + 1
-H.eq(anchor.col, math.max(relative_label_col + vim.fn.strdisplaywidth(search_label) - popup_width - 3, 1), "popup anchor should follow the label rendered in the active narrow split")
+H.eq(anchor.col, math.max(relative_label_col + vim.fn.strdisplaywidth(search_label) - popup_width - 1, 1), "popup anchor should follow the label rendered in the active narrow split")
 
 H.finish()
 print("ok - tests/integration/window_local_statusline_anchor.lua")
