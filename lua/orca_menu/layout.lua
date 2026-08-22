@@ -304,6 +304,12 @@ local function position_id(index)
   return "orca_menu:" .. index
 end
 
+-- Lualine's component span also includes its trailing separator. The click
+-- marker only covers Orca's rendered content, so derive that narrower span.
+local function component_content_width(index)
+  return vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(index))
+end
+
 function M.refresh_label_positions(winid)
   winid = position_window(winid)
   state.label_positions = {}
@@ -348,8 +354,8 @@ function M.is_statusline_row(row)
   return false
 end
 
-function M.label_hit_at_col(col)
-  local mouse = vim.fn.getmousepos()
+function M.label_hit_at_col(col, mouse)
+  mouse = mouse or vim.fn.getmousepos()
   M.refresh_label_positions(mouse.winid)
 
   local statusline_hit = M.is_statusline_row(mouse.screenrow)
@@ -365,15 +371,24 @@ function M.label_hit_at_col(col)
     local row_match = position and position.screen and position.screen.row == mouse.screenrow or false
     local component_start_col = position and position.screen and position.screen.start_col
     local component_end_col = position and position.screen and position.screen.end_col
-    local col_match = component_start_col
-      and component_end_col
-      and col >= component_start_col
-      and col <= component_end_col
+    local hit_start_col = component_start_col
+    local content_width = component_content_width(index)
+    local hit_end_col = hit_start_col and content_width > 0 and hit_start_col + content_width - 1 or nil
+    if hit_end_col and component_end_col then
+      hit_end_col = math.min(hit_end_col, component_end_col)
+    end
+    local col_match = hit_start_col
+      and hit_end_col
+      and col >= hit_start_col
+      and col <= hit_end_col
       or false
     local candidate = {
       index = index,
       start_col = start_col,
       end_col = end_col,
+      hit_start_col = hit_start_col,
+      hit_end_col = hit_end_col,
+      content_width = content_width,
       label_width = label_width,
       row_match = row_match,
       col_match = col_match,

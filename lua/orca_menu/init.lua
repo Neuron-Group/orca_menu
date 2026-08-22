@@ -117,7 +117,7 @@ function rebuild_click_handlers()
 
   for index, _ in ipairs(state.config.menus or {}) do
     _G["orca_menu_click_menu_" .. index] = function()
-      require("orca_menu").click(index)
+      require("orca_menu").click(index, vim.fn.getmousepos())
     end
   end
 end
@@ -190,10 +190,13 @@ function M.open_menu(index, _use_mouse)
   popup.open_top(target)
 end
 
-function M.click(index)
+function M.click(index, mouse)
   local target = index or state.active_top
-  local mouse = vim.fn.getmousepos()
-  local hit = require("orca_menu.layout").label_hit_at_col(math.max((mouse.screencol or 1), 1))
+  mouse = mouse or vim.fn.getmousepos()
+  local hit = require("orca_menu.layout").label_hit_at_col(
+    math.max((mouse.screencol or 1), 1),
+    mouse
+  )
   if hit ~= target then
     return
   end

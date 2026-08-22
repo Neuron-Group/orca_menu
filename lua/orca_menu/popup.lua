@@ -863,10 +863,10 @@ function M.go_back()
   end
 end
 
-function M.handle_mouse()
-  local mouse = vim.fn.getmousepos()
+function M.handle_mouse(mouse)
+  mouse = mouse or vim.fn.getmousepos()
   local screen_col = math.max((mouse.screencol or 1), 1)
-  local bar_index = layout.label_hit_at_col(screen_col)
+  local bar_index = layout.label_hit_at_col(screen_col, mouse)
 
   local screen_row = math.max((mouse.screenrow or 1), 1)
   local levels = {}

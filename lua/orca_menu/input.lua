@@ -140,7 +140,7 @@ local function install_mouse_key_hook()
     local mode_name = current_map_mode()
     local layout = require("orca_menu.layout")
     local popup_open = popup.is_open()
-    local bar_index = layout.label_hit_at_col(math.max((mouse.screencol or 1), 1))
+    local bar_index = layout.label_hit_at_col(math.max((mouse.screencol or 1), 1), mouse)
     local mapping = mouse_mapping_summary(mode_name)
     local trace_extra = {
       phase = "pre_mapping",
@@ -158,7 +158,7 @@ local function install_mouse_key_hook()
 
     if popup_open then
       mode.run_after_editor_mode(function()
-        popup.handle_mouse()
+        popup.handle_mouse(mouse)
         trace_extra.phase = "intercepted_popup"
         trace_mouse("<LeftMouse>", trace_extra, mouse)
       end)
@@ -169,7 +169,7 @@ local function install_mouse_key_hook()
       return
     end
 
-    require("orca_menu").click(bar_index)
+    require("orca_menu").click(bar_index, mouse)
     trace_extra.phase = "intercepted_statusline"
     trace_mouse("<LeftMouse>", trace_extra, mouse)
     return ""
@@ -475,14 +475,15 @@ function M.install_mouse()
     end
 
     if popup.is_open() then
+      local mouse = vim.fn.getmousepos()
       mode.run_after_editor_mode(function()
-        popup.handle_mouse()
+        popup.handle_mouse(mouse)
         trace_mouse(event, { phase = "handled_popup", keys = keys })
       end)
     else
       local mouse = vim.fn.getmousepos()
       local layout = require("orca_menu.layout")
-      local bar_index = layout.label_hit_at_col(math.max((mouse.screencol or 1), 1))
+      local bar_index = layout.label_hit_at_col(math.max((mouse.screencol or 1), 1), mouse)
       if bar_index then
         mode.run_after_editor_mode(function()
           popup.open_top(bar_index)

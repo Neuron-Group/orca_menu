@@ -53,15 +53,32 @@ H.falsy(popup.is_open(), "clicking the same top label should close the popup tre
 restore()
 
 for index, position in pairs(state.component_positions) do
+  local content_end = position.screen.start_col
+    + vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(index))
+    - 1
   local restore_component_edge = H.stub_mouse({
     screenrow = statusline_row,
-    screencol = position.screen.end_col,
+    screencol = content_end,
   })
   popup.handle_mouse()
   H.truthy(popup.is_open(), "the right edge of a lualine component should open its menu")
   H.eq(state.active_top, index, "the right edge should target its lualine menu")
   popup.close_all()
   restore_component_edge()
+end
+
+local first_position = state.component_positions[1]
+local first_content_end = first_position.screen.start_col
+  + vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(1))
+  - 1
+if first_content_end < first_position.screen.end_col then
+  local restore_separator_mouse = H.stub_mouse({
+    screenrow = statusline_row,
+    screencol = first_content_end + 1,
+  })
+  popup.handle_mouse()
+  H.falsy(popup.is_open(), "a lualine separator should not belong to the preceding menu")
+  restore_separator_mouse()
 end
 
 local native_clicks = 0
@@ -74,7 +91,9 @@ end, { buffer = 0 })
 
 local restore_statusline_mouse = H.stub_mouse({
   screenrow = statusline_row,
-  screencol = state.component_positions[1].screen.end_col,
+  screencol = state.component_positions[1].screen.start_col
+    + vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(1))
+    - 1,
 })
 vim.fn.feedkeys(vim.keycode("<LeftMouse>"), "xt")
 H.flush()
