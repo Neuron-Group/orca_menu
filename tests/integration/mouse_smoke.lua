@@ -75,6 +75,13 @@ local trace = vim.json.decode(vim.fn.readfile(trace_path)[1])
 H.eq(trace.extra.phase, "pre_mapping", "mouse trace should record the pre-mapping phase")
 H.eq(trace.extra.mapping.buffer, 1, "mouse trace should identify the buffer-local mapping")
 H.eq(trace.extra.statusline_hit, true, "mouse trace should identify the topbar hit")
+H.eq(trace.extra.geometry.statusline_row, statusline_row, "mouse trace should record the statusline row")
+H.eq(trace.extra.geometry.labels[1].label_start, state.label_positions[1], "mouse trace should record the label start")
+H.eq(
+  trace.extra.geometry.labels[1].label_end,
+  state.label_positions[1] + vim.fn.strdisplaywidth("File(f)") - 1,
+  "mouse trace should record the complete label hitbox"
+)
 
 popup.close_all()
 H.flush()

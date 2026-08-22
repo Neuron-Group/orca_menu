@@ -64,6 +64,54 @@ local function mouse_mapping_summary(mode_name)
   }
 end
 
+local function position_summary(position)
+  if type(position) ~= "table" then
+    return nil
+  end
+
+  return {
+    visible = position.visible,
+    logical = vim.deepcopy(position.logical),
+    screen = vim.deepcopy(position.screen),
+  }
+end
+
+local function mouse_geometry_summary(layout)
+  local labels = {}
+  for index, menu in ipairs(state.config.menus or {}) do
+    local label = layout.top_bar_display_label(menu, index)
+    local label_width = vim.fn.strdisplaywidth(label)
+    local label_start = state.label_positions[index]
+    labels[index] = {
+      label = label,
+      label_width = label_width,
+      label_start = label_start,
+      label_end = label_start and label_start + label_width - 1 or nil,
+      component = position_summary(state.component_positions[index]),
+    }
+  end
+
+  local popups = {}
+  for level, entry in ipairs(state.menu_stack or {}) do
+    popups[level] = {
+      content_row = entry.content_row,
+      content_col = entry.content_col,
+      content_width = entry.content_width,
+      content_height = entry.content_height,
+      frame_row = entry.frame_row,
+      frame_col = entry.frame_col,
+      frame_width = entry.frame_width,
+      frame_height = entry.frame_height,
+    }
+  end
+
+  return {
+    statusline_row = vim.o.lines - vim.o.cmdheight,
+    labels = labels,
+    popups = popups,
+  }
+end
+
 local function trace_mouse(event, extra, mouse)
   local trace_path = state.mouse_trace_path or vim.env.ORCA_MENU_MOUSE_TRACE
   if type(trace_path) ~= "string" or trace_path == "" then
@@ -128,6 +176,7 @@ local function install_mouse_key_hook()
       bar_index = bar_index,
       statusline_hit = bar_index ~= nil,
       popup_open = popup_open,
+      geometry = mouse_geometry_summary(layout),
     }
     trace_mouse("<LeftMouse>", trace_extra, mouse)
 
