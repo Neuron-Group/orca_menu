@@ -715,8 +715,10 @@ Disable it with:
 
 The trace includes a `pre_mapping` record for each left click, including the
 effective buffer-local mapping and the computed lualine label and popup
-geometry. This is useful for diagnosing plugins such as Lean infoviews that
-install their own `<LeftMouse>` mapping.
+geometry. It also records `label_hit_at_col` decisions and
+`popup.handle_mouse` hit-test details, including the content/frame bounds and
+the selected item row. This is useful for diagnosing plugins such as Lean
+infoviews that install their own `<LeftMouse>` mapping.
 
 For randomized stress test failures, the error output includes a replay command
 you can rerun directly. You can also replay a saved sequence manually:

@@ -28,4 +28,30 @@ local M = {
   namespace = vim.api.nvim_create_namespace("orca_menu"),
 }
 
+function M.trace_mouse(event, extra, mouse)
+  local trace_path = M.mouse_trace_path or vim.env.ORCA_MENU_MOUSE_TRACE
+  if type(trace_path) ~= "string" or trace_path == "" then
+    return
+  end
+
+  mouse = mouse or vim.fn.getmousepos()
+  local line = vim.json.encode({
+    event = event,
+    mouse = mouse,
+    mode = vim.fn.mode(),
+    popup_open = #M.windows > 0,
+    menu_mode = M.menu_mode,
+    active_top = M.active_top,
+    stack_depth = #M.menu_stack,
+    extra = extra,
+    time = vim.loop.hrtime(),
+  })
+
+  if not line then
+    return
+  end
+
+  pcall(vim.fn.writefile, { line }, trace_path, "a")
+end
+
 return M

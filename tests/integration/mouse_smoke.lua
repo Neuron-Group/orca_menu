@@ -71,7 +71,15 @@ H.flush()
 H.truthy(popup.is_open(), "topbar click should open from a buffer with a local mouse mapping")
 H.eq(native_clicks, 0, "Orca should intercept a topbar click before the local mapping")
 
-local trace = vim.json.decode(vim.fn.readfile(trace_path)[1])
+local trace
+for _, line in ipairs(vim.fn.readfile(trace_path)) do
+  local candidate = vim.json.decode(line)
+  if candidate.extra and candidate.extra.phase == "pre_mapping" then
+    trace = candidate
+    break
+  end
+end
+H.truthy(trace, "mouse trace should contain the pre-mapping phase")
 H.eq(trace.extra.phase, "pre_mapping", "mouse trace should record the pre-mapping phase")
 H.eq(trace.extra.mapping.buffer, 1, "mouse trace should identify the buffer-local mapping")
 H.eq(trace.extra.statusline_hit, true, "mouse trace should identify the topbar hit")

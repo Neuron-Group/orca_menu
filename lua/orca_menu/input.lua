@@ -112,31 +112,7 @@ local function mouse_geometry_summary(layout)
   }
 end
 
-local function trace_mouse(event, extra, mouse)
-  local trace_path = state.mouse_trace_path or vim.env.ORCA_MENU_MOUSE_TRACE
-  if type(trace_path) ~= "string" or trace_path == "" then
-    return
-  end
-
-  mouse = mouse or vim.fn.getmousepos()
-  local line = vim.json.encode({
-    event = event,
-    mouse = mouse,
-    mode = vim.fn.mode(),
-    popup_open = popup.is_open(),
-    menu_mode = state.menu_mode,
-    active_top = state.active_top,
-    stack_depth = #state.menu_stack,
-    extra = extra,
-    time = vim.loop.hrtime(),
-  })
-
-  if not line then
-    return
-  end
-
-  pcall(vim.fn.writefile, { line }, trace_path, "a")
-end
+local trace_mouse = state.trace_mouse
 
 local function is_left_mouse(typed)
   if typed == left_mouse_keycode then

@@ -868,7 +868,47 @@ function M.handle_mouse()
   local screen_col = math.max((mouse.screencol or 1), 1)
   local bar_index = layout.label_hit_at_col(screen_col)
 
+  local screen_row = math.max((mouse.screenrow or 1), 1)
+  local levels = {}
+  for level, entry in ipairs(state.menu_stack or {}) do
+    local content_row = entry.content_row or entry.row
+    local content_col = entry.content_col or entry.col
+    local content_width = entry.content_width or entry.width
+    local content_height = entry.content_height or entry.height
+    local frame_row = entry.frame_row or entry.row
+    local frame_col = entry.frame_col or entry.col
+    local frame_width = entry.frame_width or entry.width
+    local frame_height = entry.frame_height or entry.height
+    local content_end_col = content_col + content_width - 1
+    local frame_end_col = frame_col + frame_width - 1
+    levels[level] = {
+      content_row = content_row,
+      content_col = content_col,
+      content_end_col = content_end_col,
+      content_height = content_height,
+      frame_row = frame_row,
+      frame_col = frame_col,
+      frame_end_col = frame_end_col,
+      frame_height = frame_height,
+      content_hit = screen_row >= content_row
+        and screen_row <= content_row + content_height - 1
+        and screen_col >= content_col
+        and screen_col <= content_end_col,
+      frame_hit = screen_row >= frame_row
+        and screen_row <= frame_row + frame_height - 1
+        and screen_col >= frame_col
+        and screen_col <= frame_end_col,
+    }
+  end
+
   if bar_index then
+    state.trace_mouse("popup.handle_mouse", {
+      phase = "topbar_hit",
+      screen_row = screen_row,
+      screen_col = screen_col,
+      bar_index = bar_index,
+      levels = levels,
+    }, mouse)
     if not top_menu_enabled(state.config.menus[bar_index]) then
       return
     end
@@ -881,19 +921,33 @@ function M.handle_mouse()
     return
   end
 
-  local screen_row = math.max((mouse.screenrow or 1), 1)
   local content_hit_level = content_hit_level_at(screen_row, screen_col)
   local frame_hit_level = frame_hit_level_at(screen_row, screen_col)
 
   local clicked_level = content_hit_level or frame_hit_level
 
+  local item, row
+  if clicked_level then
+    item, row = item_at_level_row(clicked_level, screen_row)
+  end
+  state.trace_mouse("popup.handle_mouse", {
+    phase = "popup_hit_test",
+    screen_row = screen_row,
+    screen_col = screen_col,
+    bar_index = bar_index,
+    content_hit_level = content_hit_level,
+    frame_hit_level = frame_hit_level,
+    clicked_level = clicked_level,
+    item_row = row,
+    item_label = item and item.label or nil,
+    item_kind = item and item.kind or nil,
+    levels = levels,
+  }, mouse)
+
   if not clicked_level then
     M.close_all()
     return
   end
-
-  local entry = state.menu_stack[clicked_level]
-  local item, row = item_at_level_row(clicked_level, screen_row)
 
   if not item then
     return

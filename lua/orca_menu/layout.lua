@@ -352,19 +352,52 @@ function M.label_hit_at_col(col)
   local mouse = vim.fn.getmousepos()
   M.refresh_label_positions(mouse.winid)
 
+  local statusline_hit = M.is_statusline_row(mouse.screenrow)
+  local candidates = {}
+  local hit
+
   for index, menu in ipairs(state.config.menus) do
     local start_col = state.label_positions[index]
     local position = state.component_positions[index]
-    if start_col and position and position.screen and M.is_statusline_row(mouse.screenrow) then
-      local display_label = M.top_bar_display_label(menu, index)
-      local label_width = vim.fn.strdisplaywidth(display_label)
-      local end_col = start_col + label_width - 1
-      if col >= start_col and col <= end_col then
-        return index
-      end
+    local display_label = M.top_bar_display_label(menu, index)
+    local label_width = vim.fn.strdisplaywidth(display_label)
+    local end_col = start_col and start_col + label_width - 1 or nil
+    local row_match = position and position.screen and position.screen.row == mouse.screenrow or false
+    local col_match = start_col and end_col and col >= start_col and col <= end_col or false
+    local candidate = {
+      index = index,
+      start_col = start_col,
+      end_col = end_col,
+      label_width = label_width,
+      row_match = row_match,
+      col_match = col_match,
+      hit = start_col ~= nil and position ~= nil and position.screen ~= nil and statusline_hit and col_match or false,
+    }
+    if position and position.screen then
+      candidate.component_row = position.screen.row
+      candidate.component_start_col = position.screen.start_col
+      candidate.component_end_col = position.screen.end_col
+    end
+    table.insert(candidates, candidate)
+
+    if candidate.hit then
+      hit = index
+      break
     end
   end
-  return nil
+
+  state.trace_mouse("label_hit_at_col", {
+    phase = "label_hit_test",
+    input_col = col,
+    mouse_screenrow = mouse.screenrow,
+    mouse_screencol = mouse.screencol,
+    mouse_winid = mouse.winid,
+    statusline_hit = statusline_hit,
+    hit = hit,
+    candidates = candidates,
+  }, mouse)
+
+  return hit
 end
 
 function M.resolve_anchor(index, items)
