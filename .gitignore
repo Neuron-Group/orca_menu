@@ -6,3 +6,4 @@
 .tmp-state/
 result
 tests/nvf/flake.lock
+lualine.nvim
