@@ -61,7 +61,7 @@ local disabled_text = disabled_component[1]()
 local disabled_color = disabled_component.color()
 local comment_hl = vim.api.nvim_get_hl(0, { name = "Comment", link = false })
 
-H.eq(disabled_text, " %@v:lua.orca_menu_click_menu_2@p->LSP%X ", "disabled top menu should keep the same right padding as other top menus")
+H.eq(disabled_text, " p->LSP ", "disabled top menu should keep the same right padding as other top menus")
 H.eq(disabled_color.fg, string.format("#%06x", comment_hl.fg), "disabled top menu should hand lualine the configured foreground color")
 H.eq(disabled_color.bg, nil, "disabled top menu color should leave background unset so lualine keeps its own section background")
 

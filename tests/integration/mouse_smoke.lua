@@ -67,6 +67,22 @@ for index, position in pairs(state.component_positions) do
   restore_component_edge()
 end
 
+for index, position in pairs(state.component_positions) do
+  local content_width = vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(index))
+  local content_end = math.min(position.screen.end_col, position.screen.start_col + content_width - 1)
+  for col = position.screen.start_col, content_end do
+    local restore_component_cell = H.stub_mouse({
+      screenrow = statusline_row,
+      screencol = col,
+    })
+    popup.handle_mouse()
+    H.truthy(popup.is_open(), "every rendered component cell should open its menu")
+    H.eq(state.active_top, index, "every rendered component cell should target its menu")
+    popup.close_all()
+    restore_component_cell()
+  end
+end
+
 local first_position = state.component_positions[1]
 local first_content_end = first_position.screen.start_col
   + vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(1))
@@ -134,6 +150,25 @@ vim.fn.feedkeys(vim.keycode("<LeftMouse>"), "xt")
 H.flush()
 H.eq(native_clicks, 1, "non-Orca clicks should reach the existing local mapping")
 restore_native_mouse()
+
+for index, position in pairs(state.component_positions) do
+  local content_width = vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(index))
+  local content_end = math.min(position.screen.end_col, position.screen.start_col + content_width - 1)
+  for col = position.screen.start_col, content_end do
+    local restore_component_cell = H.stub_mouse({
+      screenrow = statusline_row,
+      screencol = col,
+    })
+    popup.close_all()
+    vim.fn.feedkeys(vim.keycode("<LeftMouse>"), "xt")
+    H.flush()
+    H.flush()
+    H.truthy(popup.is_open(), "real mouse clicks should open every component cell")
+    H.eq(state.active_top, index, "real mouse clicks should target their component")
+    restore_component_cell()
+  end
+end
+
 state.mouse_trace_path = nil
 
 require("orca_menu").open_menu(1)

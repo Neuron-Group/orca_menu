@@ -116,16 +116,10 @@ function M.component_at(index)
     return ""
   end
   local label, spacing, right_spacing = component_parts(menu, index)
-  if state.config.enable_mouse == false then
-    return string.format("%s%s%s", spacing, label, right_spacing)
-  end
-  return string.format(
-    "%%@v:lua.orca_menu_click_menu_%d@%s%s%s%%X",
-    index,
-    spacing,
-    label,
-    right_spacing
-  )
+  -- Mouse dispatch is owned by input.lua, which uses lualine's screen
+  -- position metadata. Native %@ regions end before lualine separators and
+  -- can therefore disagree with the component span used for hit testing.
+  return string.format("%s%s%s", spacing, label, right_spacing)
 end
 
 function M.anchor_component()
