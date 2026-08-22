@@ -25,7 +25,7 @@ configurable in Lua.
 ## Requirements
 
 - Neovim `>= 0.9`
-- `nvim-lualine/lualine.nvim` with the `get_component_positions()` API
+- the patched `lualine.nvim` with the `get_component_positions()` API
 - `anuvyklack/hydra.nvim`
 
 ## Installation
@@ -36,7 +36,7 @@ configurable in Lua.
 {
   "Neuron-Group/orca_menu",
   dependencies = {
-    "nvim-lualine/lualine.nvim",
+    "Neuron-Group/lualine.nvim",
     "anuvyklack/hydra.nvim",
   },
   config = function()
@@ -75,7 +75,7 @@ configurable in Lua.
 use {
   "your-name/orca_menu",
   requires = {
-    "nvim-lualine/lualine.nvim",
+    "Neuron-Group/lualine.nvim",
     "anuvyklack/hydra.nvim",
   },
   config = function()
@@ -90,12 +90,14 @@ This repository includes two Nix-oriented packaging entrypoints:
 
 - `flake.nix`
   - exposes `packages.default` as a Vim plugin package
+  - exposes `packages.lualine-nvim` as the patched lualine package
 - `nix/overlay.nix`
   - exposes `vimPlugins.orca-menu`
+  - overrides `vimPlugins.lualine-nvim` with the pinned lualine input
 - `nix/home-manager-module.nix`
-  - small Home Manager helper module
+  - Home Manager module with patched lualine enabled by default
 - `nix/nvf-module.nix`
-  - `nvf` module for Nix-native `orca_menu` configuration
+  - `nvf` module using the same patched lualine package
 
 Example flake input:
 
@@ -117,10 +119,66 @@ Example plugin use with overlay output:
         overlays = [ orca-menu.overlays.default ];
       };
     in {
-      packages.${system}.default = pkgs.neovim;
+      # Both packages are now available from the same package set.
+      packages.${system}.default = pkgs.vimPlugins.orca-menu;
+      packages.${system}.lualine = pkgs.vimPlugins.lualine-nvim;
     };
 }
 ```
+
+The overlay deliberately uses the canonical `vimPlugins.lualine-nvim`
+attribute. Any plugin configuration that consumes that package from the
+overlaid package set receives the version with
+`get_component_positions()` support.
+
+## Home Manager Module
+
+The flake exports `homeManagerModules.default`. Import it once and configure
+Orca through `programs.orca-menu`; the module installs Orca, Hydra, and the
+pinned lualine package together:
+
+```nix
+{
+  inputs.orca-menu.url = "github:Neuron-Group/orca_menu";
+
+  outputs = { self, home-manager, nixpkgs, orca-menu, ... }:
+    {
+      homeConfigurations.me = home-manager.lib.homeManagerConfiguration {
+        pkgs = import nixpkgs { system = "x86_64-linux"; };
+        modules = [
+          orca-menu.homeManagerModules.default
+          {
+            programs.orca-menu = {
+              enable = true;
+              settings = {
+                keys.open = "<F12>";
+                menus = [
+                  {
+                    label = "&File";
+                    key = "f";
+                    items = [
+                      { label = "&Write"; key = "w"; command = "write"; }
+                    ];
+                  }
+                ];
+              };
+            };
+          }
+        ];
+      };
+    };
+}
+```
+
+The useful options are:
+
+- `programs.orca-menu.enable` enables the module.
+- `programs.orca-menu.settings` is passed to `require("orca_menu").setup(...)`.
+- `programs.orca-menu.lualinePackage` overrides the patched lualine package when
+  needed.
+- `programs.orca-menu.installDependencies` can be set to `false` when Hydra
+  and lualine are managed elsewhere.
+- `programs.orca-menu.extraConfigLua` is appended after the generated setup.
 
 ## NVF Module
 

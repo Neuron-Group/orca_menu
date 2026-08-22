@@ -5,7 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     lualine = {
-      url = "git+file:./lualine.nvim";
+      url = "github:Neuron-Group/lualine.nvim";
       flake = false;
     };
   };
@@ -30,15 +30,9 @@
             && baseName != "debug_sequence.lua"
             && baseName != "lualine.nvim";
       };
-      overlay = final: prev: {
-        vimPlugins = prev.vimPlugins // {
-          orca-menu = final.vimUtils.buildVimPlugin {
-            pname = "orca-menu";
-            version = "dev";
-            src = src;
-          };
-        };
-      };
+      overlay = import ./nix/overlay.nix { inherit lualine; };
+      homeManagerModule = import ./nix/home-manager-module.nix { inherit lualine; };
+      nvfModule = import ./nix/nvf-module.nix { inherit lualine; };
     in
     flake-utils.lib.eachDefaultSystem (system:
       let
@@ -47,19 +41,12 @@
           overlays = [ overlay ];
         };
         pluginPackage = pkgs.vimPlugins.orca-menu;
-        lualinePackage = pkgs.vimUtils.buildVimPlugin {
-          pname = "lualine-nvim-local";
-          version = "dev";
-          src = lualine;
-          dontUnpack = true;
-          postInstall = ''
-            rm -rf $out
-            mkdir -p $out
-            cp -r ${lualine}/. $out/
-          '';
-        };
+        lualinePackage = pkgs.vimPlugins.lualine-nvim;
       in {
-        packages.default = pluginPackage;
+        packages = {
+          default = pluginPackage;
+          lualine-nvim = lualinePackage;
+        };
 
         checks = {
           package = pluginPackage;
@@ -80,6 +67,7 @@
       })
     // {
       overlays.default = overlay;
-      nvfModules.default = import ./nix/nvf-module.nix;
+      homeManagerModules.default = homeManagerModule;
+      nvfModules.default = nvfModule;
     };
 }

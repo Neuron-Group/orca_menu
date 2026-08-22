@@ -1,3 +1,4 @@
+{ lualine ? null }:
 {
   config,
   lib,
@@ -6,11 +7,8 @@
 }:
 let
   cfg = config.vim.orcaMenu;
-  overlay = import ./overlay.nix;
-  pluginPkgs = import pkgs.path {
-    system = pkgs.stdenv.hostPlatform.system;
-    overlays = [ overlay ];
-  };
+  overlay = import ./overlay.nix { inherit lualine; };
+  pluginPkgs = pkgs.extend overlay;
   inherit (lib) literalExpression mkEnableOption mkIf mkMerge mkOption optionalAttrs types;
   toLua = lib.generators.toLua { multiline = true; indent = "  "; };
   setupLua = toLua cfg.settings;
@@ -28,7 +26,14 @@ in {
     installDependencies = mkOption {
       type = types.bool;
       default = true;
-      description = "Whether to install `hydra.nvim` and `lualine.nvim` alongside `orca_menu`.";
+      description = "Whether to install `hydra.nvim` and the patched `lualine.nvim` alongside `orca_menu`.";
+    };
+
+    lualinePackage = mkOption {
+      type = types.package;
+      default = pluginPkgs.vimPlugins.lualine-nvim;
+      defaultText = literalExpression "pkgs.vimPlugins.lualine-nvim";
+      description = "The lualine package used by orca-menu; defaults to the patched package.";
     };
 
     settings = mkOption {
@@ -91,7 +96,7 @@ in {
           package = pkgs.vimPlugins.hydra-nvim;
         };
         lualine-nvim = {
-          package = pkgs.vimPlugins.lualine-nvim;
+          package = cfg.lualinePackage;
         };
       })
     ];

@@ -1,3 +1,4 @@
+{ lualine ? null }:
 let
   src = builtins.path {
     path = ../.;
@@ -14,7 +15,8 @@ let
         && baseName != ".tmp-data"
         && baseName != "debug_click.lua"
         && baseName != "debug_clipped.lua"
-        && baseName != "debug_sequence.lua";
+        && baseName != "debug_sequence.lua"
+        && baseName != "lualine.nvim";
   };
 in
 final: prev: {
@@ -24,5 +26,17 @@ final: prev: {
       version = "dev";
       src = src;
     };
-  };
+  } // (if lualine == null then { } else {
+    lualine-nvim = final.vimUtils.buildVimPlugin {
+      pname = "lualine-nvim";
+      version = "patched";
+      src = lualine;
+      dontUnpack = true;
+      postInstall = ''
+        rm -rf $out
+        mkdir -p $out
+        cp -r ${lualine}/. $out/
+      '';
+    };
+  });
 }
