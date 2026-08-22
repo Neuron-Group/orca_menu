@@ -29,14 +29,48 @@ local mouse_key_lookup = {}
 for _, key in ipairs(mouse_keys) do
   mouse_key_lookup[key] = true
 end
+local left_mouse_keycode = vim.keycode("<LeftMouse>")
+local special_key_prefix = string.char(128)
+local mouse_key_hook_ns = vim.api.nvim_create_namespace("orca_menu_mouse_key_hook")
 
-local function trace_mouse(event, extra)
+local function current_map_mode()
+  local current = vim.fn.mode()
+  if current:sub(1, 1) == "i" then
+    return "i"
+  end
+  if current == "v" or current == "V" or current == "\22" then
+    return "x"
+  end
+  return "n"
+end
+
+local function mouse_mapping_summary(mode_name)
+  local mapping = vim.fn.maparg("<LeftMouse>", mode_name, false, true)
+  if type(mapping) ~= "table" or mapping.lhs == nil or mapping.lhs == "" then
+    return nil
+  end
+
+  return {
+    lhs = mapping.lhs,
+    rhs = mapping.rhs,
+    mode = mapping.mode,
+    buffer = mapping.buffer,
+    callback = mapping.callback ~= nil,
+    expr = mapping.expr == 1,
+    noremap = mapping.noremap == 1,
+    silent = mapping.silent == 1,
+    nowait = mapping.nowait == 1,
+    desc = mapping.desc,
+  }
+end
+
+local function trace_mouse(event, extra, mouse)
   local trace_path = state.mouse_trace_path or vim.env.ORCA_MENU_MOUSE_TRACE
   if type(trace_path) ~= "string" or trace_path == "" then
     return
   end
 
-  local mouse = vim.fn.getmousepos()
+  mouse = mouse or vim.fn.getmousepos()
   local line = vim.json.encode({
     event = event,
     mouse = mouse,
@@ -54,6 +88,67 @@ local function trace_mouse(event, extra)
   end
 
   pcall(vim.fn.writefile, { line }, trace_path, "a")
+end
+
+local function is_left_mouse(typed)
+  if typed == left_mouse_keycode then
+    return true
+  end
+
+  if typed:sub(1, 1) ~= special_key_prefix then
+    return false
+  end
+
+  return vim.fn.keytrans(typed) == "<LeftMouse>"
+end
+
+local function install_mouse_key_hook()
+  if state.mouse_key_hook_installed then
+    return
+  end
+
+  vim.on_key(function(_, typed)
+    if not is_left_mouse(typed) then
+      return
+    end
+
+    local mouse = vim.fn.getmousepos()
+    local mode_name = current_map_mode()
+    local layout = require("orca_menu.layout")
+    local bar_index = layout.label_hit_at_col(math.max((mouse.screencol or 1), 1))
+    local mapping = mouse_mapping_summary(mode_name)
+    local trace_extra = {
+      phase = "pre_mapping",
+      typed = vim.fn.keytrans(typed),
+      map_mode = mode_name,
+      mapping = mapping,
+      current_win = vim.api.nvim_get_current_win(),
+      current_buf = vim.api.nvim_get_current_buf(),
+      bar_index = bar_index,
+      statusline_hit = bar_index ~= nil,
+    }
+    trace_mouse("<LeftMouse>", trace_extra, mouse)
+
+    if not bar_index then
+      return
+    end
+
+    require("orca_menu").click(bar_index)
+    trace_extra.phase = "intercepted_statusline"
+    trace_mouse("<LeftMouse>", trace_extra, mouse)
+    return ""
+  end, mouse_key_hook_ns)
+
+  state.mouse_key_hook_installed = true
+end
+
+local function disable_mouse_key_hook()
+  if not state.mouse_key_hook_installed then
+    return
+  end
+
+  vim.on_key(nil, mouse_key_hook_ns)
+  state.mouse_key_hook_installed = false
 end
 
 local function bind(keys, fn)
@@ -305,9 +400,11 @@ end
 function M.install_mouse()
   if state.config and state.config.enable_mouse == false then
     M.disable_mouse()
+    disable_mouse_key_hook()
     return
   end
 
+  install_mouse_key_hook()
   refresh_mousemove_binding()
 
   if not popup.is_open() then

@@ -22,6 +22,7 @@ local M = {
   current_open_key = nil,
   last_refresh_signature = nil,
   mouse_trace_path = nil,
+  mouse_key_hook_installed = false,
   mousemoveevent_was_enabled = nil,
   selection_namespace = vim.api.nvim_create_namespace("orca_menu_selection"),
   namespace = vim.api.nvim_create_namespace("orca_menu"),
