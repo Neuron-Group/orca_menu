@@ -423,10 +423,10 @@ function M.label_hit_at_col(col, mouse)
 end
 
 function M.resolve_anchor(index, items)
-  local winid = position_window()
-  M.refresh_label_positions(winid)
+  M.refresh_label_positions()
   local start_col = state.label_positions[index]
   local component_position = state.component_positions[index]
+  local winid = position_window(component_position and component_position.winid)
   local menu = state.config.menus[index]
   local display_label = M.top_bar_display_label(menu, index)
   local label_width = vim.fn.strdisplaywidth(display_label)
