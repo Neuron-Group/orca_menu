@@ -43,5 +43,16 @@ H.eq(lualine.get_component_positions({ component_id = "orca_menu:1" }).id, "orca
 H.eq(state.label_positions[1], first.screen.start_col + 1, "Orca label cache should derive from lualine screen geometry")
 H.eq(layout.is_top_visible(2), true, "Orca visibility should derive from lualine position metadata")
 
+local evaluated = vim.api.nvim_eval_statusline(vim.wo.statusline, {
+  winid = vim.api.nvim_get_current_win(),
+  maxwidth = vim.api.nvim_win_get_width(0),
+})
+for index, menu in ipairs(state.config.menus) do
+  local label = layout.top_bar_display_label(menu, index)
+  local label_start = assert(evaluated.str:find(label, 1, true), "rendered label should be present")
+  local rendered_col = vim.fn.strdisplaywidth(evaluated.str:sub(1, label_start - 1)) + 1
+  H.eq(state.label_positions[index], rendered_col, "label position should match final rendered statusline")
+end
+
 H.finish()
 print("ok - tests/integration/lualine_component_positions.lua")

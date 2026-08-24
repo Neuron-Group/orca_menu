@@ -76,6 +76,28 @@ local function position_summary(position)
   }
 end
 
+local function screen_cells_summary(mouse)
+  if type(mouse) ~= "table" or type(mouse.screenrow) ~= "number" or type(mouse.screencol) ~= "number" then
+    return nil
+  end
+
+  local cells = {}
+  for offset = -2, 2 do
+    local col = mouse.screencol + offset
+    if col >= 1 and col <= vim.o.columns then
+      local ok_string, string_value = pcall(vim.fn.screenstring, mouse.screenrow, col)
+      local ok_char, char_value = pcall(vim.fn.screenchar, mouse.screenrow, col)
+      cells[#cells + 1] = {
+        col = col,
+        string = ok_string and string_value or nil,
+        char = ok_char and char_value or nil,
+      }
+    end
+  end
+
+  return cells
+end
+
 local function mouse_geometry_summary(layout)
   local labels = {}
   for index, menu in ipairs(state.config.menus or {}) do
@@ -153,6 +175,7 @@ local function install_mouse_key_hook()
       statusline_hit = bar_index ~= nil,
       popup_open = popup_open,
       geometry = mouse_geometry_summary(layout),
+      screen_cells = screen_cells_summary(mouse),
     }
     trace_mouse("<LeftMouse>", trace_extra, mouse)
 
