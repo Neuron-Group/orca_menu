@@ -156,6 +156,12 @@ local function install_mouse_key_hook()
     }
     trace_mouse("<LeftMouse>", trace_extra, mouse)
 
+    -- Popup mappings already own this event. The hook only needs to take over
+    -- when a buffer-local mapping would otherwise steal it from Orca.
+    if popup_open and mapping and mapping.buffer == 0 then
+      return
+    end
+
     if popup_open then
       mode.run_after_editor_mode(function()
         popup.handle_mouse(mouse)
