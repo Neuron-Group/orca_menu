@@ -455,10 +455,7 @@ function M.resolve_anchor(index, items)
     end
     local relative_col = right_aligned_col - screen_origin + 1
     local available_width = vim.o.laststatus == 3 and vim.o.columns or vim.api.nvim_win_get_width(winid)
-    -- Convert the 1-based desired screen column to the floating window's
-    -- 0-based column. Keep the popup aligned two cells to the right of the
-    -- legacy anchor adjustment.
-    col = math.max(math.min(relative_col - 1, available_width - popup_width + 1), 1)
+    col = math.max(math.min(relative_col - 3, available_width - popup_width + 1), 1)
   else
     col = math.max(state.anchor.col or 1, 1)
   end
