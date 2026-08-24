@@ -106,4 +106,3 @@ H.falsy(popup.is_open(), "action execution should close popups")
 
 H.finish()
 print("ok - tests/integration/menu_flow.lua")
-

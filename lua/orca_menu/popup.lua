@@ -25,7 +25,10 @@ local function resolve_enabled_top(index)
   end
 
   local start = math.max(math.min(index or state.active_top or 1, count), 1)
-  if layout.is_top_visible(start) and top_menu_enabled(menus[start]) then
+  -- Explicit keyboard/API activation remains valid even when the label is
+  -- clipped from the statusline. Mouse dispatch has already required a real
+  -- visible hit, while an implicit target still needs screen visibility.
+  if top_menu_enabled(menus[start]) and (index ~= nil or layout.is_top_visible(start)) then
     return start
   end
 
@@ -55,8 +58,16 @@ local function sync_hydra_exit_if_needed()
   return false
 end
 
-local function refresh_topbar()
-  require("orca_menu.lualine").refresh()
+local function refresh_topbar(winid, force)
+  local opts = {
+    place = { "statusline" },
+  }
+  if force then
+    opts.force = true
+    opts.scope = "window"
+    opts.winid = winid
+  end
+  require("orca_menu.lualine").refresh(opts)
 end
 
 local function available_content_height()
@@ -588,10 +599,14 @@ function M.open_top(index)
   state.active_top = resolved
   state.menu_mode = true
   remember_menu_owner_win()
+  local owner_win = state.menu_owner_win
+  -- Menu colors and lualine's truncation can change the final component
+  -- layout. Measure the statusline after activation and before anchoring.
+  refresh_topbar(owner_win, true)
+  layout.refresh_label_positions(owner_win)
   local items = actions.current_items()
   state.anchor = layout.resolve_anchor(state.active_top, items)
   require("orca_menu.input").enable_keys()
-  refresh_topbar()
   state.menu_stack = {
     { items = items, selected = 1, scroll_top = 1 },
   }

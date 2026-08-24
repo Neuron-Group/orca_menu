@@ -60,10 +60,21 @@ function M.topbar_active_color()
   return topbar_text_color(source, state.config.highlights.topbar_active_preserve_bg ~= false)
 end
 
-function M.refresh()
+function M.refresh(opts)
   local ok, lualine = pcall(require, "lualine")
   if ok and type(lualine.refresh) == "function" then
-    pcall(lualine.refresh, { place = { "statusline" } })
+    opts = vim.tbl_extend("force", {
+      place = { "statusline" },
+    }, opts or {})
+    local winid = opts.winid
+    opts.winid = nil
+    if winid and vim.api.nvim_win_is_valid(winid) then
+      pcall(vim.api.nvim_win_call, winid, function()
+        lualine.refresh(opts)
+      end)
+    else
+      pcall(lualine.refresh, opts)
+    end
     return
   end
 
