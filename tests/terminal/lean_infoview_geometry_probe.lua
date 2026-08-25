@@ -79,6 +79,8 @@ local positions = lualine.get_component_positions({
 local position = assert(positions["orca_menu:1"])
 assert(position.screen, "lualine should expose a screen span for the rendered menu")
 local popup_width = layout.submenu_width(state.config.menus[1].items)
+local component_width = vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(1))
+assert(position.screen.width == component_width, "lualine screen geometry should exclude statusline separators")
 local border_size = state.config.submenu.border and 1 or 0
 local frame_width = popup_width + (border_size * 2)
 local min_frame_col = 1
@@ -106,6 +108,7 @@ local actual = {
   infoview_config = vim.api.nvim_win_get_config(infoview_win),
   infoview_screen = vim.fn.win_screenpos(infoview_win),
   component = position,
+  component_width = component_width,
   popup_width = popup_width,
   frame_width = frame_width,
   laststatus = vim.o.laststatus,
