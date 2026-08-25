@@ -596,16 +596,18 @@ function M.open_top(index)
   if not resolved then
     return
   end
-  state.active_top = resolved
-  state.menu_mode = true
   remember_menu_owner_win()
   local owner_win = state.menu_owner_win
-  -- Menu colors and lualine's truncation can change the final component
-  -- layout. Measure the statusline after activation and before anchoring.
+  -- Capture the frame that produced this open request. Activating a menu can
+  -- change lualine highlights and right-aligned section widths, so measuring
+  -- after the state transition may describe a different screen frame than
+  -- the click which selected the menu.
+  local position_snapshot = layout.capture_top_position(resolved, owner_win)
+  state.active_top = resolved
+  state.menu_mode = true
   refresh_topbar(owner_win, true)
-  layout.refresh_label_positions(owner_win)
   local items = actions.current_items()
-  state.anchor = layout.resolve_anchor(state.active_top, items)
+  state.anchor = layout.resolve_anchor(state.active_top, items, position_snapshot)
   require("orca_menu.input").enable_keys()
   state.menu_stack = {
     { items = items, selected = 1, scroll_top = 1 },

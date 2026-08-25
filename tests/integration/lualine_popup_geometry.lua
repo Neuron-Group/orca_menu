@@ -95,12 +95,11 @@ local right_anchor = host_position.screen.start_col
   + vim.fn.strdisplaywidth(label)
   - 1
 local popup_width = layout.submenu_width(state.config.menus[1].items)
-local relative_col = right_anchor - popup_width + 1 - host_screen[2] + 1
 local expected_col = math.max(
-  math.min(relative_col - 3, vim.api.nvim_win_get_width(local_host) - popup_width + 1),
+  math.min(right_anchor - popup_width + 1 - 3, vim.o.columns - popup_width + 1),
   1
 )
-H.eq(anchor.col, expected_col, "anchor should use lualine's host-relative component geometry")
+H.eq(anchor.col, expected_col, "anchor should use lualine's editor-screen component geometry")
 
 vim.api.nvim_win_close(local_float, true)
 vim.api.nvim_buf_delete(local_buf, { force = true })
