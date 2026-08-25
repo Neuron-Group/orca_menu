@@ -87,20 +87,14 @@ local local_mouse = {
 H.eq(layout.label_hit_at_col(local_mouse.screencol, local_mouse), 1, "local topbar clicks should hit through a float window")
 
 local anchor = layout.resolve_anchor(1, state.config.menus[1].items)
-H.truthy(anchor.col <= vim.api.nvim_win_get_width(local_host), "anchor should stay within the underlying window")
-local label = layout.top_bar_display_label(state.config.menus[1], 1)
-local spacing_width = vim.fn.strdisplaywidth(state.config.lualine.spacing or " ")
-local right_anchor = host_position.screen.start_col
-  + spacing_width
-  + vim.fn.strdisplaywidth(label)
-  - 1
+H.truthy(anchor.col <= vim.o.columns, "anchor should stay within the editor screen")
+local right_anchor = host_position.screen.end_col
 local popup_width = layout.submenu_width(state.config.menus[1].items)
-local relative_col = right_anchor - popup_width + 1 - host_screen[2] + 1
 local expected_col = math.max(
-  math.min(relative_col - 3, vim.api.nvim_win_get_width(local_host) - popup_width + 1),
+  math.min(right_anchor - popup_width + 1 - 3, vim.o.columns - popup_width + 1),
   1
 )
-H.eq(anchor.col, expected_col, "anchor should use lualine's host-relative component geometry")
+H.eq(anchor.col, expected_col, "anchor should use lualine's editor-screen component geometry")
 
 vim.api.nvim_win_close(local_float, true)
 vim.api.nvim_buf_delete(local_buf, { force = true })

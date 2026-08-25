@@ -45,20 +45,20 @@ lualine.refresh({ force = true, scope = "all", place = { "statusline" } })
 vim.api.nvim_set_current_win(left_win)
 layout.refresh_label_positions()
 
-local search_label = layout.top_bar_display_label(state.config.menus[2], 2)
 local positions = lualine.get_component_positions({ winid = left_win })
 local position = assert(positions["orca_menu:2"], "expected Search component position in left split statusline")
 H.truthy(position.screen, "expected Search component to be visible in the left split statusline")
-local expected_col = position.screen.start_col + vim.fn.strdisplaywidth(state.config.lualine.spacing or " ")
 
-H.eq(state.label_positions[2], expected_col, "label positions should be computed against the current window width")
+H.eq(state.label_positions[2], position.screen.start_col, "label positions should follow lualine's screen geometry")
 
 local popup_width = layout.submenu_width(state.config.menus[2].items)
 local anchor = layout.resolve_anchor(2, state.config.menus[2].items)
-H.truthy(anchor.col <= vim.api.nvim_win_get_width(left_win), "popup anchor should stay within the narrow current window")
-local screen_pos = vim.fn.win_screenpos(left_win)
-local relative_label_col = expected_col - screen_pos[2] + 1
-H.eq(anchor.col, math.max(relative_label_col + vim.fn.strdisplaywidth(search_label) - popup_width - 3, 1), "popup anchor should follow the label rendered in the active narrow split")
+H.truthy(anchor.col <= vim.o.columns, "popup anchor should stay within the editor screen")
+H.eq(
+  anchor.col,
+  math.max(math.min(position.screen.end_col - popup_width + 1 - 3, vim.o.columns - popup_width + 1), 1),
+  "popup anchor should follow lualine's screen geometry"
+)
 
 H.finish()
 print("ok - tests/integration/window_local_statusline_anchor.lua")

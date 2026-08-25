@@ -74,9 +74,12 @@ H.eq(view_component.color(), nil, "inactive sibling top menu should keep lualine
 H.render_statusline()
 layout.refresh_label_positions()
 local popup_width = layout.submenu_width(state.config.menus[1].items)
-local component_width = vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(1))
-local block_start = state.label_positions[1] - vim.fn.strdisplaywidth(state.config.lualine.spacing)
-H.eq(state.anchor.col, math.max(block_start + component_width - popup_width - 2, 1), "first popup open should already align to the highlighted component width")
+local component = state.component_positions[1]
+H.eq(
+  state.anchor.col,
+  math.max(component.screen.end_col - popup_width + 1 - 3, 1),
+  "first popup open should already align to lualine's highlighted component geometry"
+)
 
 popup.close_all()
 H.eq(tools_component.color(), nil, "closing popup should clear active top menu color override")

@@ -321,21 +321,13 @@ function M.refresh_label_positions(winid)
     place = "statusline",
     winid = winid,
   }) or {}
-  local spacing = state.config.lualine.spacing or " "
-  local spacing_width = vim.fn.strdisplaywidth(spacing)
 
-  for index, menu in ipairs(state.config.menus or {}) do
+  for index, _ in ipairs(state.config.menus or {}) do
     local position = positions[position_id(index)]
     if position and position.visible and position.screen then
-      local label = M.top_bar_display_label(menu, index)
-      local label_start = position.screen.start_col + spacing_width
-      local label_width = vim.fn.strdisplaywidth(label)
-      local label_end = label_start + label_width - 1
-      if label_width > 0 and label_end <= position.screen.end_col then
-        state.label_positions[index] = label_start
-        state.component_positions[index] = position
-        state.visible_labels[index] = true
-      end
+      state.label_positions[index] = position.screen.start_col
+      state.component_positions[index] = position
+      state.visible_labels[index] = true
     end
   end
 end
@@ -424,38 +416,17 @@ end
 
 function M.resolve_anchor(index, items)
   M.refresh_label_positions()
-  local start_col = state.label_positions[index]
   local component_position = state.component_positions[index]
-  local winid = position_window(component_position and component_position.winid)
-  local menu = state.config.menus[index]
-  local display_label = M.top_bar_display_label(menu, index)
-  local label_width = vim.fn.strdisplaywidth(display_label)
   local popup_width = M.submenu_width(items)
   local col
 
-  if start_col then
-    local right_anchor = start_col + label_width - 1
-    local highlight_extends_right = state.menu_mode
-      and state.active_top == index
-      and state.config
-      and state.config.highlights
-      and state.config.highlights.topbar_active_preserve_bg == false
-
-    if highlight_extends_right and component_position.screen then
-      right_anchor = component_position.screen.end_col
-    end
-
+  if component_position and component_position.screen then
+    -- Lualine reports final screen coordinates. Popup windows below are editor
+    -- relative, so converting this span through the rendering window would
+    -- move the popup into that window's local coordinate space.
+    local right_anchor = component_position.screen.end_col
     local right_aligned_col = right_anchor - popup_width + 1
-    local screen_origin = 1
-    if vim.o.laststatus ~= 3 then
-      local ok, screen_pos = pcall(vim.fn.win_screenpos, winid)
-      if ok and screen_pos and screen_pos[2] then
-        screen_origin = screen_pos[2]
-      end
-    end
-    local relative_col = right_aligned_col - screen_origin + 1
-    local available_width = vim.o.laststatus == 3 and vim.o.columns or vim.api.nvim_win_get_width(winid)
-    col = math.max(math.min(relative_col - 3, available_width - popup_width + 1), 1)
+    col = math.max(math.min(right_aligned_col - 3, vim.o.columns - popup_width + 1), 1)
   else
     col = math.max(state.anchor.col or 1, 1)
   end

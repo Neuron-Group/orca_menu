@@ -55,8 +55,7 @@ for index, menu in ipairs(state.config.menus) do
   local label_start = evaluated.str:find(label, 1, true)
   if label_start then
     visible_count = visible_count + 1
-    local rendered_col = vim.fn.strdisplaywidth(evaluated.str:sub(1, label_start - 1)) + 1
-    H.eq(state.label_positions[index], rendered_col, "visible labels should use their final rendered columns")
+    H.eq(state.label_positions[index], position.screen.start_col, "visible labels should use lualine screen geometry")
   else
     H.falsy(position.visible, "clipped components should not be reported as visible")
     H.falsy(position.screen, "clipped components should not expose screen geometry")
