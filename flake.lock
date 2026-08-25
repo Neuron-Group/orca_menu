@@ -21,11 +21,11 @@
     "lualine": {
       "flake": false,
       "locked": {
-        "lastModified": 1787576337,
-        "narHash": "sha256-jFOSSoNnKRy3yHhvlPm+3SDpjLQnBh8qcXCTEzDToCY=",
+        "lastModified": 1787634532,
+        "narHash": "sha256-uZIdGO9qNGxcRB0vixuASS0Hr9jeP1SdSE+H8rGzgkU=",
         "owner": "Neuron-Group",
         "repo": "lualine.nvim",
-        "rev": "7433b7bc809d6d60449f9e212d6000a1a5b55ad1",
+        "rev": "2e54507b02caf89076699ce8ad460c3f92bab929",
         "type": "github"
       },
       "original": {

@@ -4,7 +4,7 @@ if not outfile or outfile == "" then
   error("ORCA_TERMINAL_RESULT is required")
 end
 
-vim.o.laststatus = 2
+vim.o.laststatus = tonumber(vim.env.ORCA_LASTSTATUS or "2")
 vim.o.mouse = "a"
 vim.g.mapleader = " "
 vim.g.lean_config = {
@@ -23,10 +23,25 @@ local iv = infoview.open()
 iv:reposition()
 iv:enter()
 
+local lualine = require("lualine")
+lualine.setup({
+  options = {
+    globalstatus = vim.o.laststatus == 3,
+  },
+  sections = {
+    lualine_a = { "mode" },
+    lualine_b = { "branch" },
+    lualine_c = { "filename" },
+    lualine_x = { "filetype" },
+    lualine_y = { "progress" },
+    lualine_z = { "location" },
+  },
+})
+
 require("orca_menu").setup({
   enable_mouse = false,
   lualine = {
-    section = "a",
+    section = vim.env.ORCA_LUALINE_SECTION or "a",
     spacing = " ",
   },
   menus = {
@@ -43,7 +58,6 @@ require("orca_menu").setup({
 local layout = require("orca_menu.layout")
 local popup = require("orca_menu.popup")
 local state = require("orca_menu.state")
-local lualine = require("lualine")
 
 local main_win = iv.last_window.id
 local infoview_win = iv.window.id
@@ -51,10 +65,12 @@ vim.api.nvim_set_current_win(infoview_win)
 lualine.refresh({ force = true, scope = "all", place = { "statusline" } })
 layout.refresh_label_positions(infoview_win)
 
-local position = assert(lualine.get_component_positions({
+local positions = lualine.get_component_positions({
   place = "statusline",
   winid = infoview_win,
-})["orca_menu:1"])
+})
+local position = assert(positions["orca_menu:1"])
+assert(position.screen, "lualine should expose a screen span for the rendered menu")
 local popup_width = layout.submenu_width(state.config.menus[1].items)
 local expected_col = math.max(
   math.min(position.screen.end_col - popup_width + 1 - 3, vim.o.columns - popup_width + 1),
@@ -74,6 +90,8 @@ local actual = {
   infoview_screen = vim.fn.win_screenpos(infoview_win),
   component = position,
   popup_width = popup_width,
+  laststatus = vim.o.laststatus,
+  section = vim.env.ORCA_LUALINE_SECTION or "a",
   anchor = vim.deepcopy(state.anchor),
   popup_screen = actual_screen,
   expected_col = expected_col,

@@ -10,14 +10,7 @@ import tempfile
 import time
 
 
-def main():
-    repo_root = os.getcwd()
-    lean_root = os.environ.get("ORCA_LEAN_NVIM", "/home/neuron/Projects/lean.nvim")
-    lean_file = os.environ.get(
-        "ORCA_LEAN_FILE",
-        os.path.join(lean_root, "spec/fixtures/projects/Example/Example.lean"),
-    )
-
+def run_case(repo_root, lean_root, lean_file, laststatus, section):
     with tempfile.TemporaryDirectory(prefix="orca-menu-lean-geometry-") as tmpdir:
         result_path = os.path.join(tmpdir, "result.json")
         env = os.environ.copy()
@@ -32,6 +25,8 @@ def main():
                 "ORCA_LUALINE": os.path.join(repo_root, "lualine.nvim"),
                 "ORCA_LEAN_FILE": lean_file,
                 "ORCA_TERMINAL_RESULT": result_path,
+                "ORCA_LASTSTATUS": str(laststatus),
+                "ORCA_LUALINE_SECTION": section,
             }
         )
         for key in ("HOME", "XDG_STATE_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME"):
@@ -77,21 +72,46 @@ def main():
             raise AssertionError("result file missing\n" + output.decode("utf-8", errors="replace"))
 
         with open(result_path, encoding="utf-8") as handle:
-            result = json.load(handle)
+            return json.load(handle)
 
-        if result.get("status") != "ok":
-            raise AssertionError(f"unexpected probe status: {result}")
-        if result.get("infoview_config", {}).get("relative") != "":
-            raise AssertionError(f"expected a real split infoview window: {result}")
-        if result.get("owner_win") != result.get("infoview_win"):
-            raise AssertionError(f"expected the infoview to own the menu request: {result}")
-        if result.get("anchor", {}).get("col") != result.get("expected_col"):
-            raise AssertionError(f"anchor did not use lualine screen geometry: {result}")
-        if result.get("popup_screen", [None, None])[1] != result.get("expected_col") + 1:
-            raise AssertionError(f"popup is not at the expected editor screen column: {result}")
 
-        print(json.dumps(result, indent=2, sort_keys=True))
-        print("ok - tests/terminal/run_lean_infoview_geometry_probe.py")
+def validate(result, laststatus, section):
+    if result.get("status") != "ok":
+        raise AssertionError(f"unexpected probe status: {result}")
+    if result.get("laststatus") != laststatus or result.get("section") != section:
+        raise AssertionError(f"probe configuration did not reach Neovim: {result}")
+    if result.get("infoview_config", {}).get("relative") != "":
+        raise AssertionError(f"expected a real split infoview window: {result}")
+    if result.get("owner_win") != result.get("infoview_win"):
+        raise AssertionError(f"expected the infoview to own the menu request: {result}")
+    if result.get("anchor", {}).get("col") != result.get("expected_col"):
+        raise AssertionError(f"anchor did not use lualine screen geometry: {result}")
+    if result.get("popup_screen", [None, None])[1] != result.get("expected_col") + 1:
+        raise AssertionError(f"popup is not at the expected editor screen column: {result}")
+
+
+def main():
+    repo_root = os.getcwd()
+    lean_root = os.environ.get("ORCA_LEAN_NVIM", "/home/neuron/Projects/lean.nvim")
+    lean_file = os.environ.get(
+        "ORCA_LEAN_FILE",
+        os.path.join(lean_root, "spec/fixtures/projects/Example/Example.lean"),
+    )
+    requested_laststatus = os.environ.get("ORCA_LASTSTATUS")
+    requested_section = os.environ.get("ORCA_LUALINE_SECTION")
+    if requested_laststatus or requested_section:
+        cases = [(int(requested_laststatus or "2"), requested_section or "a")]
+    else:
+        cases = [(2, "a"), (3, "y")]
+
+    results = []
+    for laststatus, section in cases:
+        result = run_case(repo_root, lean_root, lean_file, laststatus, section)
+        validate(result, laststatus, section)
+        results.append(result)
+
+    print(json.dumps(results if len(results) > 1 else results[0], indent=2, sort_keys=True))
+    print("ok - tests/terminal/run_lean_infoview_geometry_probe.py")
 
 
 if __name__ == "__main__":
