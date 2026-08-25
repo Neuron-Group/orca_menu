@@ -92,7 +92,7 @@ local popup_width = layout.submenu_width(state.config.menus[1].items)
 H.eq(
   anchor.col,
   H.expected_popup_anchor(host_position, popup_width, state.config.submenu.border),
-  "anchor should use lualine's screen and host geometry"
+  "anchor should use lualine's screen geometry"
 )
 
 vim.api.nvim_win_close(local_float, true)

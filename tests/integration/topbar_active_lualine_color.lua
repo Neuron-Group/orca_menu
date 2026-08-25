@@ -78,7 +78,7 @@ local component = state.component_positions[1]
 H.eq(
   state.anchor.col,
   H.expected_popup_anchor(component, popup_width, state.config.submenu.border),
-  "first popup open should already align to lualine's highlighted component and host geometry"
+  "first popup open should already align to lualine's highlighted component geometry"
 )
 
 popup.close_all()

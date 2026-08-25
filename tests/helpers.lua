@@ -55,13 +55,6 @@ function M.expected_popup_anchor(position, popup_width, border)
   local frame_width = popup_width + (border_size * 2)
   local min_frame_col = 1
   local max_frame_col = math.max(vim.o.columns - frame_width + 1, 1)
-  local window_screen = position.screen and position.screen.window
-  if window_screen
-    and window_screen.end_col - window_screen.start_col + 1 >= frame_width
-  then
-    min_frame_col = math.max(min_frame_col, window_screen.start_col)
-    max_frame_col = math.min(max_frame_col, window_screen.end_col - frame_width + 1)
-  end
   local frame_col = math.min(
     math.max(position.screen.end_col - frame_width + 1, min_frame_col),
     max_frame_col

@@ -74,7 +74,7 @@ local popup_width = layout.submenu_width(state.config.menus[target].items)
 H.eq(
   state.anchor.col,
   H.expected_popup_anchor(target_position, popup_width, state.config.submenu.border),
-  "opening should anchor from the freshly measured component and host"
+  "opening should anchor from the freshly measured component"
 )
 
 H.finish()

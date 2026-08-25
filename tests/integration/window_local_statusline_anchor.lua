@@ -57,7 +57,7 @@ H.truthy(anchor.col <= vim.o.columns, "popup anchor should stay within the edito
 H.eq(
   anchor.col,
   H.expected_popup_anchor(position, popup_width, state.config.submenu.border),
-  "popup anchor should follow lualine's screen and host geometry"
+  "popup anchor should follow lualine's screen geometry"
 )
 
 H.finish()

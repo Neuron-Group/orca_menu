@@ -433,15 +433,6 @@ function M.resolve_anchor(index, items)
     local frame_left = component_position.screen.end_col - frame_width + 1
     local min_frame_left = 1
     local max_frame_left = math.max(vim.o.columns - frame_width + 1, 1)
-    local window_screen = component_position.screen.window
-    if window_screen
-      and type(window_screen.start_col) == "number"
-      and type(window_screen.end_col) == "number"
-      and window_screen.end_col - window_screen.start_col + 1 >= frame_width
-    then
-      min_frame_left = math.max(min_frame_left, window_screen.start_col)
-      max_frame_left = math.min(max_frame_left, window_screen.end_col - frame_width + 1)
-    end
     frame_left = math.min(math.max(frame_left, min_frame_left), max_frame_left)
     col = frame_left - 1
   else

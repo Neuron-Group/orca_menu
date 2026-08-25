@@ -66,13 +66,15 @@ local state = require("orca_menu.state")
 
 local main_win = iv.last_window.id
 local infoview_win = iv.window.id
-vim.api.nvim_set_current_win(infoview_win)
+local owner_kind = vim.env.ORCA_OWNER or "infoview"
+local owner_win = owner_kind == "main" and main_win or infoview_win
+vim.api.nvim_set_current_win(owner_win)
 lualine.refresh({ force = true, scope = "all", place = { "statusline" } })
-layout.refresh_label_positions(infoview_win)
+layout.refresh_label_positions(owner_win)
 
 local positions = lualine.get_component_positions({
   place = "statusline",
-  winid = infoview_win,
+  winid = owner_win,
 })
 local position = assert(positions["orca_menu:1"])
 assert(position.screen, "lualine should expose a screen span for the rendered menu")
@@ -81,11 +83,6 @@ local border_size = state.config.submenu.border and 1 or 0
 local frame_width = popup_width + (border_size * 2)
 local min_frame_col = 1
 local max_frame_col = math.max(vim.o.columns - frame_width + 1, 1)
-local window_screen = position.screen.window
-if window_screen and window_screen.end_col - window_screen.start_col + 1 >= frame_width then
-  min_frame_col = math.max(min_frame_col, window_screen.start_col)
-  max_frame_col = math.min(max_frame_col, window_screen.end_col - frame_width + 1)
-end
 local expected_frame_col = math.min(
   math.max(position.screen.end_col - frame_width + 1, min_frame_col),
   max_frame_col
@@ -103,6 +100,7 @@ local actual = {
   status = "ok",
   main_win = main_win,
   infoview_win = infoview_win,
+  owner_kind = owner_kind,
   owner_win = state.menu_owner_win,
   current_win = vim.api.nvim_get_current_win(),
   infoview_config = vim.api.nvim_win_get_config(infoview_win),

@@ -10,7 +10,7 @@ import tempfile
 import time
 
 
-def run_case(repo_root, lean_root, lean_file, laststatus, section):
+def run_case(repo_root, lean_root, lean_file, laststatus, section, owner_kind):
     with tempfile.TemporaryDirectory(prefix="orca-menu-lean-geometry-") as tmpdir:
         result_path = os.path.join(tmpdir, "result.json")
         env = os.environ.copy()
@@ -27,6 +27,7 @@ def run_case(repo_root, lean_root, lean_file, laststatus, section):
                 "ORCA_TERMINAL_RESULT": result_path,
                 "ORCA_LASTSTATUS": str(laststatus),
                 "ORCA_LUALINE_SECTION": section,
+                "ORCA_OWNER": owner_kind,
             }
         )
         for key in ("HOME", "XDG_STATE_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME"):
@@ -75,27 +76,25 @@ def run_case(repo_root, lean_root, lean_file, laststatus, section):
             return json.load(handle)
 
 
-def validate(result, laststatus, section):
+def validate(result, laststatus, section, owner_kind):
     if result.get("status") != "ok":
         raise AssertionError(f"unexpected probe status: {result}")
     if result.get("laststatus") != laststatus or result.get("section") != section:
         raise AssertionError(f"probe configuration did not reach Neovim: {result}")
     if result.get("infoview_config", {}).get("relative") != "":
         raise AssertionError(f"expected a real split infoview window: {result}")
-    if result.get("owner_win") != result.get("infoview_win"):
-        raise AssertionError(f"expected the infoview to own the menu request: {result}")
+    expected_owner = result.get("infoview_win") if owner_kind == "infoview" else result.get("main_win")
+    if result.get("owner_win") != expected_owner:
+        raise AssertionError(f"expected {owner_kind} to own the menu request: {result}")
+    if result.get("owner_kind") != owner_kind:
+        raise AssertionError(f"probe owner configuration did not reach Neovim: {result}")
     if result.get("anchor", {}).get("col") != result.get("expected_col"):
         raise AssertionError(f"anchor did not use lualine screen geometry: {result}")
     if result.get("popup_screen", [None, None])[1] != result.get("expected_col") + 1:
         raise AssertionError(f"popup is not at the expected editor screen column: {result}")
     popup_entry = result.get("popup_entry", {})
     if popup_entry.get("frame_col") != result.get("expected_frame_col"):
-        raise AssertionError(f"popup frame does not follow lualine's host geometry: {result}")
-    window_screen = result["component"]["screen"].get("window")
-    if window_screen:
-        frame_end = popup_entry["frame_col"] + popup_entry["frame_width"] - 1
-        if popup_entry["frame_col"] < window_screen["start_col"] or frame_end > window_screen["end_col"]:
-            raise AssertionError(f"popup frame escaped lualine's host window: {result}")
+        raise AssertionError(f"popup frame does not follow lualine's screen geometry: {result}")
 
 
 def main():
@@ -107,16 +106,32 @@ def main():
     )
     requested_laststatus = os.environ.get("ORCA_LASTSTATUS")
     requested_section = os.environ.get("ORCA_LUALINE_SECTION")
+    requested_owner = os.environ.get("ORCA_OWNER")
     if requested_laststatus or requested_section:
-        cases = [(int(requested_laststatus or "2"), requested_section or "a")]
+        cases = [(int(requested_laststatus or "2"), requested_section or "a", requested_owner or "infoview")]
     else:
-        cases = [(2, "a"), (3, "y")]
+        cases = [
+            (2, "a", "infoview"),
+            (2, "a", "main"),
+            (3, "y", "infoview"),
+            (3, "y", "main"),
+        ]
 
     results = []
-    for laststatus, section in cases:
-        result = run_case(repo_root, lean_root, lean_file, laststatus, section)
-        validate(result, laststatus, section)
+    for laststatus, section, owner_kind in cases:
+        result = run_case(repo_root, lean_root, lean_file, laststatus, section, owner_kind)
+        validate(result, laststatus, section, owner_kind)
         results.append(result)
+
+    global_results = [result for result in results if result.get("laststatus") == 3]
+    if len(global_results) == 2:
+        first, second = global_results
+        if first.get("component", {}).get("screen") != second.get("component", {}).get("screen"):
+            raise AssertionError(f"global lualine geometry changed with the owner window: {results}")
+        if first.get("anchor", {}).get("col") != second.get("anchor", {}).get("col"):
+            raise AssertionError(f"global popup anchor changed with the owner window: {results}")
+        if first.get("popup_entry", {}).get("frame_col") != second.get("popup_entry", {}).get("frame_col"):
+            raise AssertionError(f"global popup frame changed with the owner window: {results}")
 
     print(json.dumps(results if len(results) > 1 else results[0], indent=2, sort_keys=True))
     print("ok - tests/terminal/run_lean_infoview_geometry_probe.py")
