@@ -106,6 +106,26 @@ local function screen_cells(row, first_col, last_col)
   return cells
 end
 
+local function rendered_range(row, text, first_col, last_col)
+  local cells = screen_cells(row, first_col, last_col)
+  local rendered = {}
+  for _, cell in ipairs(cells) do
+    table.insert(rendered, cell.text)
+  end
+  local joined = table.concat(rendered)
+  local start = joined:find(text, 1, true)
+  if not start then
+    return nil
+  end
+  local prefix = joined:sub(1, start - 1)
+  local start_col = first_col + vim.fn.strdisplaywidth(prefix)
+  return {
+    start_col = start_col,
+    end_col = start_col + vim.fn.strdisplaywidth(text) - 1,
+    width = vim.fn.strdisplaywidth(text),
+  }
+end
+
 local function current_component_position(winid)
   return vim.deepcopy(lualine.get_component_positions({
     place = "statusline",
@@ -245,10 +265,31 @@ if vim.env.ORCA_REAL_MOUSE == "1" then
       screenrow = tonumber(vim.env.ORCA_MOUSE_ROW),
     }) }, trace_path, "a")
   end
+  local mouse_target_win = vim.env.ORCA_MOUSE_TARGET == "infoview" and infoview_win or owner_win
+  vim.cmd("redrawstatus")
+  vim.cmd("redraw")
+  local target_position = current_component_position(mouse_target_win)
+  local target_item = target_position.screen.item or target_position.screen
+  local target_row = target_position.screen.row
+  local target_ready_path = outfile .. ".ready"
+  if vim.env.ORCA_REAL_MOUSE_AUTO == "1" then
+    vim.fn.writefile({ vim.json.encode({
+      screencol = target_item.start_col,
+      screenrow = target_row,
+      winid = mouse_target_win,
+    }) }, target_ready_path)
+  end
   vim.defer_fn(function()
     local mouse = vim.fn.getmousepos()
     local position = current_component_position(mouse.winid or owner_win)
     local item_position = position.screen.item or position.screen
+    local component_text = require("orca_menu.lualine").visible_component_at(1)
+    local rendered_component = rendered_range(
+      position.screen.row,
+      component_text,
+      math.max(position.screen.start_col - 8, 1),
+      math.min(position.screen.end_col + 8, vim.o.columns)
+    )
     local hit = layout.label_hit_at_col(math.max(mouse.screencol or 1, 1), mouse)
     local popup_data = nil
     if vim.env.ORCA_REAL_MOUSE_CLICK == "1" and hit and not require("orca_menu.popup").is_open() then
@@ -275,6 +316,9 @@ if vim.env.ORCA_REAL_MOUSE == "1" then
         mouse = mouse,
         item = item_position,
         hit = hit,
+        target_position = target_position,
+        target_item = target_item,
+        rendered_component = rendered_component,
       },
       popup = popup_data,
     }) }, outfile)

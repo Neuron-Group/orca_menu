@@ -35,6 +35,8 @@ def run_case(repo_root, lean_root, lean_file, laststatus, section, owner_kind):
                 "ORCA_SWITCH_LASTSTATUS": os.environ.get("ORCA_SWITCH_LASTSTATUS", ""),
                 "ORCA_REAL_MOUSE": os.environ.get("ORCA_REAL_MOUSE", "0"),
                 "ORCA_REAL_MOUSE_CLICK": os.environ.get("ORCA_REAL_MOUSE_CLICK", "0"),
+                "ORCA_REAL_MOUSE_AUTO": os.environ.get("ORCA_REAL_MOUSE_AUTO", "0"),
+                "ORCA_MOUSE_TARGET": os.environ.get("ORCA_MOUSE_TARGET", ""),
                 "ORCA_TEST_POSITION_CACHE": os.environ.get("ORCA_TEST_POSITION_CACHE", "0"),
                 "ORCA_CACHE_TRANSITION_CURRENT": os.environ.get("ORCA_CACHE_TRANSITION_CURRENT", ""),
                 "ORCA_MOUSE_COL": os.environ.get("ORCA_MOUSE_COL", ""),
@@ -71,6 +73,15 @@ def run_case(repo_root, lean_root, lean_file, laststatus, section, owner_kind):
         while time.time() < end and not os.path.exists(result_path):
             if proc.poll() is not None:
                 break
+            if not mouse_sent and env.get("ORCA_REAL_MOUSE_AUTO") == "1":
+                ready_path = result_path + ".ready"
+                if os.path.exists(ready_path):
+                    with open(ready_path, encoding="utf-8") as handle:
+                        ready = json.load(handle)
+                    mouse_col = str(ready["screencol"])
+                    mouse_row = str(ready["screenrow"])
+                    os.write(master_fd, f"\x1b[<0;{mouse_col};{mouse_row}M".encode())
+                    mouse_sent = True
             if mouse_send_at and not mouse_sent and time.time() >= mouse_send_at:
                 os.write(master_fd, f"\x1b[<0;{mouse_col};{mouse_row}M".encode())
                 mouse_sent = True
