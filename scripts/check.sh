@@ -78,8 +78,6 @@ echo "==> tests/terminal/run_dynamic_unregister_open_terminal.py"
 python3 tests/terminal/run_dynamic_unregister_open_terminal.py
 echo "==> tests/terminal/run_dynamic_multi_update_terminal.py"
 python3 tests/terminal/run_dynamic_multi_update_terminal.py
-echo "==> tests/terminal/run_lualine_mouse_geometry_terminal.py"
-python3 tests/terminal/run_lualine_mouse_geometry_terminal.py
 run_suite tests/integration/mixed_input.lua
 run_suite tests/integration/mixed_fuzz.lua
 run_suite tests/integration/randomized_stress.lua

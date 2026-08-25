@@ -354,22 +354,6 @@ function M.is_statusline_row(row)
   return false
 end
 
-function M.capture_top_position(index, winid)
-  winid = position_window(winid)
-  M.refresh_label_positions(winid)
-
-  local position = state.component_positions[index]
-  local start_col = state.label_positions[index]
-  if not position or not position.screen or not start_col then
-    return nil
-  end
-
-  return {
-    label_start = start_col,
-    component = vim.deepcopy(position),
-  }
-end
-
 function M.label_hit_at_col(col, mouse)
   mouse = mouse or vim.fn.getmousepos()
   M.refresh_label_positions(mouse.winid)
@@ -438,17 +422,11 @@ function M.label_hit_at_col(col, mouse)
   return hit
 end
 
-function M.resolve_anchor(index, items, snapshot)
-  local start_col
-  local component_position
-  if snapshot then
-    start_col = snapshot.label_start
-    component_position = snapshot.component
-  else
-    M.refresh_label_positions()
-    start_col = state.label_positions[index]
-    component_position = state.component_positions[index]
-  end
+function M.resolve_anchor(index, items)
+  M.refresh_label_positions()
+  local start_col = state.label_positions[index]
+  local component_position = state.component_positions[index]
+  local winid = position_window(component_position and component_position.winid)
   local menu = state.config.menus[index]
   local display_label = M.top_bar_display_label(menu, index)
   local label_width = vim.fn.strdisplaywidth(display_label)
@@ -467,11 +445,17 @@ function M.resolve_anchor(index, items, snapshot)
       right_anchor = component_position.screen.end_col
     end
 
-    -- Popup windows are relative to the editor, while lualine reports screen
-    -- columns. Keep the anchor in that same editor coordinate system; a
-    -- window-local conversion moves the popup into the neighboring split.
     local right_aligned_col = right_anchor - popup_width + 1
-    col = math.max(math.min(right_aligned_col - 3, vim.o.columns - popup_width + 1), 1)
+    local screen_origin = 1
+    if vim.o.laststatus ~= 3 then
+      local ok, screen_pos = pcall(vim.fn.win_screenpos, winid)
+      if ok and screen_pos and screen_pos[2] then
+        screen_origin = screen_pos[2]
+      end
+    end
+    local relative_col = right_aligned_col - screen_origin + 1
+    local available_width = vim.o.laststatus == 3 and vim.o.columns or vim.api.nvim_win_get_width(winid)
+    col = math.max(math.min(relative_col - 3, available_width - popup_width + 1), 1)
   else
     col = math.max(state.anchor.col or 1, 1)
   end
