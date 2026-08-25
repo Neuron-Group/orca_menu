@@ -89,7 +89,7 @@ def validate(result, laststatus, section, owner_kind):
     if result.get("owner_kind") != owner_kind:
         raise AssertionError(f"probe owner configuration did not reach Neovim: {result}")
     if result.get("component", {}).get("screen", {}).get("width") != result.get("component_width"):
-        raise AssertionError(f"lualine screen span includes non-component separator cells: {result}")
+        raise AssertionError(f"lualine screen span does not match the rendered component: {result}")
     if result.get("anchor", {}).get("col") != result.get("expected_col"):
         raise AssertionError(f"anchor did not use lualine screen geometry: {result}")
     if result.get("popup_screen", [None, None])[1] != result.get("expected_col") + 1:

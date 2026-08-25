@@ -53,9 +53,7 @@ H.falsy(popup.is_open(), "clicking the same top label should close the popup tre
 restore()
 
 for index, position in pairs(state.component_positions) do
-  local content_end = position.screen.start_col
-    + vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(index))
-    - 1
+  local content_end = position.screen.end_col
   local restore_component_edge = H.stub_mouse({
     screenrow = statusline_row,
     screencol = content_end,
@@ -68,8 +66,7 @@ for index, position in pairs(state.component_positions) do
 end
 
 for index, position in pairs(state.component_positions) do
-  local content_width = vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(index))
-  local content_end = math.min(position.screen.end_col, position.screen.start_col + content_width - 1)
+  local content_end = position.screen.end_col
   for col = position.screen.start_col, content_end do
     local restore_component_cell = H.stub_mouse({
       screenrow = statusline_row,
@@ -84,10 +81,8 @@ for index, position in pairs(state.component_positions) do
 end
 
 local first_position = state.component_positions[1]
-local first_content_end = first_position.screen.start_col
-  + vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(1))
-  - 1
-if first_content_end < first_position.screen.end_col then
+local first_content_end = first_position.screen.end_col
+if first_content_end < vim.o.columns then
   local restore_separator_mouse = H.stub_mouse({
     screenrow = statusline_row,
     screencol = first_content_end + 1,

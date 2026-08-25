@@ -40,12 +40,12 @@ H.truthy(first.visible and first.screen, "visible component should expose a scre
 H.truthy(second.visible and second.screen, "second visible component should expose a screen span")
 H.eq(first.screen.row, vim.o.lines - vim.o.cmdheight, "screen span should expose the statusline row")
 H.eq(lualine.get_component_positions({ component_id = "orca_menu:1" }).id, "orca_menu:1", "single-component lookup should work")
-H.eq(state.label_positions[1], first.screen.start_col, "Orca label cache should use lualine screen geometry")
+H.eq(state.label_positions[1], first.screen.start_col, "Orca label cache should use lualine component geometry")
 H.eq(layout.is_top_visible(2), true, "Orca visibility should derive from lualine position metadata")
 
 for index, _ in ipairs(state.config.menus) do
   local position = positions["orca_menu:" .. index]
-  H.eq(state.label_positions[index], position.screen.start_col, "label position should match lualine screen geometry")
+  H.eq(state.label_positions[index], position.screen.start_col, "label position should match lualine component geometry")
 end
 
 H.finish()

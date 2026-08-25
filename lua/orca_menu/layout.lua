@@ -308,12 +308,6 @@ local function position_id(index)
   return "orca_menu:" .. index
 end
 
--- Lualine's component span also includes its trailing separator. The click
--- marker only covers Orca's rendered content, so derive that narrower span.
-local function component_content_width(index)
-  return vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(index))
-end
-
 function M.refresh_label_positions(winid)
   winid = position_window(winid)
   state.label_positions = {}
@@ -358,21 +352,16 @@ function M.label_hit_at_col(col, mouse)
   local candidates = {}
   local hit
 
-  for index, menu in ipairs(state.config.menus) do
+  for index, _ in ipairs(state.config.menus) do
     local start_col = state.label_positions[index]
     local position = state.component_positions[index]
-    local display_label = M.top_bar_display_label(menu, index)
-    local label_width = vim.fn.strdisplaywidth(display_label)
-    local end_col = start_col and start_col + label_width - 1 or nil
+    local end_col = position and position.screen and position.screen.end_col or nil
     local row_match = position and position.screen and position.screen.row == mouse.screenrow or false
     local component_start_col = position and position.screen and position.screen.start_col
     local component_end_col = position and position.screen and position.screen.end_col
     local hit_start_col = component_start_col
-    local content_width = component_content_width(index)
-    local hit_end_col = hit_start_col and content_width > 0 and hit_start_col + content_width - 1 or nil
-    if hit_end_col and component_end_col then
-      hit_end_col = math.min(hit_end_col, component_end_col)
-    end
+    local content_width = position and position.screen and position.screen.width or 0
+    local hit_end_col = component_end_col
     local col_match = hit_start_col
       and hit_end_col
       and col >= hit_start_col
@@ -385,7 +374,7 @@ function M.label_hit_at_col(col, mouse)
       hit_start_col = hit_start_col,
       hit_end_col = hit_end_col,
       content_width = content_width,
-      label_width = label_width,
+      label_width = content_width,
       row_match = row_match,
       col_match = col_match,
       hit = start_col ~= nil and position ~= nil and position.screen ~= nil and statusline_hit and row_match and col_match
@@ -426,8 +415,7 @@ function M.resolve_anchor(index, items)
 
   if component_position and component_position.screen then
     -- Lualine reports a 1-based, inclusive screen span. A popup's editor
-    -- anchor is a 0-based column at the outer frame's left edge, so include
-    -- both border cells when converting the component's right edge.
+    -- anchor is a 0-based column at the outer frame's left edge.
     local border_size = popup_border_size()
     local frame_width = popup_width + (border_size * 2)
     local frame_left = component_position.screen.end_col - frame_width + 1

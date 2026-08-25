@@ -12,6 +12,10 @@ mkdir -p "$HOME" "$XDG_STATE_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME"
 
 cd "$repo_root"
 
+if [[ -z "${ORCA_TEST_EXTRA_RTP:-}" && -d "$repo_root/lualine.nvim" ]]; then
+  export ORCA_TEST_EXTRA_RTP="$repo_root/lualine.nvim"
+fi
+
 run_suite() {
   local suite=$1
   echo "==> $suite"
