@@ -269,6 +269,23 @@ if vim.env.ORCA_REAL_MOUSE == "1" then
   vim.cmd("redrawstatus")
   vim.cmd("redraw")
   local target_position = current_component_position(mouse_target_win)
+  if not target_position or not target_position.screen then
+    vim.fn.writefile({ vim.json.encode({
+      status = "ok",
+      columns = vim.o.columns,
+      owner_win = owner_win,
+      current_win = vim.api.nvim_get_current_win(),
+      popup_open = require("orca_menu.popup").is_open(),
+      infoview_geometry = infoview_geometry,
+      geometry = geometry_before_mouse,
+      real_mouse = {
+        target_hidden = true,
+        target_position = target_position,
+      },
+    }) }, outfile)
+    vim.cmd("qa!")
+    return
+  end
   local target_item = target_position.screen.item or target_position.screen
   local target_row = target_position.screen.row
   local target_ready_path = outfile .. ".ready"
@@ -332,9 +349,57 @@ local positions = lualine.get_component_positions({
   winid = owner_win,
 })
 local position = assert(positions["orca_menu:1"])
-assert(position.screen, "lualine should expose a screen span for the rendered menu")
+local component_text = require("orca_menu.lualine").visible_component_at(1)
+if not position.screen then
+  local owner_snapshot = position_snapshot(owner_win)
+  local component_range = rendered_range(
+    owner_snapshot.row,
+    component_text,
+    math.max((owner_snapshot.screen and owner_snapshot.screen[2] or 1) - 4, 1),
+    vim.o.columns
+  )
+  assert(
+    not position.visible and component_range == nil,
+    "lualine should not expose screen geometry for a clipped menu component"
+  )
+
+  local mouse = {
+    screenrow = owner_snapshot.row,
+    screencol = 1,
+    winid = owner_win,
+    win = owner_win,
+  }
+  for col = 1, vim.o.columns do
+    mouse.screencol = col
+    assert(
+      layout.label_hit_at_col(col, mouse) == nil,
+      "clipped menu components should not retain stale topbar hitboxes"
+    )
+  end
+
+  vim.fn.writefile({ vim.json.encode({
+    status = "ok",
+    main_win = main_win,
+    infoview_win = infoview_win,
+    owner_kind = owner_kind,
+    infoview_config = vim.api.nvim_win_get_config(infoview_win),
+    infoview_geometry = infoview_geometry,
+    component = position,
+    component_text = component_text,
+    component_range = component_range,
+    component_visible = false,
+    laststatus = vim.o.laststatus,
+    section = vim.env.ORCA_LUALINE_SECTION or "a",
+    owner_win = owner_win,
+    current_win = vim.api.nvim_get_current_win(),
+    geometry = geometry_before_mouse,
+    cache_transition = cache_transition,
+  }) }, outfile)
+  vim.cmd("qa!")
+  return
+end
 local popup_width = layout.submenu_width(state.config.menus[1].items)
-local component_width = vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(1))
+local component_width = vim.fn.strdisplaywidth(component_text)
 assert(
   position.screen.width == component_width,
   "lualine screen geometry should match the rendered component"
@@ -362,7 +427,7 @@ for col = position.screen.start_col, position.screen.end_col do
   table.insert(rendered_component, vim.fn.screenstring(screen_row, col))
 end
 assert(
-  table.concat(rendered_component) == require("orca_menu.lualine").visible_component_at(1),
+  table.concat(rendered_component) == component_text,
   "lualine component geometry should address the rendered topbar component"
 )
 

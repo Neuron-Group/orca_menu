@@ -115,6 +115,12 @@ def validate(result, laststatus, section, owner_kind):
         raise AssertionError(f"unexpected probe status: {result}")
     if "real_mouse" in result:
         real_mouse = result["real_mouse"]
+        if real_mouse.get("target_hidden"):
+            if real_mouse.get("target_position", {}).get("screen") is not None:
+                raise AssertionError(f"hidden real mouse target still exposed screen geometry: {result}")
+            if result.get("popup_open"):
+                raise AssertionError(f"hidden real mouse target should not open a popup: {result}")
+            return
         item = real_mouse.get("item", {})
         col = real_mouse.get("mouse", {}).get("screencol")
         expected_hit = (
@@ -128,7 +134,10 @@ def validate(result, laststatus, section, owner_kind):
             raise AssertionError(f"real mouse hit did not follow lualine item geometry: {result}")
         popup = result.get("popup")
         if popup is not None:
-            if popup.get("owner_win") != real_mouse.get("mouse", {}).get("winid"):
+            expected_owner = real_mouse.get("mouse", {}).get("winid")
+            if not isinstance(expected_owner, int) or expected_owner <= 0:
+                expected_owner = real_mouse.get("target_position", {}).get("winid")
+            if popup.get("owner_win") != expected_owner:
                 raise AssertionError(f"popup owner did not follow the hit window: {result}")
             popup_item = popup.get("component", {}).get("screen", {}).get("item")
             if popup_item != item:
@@ -152,6 +161,13 @@ def validate(result, laststatus, section, owner_kind):
         raise AssertionError(f"expected {owner_kind} to own the menu request: {result}")
     if result.get("owner_kind") != owner_kind:
         raise AssertionError(f"probe owner configuration did not reach Neovim: {result}")
+    if result.get("component_visible") is False:
+        component = result.get("component", {})
+        if component.get("visible") or component.get("screen") is not None:
+            raise AssertionError(f"clipped component exposed visible screen geometry: {result}")
+        if result.get("component_range") is not None:
+            raise AssertionError(f"clipped component was fully rendered on screen: {result}")
+        return
     if result.get("component", {}).get("screen", {}).get("width") != result.get("component_width"):
         raise AssertionError(f"lualine screen span does not match the rendered component: {result}")
     cache_transition = result.get("cache_transition")
@@ -185,6 +201,7 @@ def main():
         cases = [
             (2, "a", "infoview"),
             (2, "a", "main"),
+            (2, "y", "infoview"),
             (3, "y", "infoview"),
             (3, "y", "main"),
         ]

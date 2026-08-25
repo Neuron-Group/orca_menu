@@ -295,7 +295,7 @@ function M.popup_height(items)
 end
 
 local function position_window(winid)
-  if winid and vim.api.nvim_win_is_valid(winid) then
+  if winid ~= nil then
     return winid
   end
   if state.menu_owner_win and vim.api.nvim_win_is_valid(state.menu_owner_win) then
