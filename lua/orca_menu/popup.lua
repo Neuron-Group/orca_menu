@@ -381,13 +381,17 @@ local function destroy_windows_only()
   state.buffers = {}
 end
 
-local function remember_menu_owner_win()
-  local current_win = vim.api.nvim_get_current_win()
+local function remember_menu_owner_win(winid)
+  local current_win = winid or vim.api.nvim_get_current_win()
+  if not vim.api.nvim_win_is_valid(current_win) then
+    current_win = vim.api.nvim_get_current_win()
+  end
   local config = vim.api.nvim_win_get_config(current_win)
   if config and config.relative and config.relative ~= "" then
-    return
+    return nil
   end
   state.menu_owner_win = current_win
+  return current_win
 end
 
 function M.close_all()
@@ -395,6 +399,7 @@ function M.close_all()
   state.menu_stack = {}
   state.menu_mode = false
   state.menu_owner_win = nil
+  state.last_topbar_hit = nil
   require("orca_menu.input").disable_keys()
   require("orca_menu.input").disable_mouse()
   require("orca_menu.selection").clear()
@@ -588,7 +593,7 @@ function M.redraw_all()
   end
 end
 
-function M.open_top(index)
+function M.open_top(index, hit)
   local resolved = resolve_enabled_top(index or state.active_top)
   if index and not layout.is_top_visible(index) and not resolved then
     return
@@ -598,14 +603,13 @@ function M.open_top(index)
   end
   state.active_top = resolved
   state.menu_mode = true
-  remember_menu_owner_win()
-  local owner_win = state.menu_owner_win
+  local owner_win = remember_menu_owner_win(hit and hit.winid)
   -- Menu colors and lualine's truncation can change the final component
   -- layout. Measure the statusline after activation and before anchoring.
   refresh_topbar(owner_win, true)
   layout.refresh_label_positions(owner_win)
   local items = actions.current_items()
-  state.anchor = layout.resolve_anchor(state.active_top, items)
+  state.anchor = layout.resolve_anchor(state.active_top, items, owner_win)
   require("orca_menu.input").enable_keys()
   state.menu_stack = {
     { items = items, selected = 1, scroll_top = 1 },
@@ -931,7 +935,7 @@ function M.handle_mouse(mouse)
     if state.active_top == bar_index and M.is_open() then
       M.close_all()
     else
-      M.open_top(bar_index)
+      M.open_top(bar_index, layout.last_topbar_hit(bar_index))
     end
     return
   end

@@ -28,7 +28,15 @@ def run_case(repo_root, lean_root, lean_file, laststatus, section, owner_kind):
                 "ORCA_LASTSTATUS": str(laststatus),
                 "ORCA_LUALINE_SECTION": section,
                 "ORCA_OWNER": owner_kind,
+                "ORCA_INFOVIEW_WIDTH": os.environ.get("ORCA_INFOVIEW_WIDTH", ""),
+                "ORCA_INFOVIEW_GUTTER": os.environ.get("ORCA_INFOVIEW_GUTTER", ""),
+                "ORCA_IGNORE_INFOVIEW": os.environ.get("ORCA_IGNORE_INFOVIEW", ""),
+                "ORCA_INITIAL_LASTSTATUS": os.environ.get("ORCA_INITIAL_LASTSTATUS", ""),
+                "ORCA_SWITCH_LASTSTATUS": os.environ.get("ORCA_SWITCH_LASTSTATUS", ""),
                 "ORCA_REAL_MOUSE": os.environ.get("ORCA_REAL_MOUSE", "0"),
+                "ORCA_REAL_MOUSE_CLICK": os.environ.get("ORCA_REAL_MOUSE_CLICK", "0"),
+                "ORCA_TEST_POSITION_CACHE": os.environ.get("ORCA_TEST_POSITION_CACHE", "0"),
+                "ORCA_CACHE_TRANSITION_CURRENT": os.environ.get("ORCA_CACHE_TRANSITION_CURRENT", ""),
                 "ORCA_MOUSE_COL": os.environ.get("ORCA_MOUSE_COL", ""),
                 "ORCA_MOUSE_ROW": os.environ.get("ORCA_MOUSE_ROW", ""),
             }
@@ -107,6 +115,22 @@ def validate(result, laststatus, section, owner_kind):
         actual_hit = real_mouse.get("hit") is not None
         if actual_hit != expected_hit:
             raise AssertionError(f"real mouse hit did not follow lualine item geometry: {result}")
+        popup = result.get("popup")
+        if popup is not None:
+            if popup.get("owner_win") != real_mouse.get("mouse", {}).get("winid"):
+                raise AssertionError(f"popup owner did not follow the hit window: {result}")
+            popup_item = popup.get("component", {}).get("screen", {}).get("item")
+            if popup_item != item:
+                raise AssertionError(f"popup did not retain the hit lualine item geometry: {result}")
+            border_size = 1 if result.get("popup_config", {}).get("border") else 0
+            frame_width = result.get("frame_width")
+            if frame_width is not None:
+                expected_frame_col = min(
+                    max(item["end_col"] + border_size - frame_width + 1, 1),
+                    max(result.get("columns", 1) - frame_width + 1, 1),
+                )
+                if popup.get("popup_entry", {}).get("frame_col") != expected_frame_col:
+                    raise AssertionError(f"popup frame did not align to the hit item: {result}")
         return
     if result.get("laststatus") != laststatus or result.get("section") != section:
         raise AssertionError(f"probe configuration did not reach Neovim: {result}")
@@ -119,6 +143,12 @@ def validate(result, laststatus, section, owner_kind):
         raise AssertionError(f"probe owner configuration did not reach Neovim: {result}")
     if result.get("component", {}).get("screen", {}).get("width") != result.get("component_width"):
         raise AssertionError(f"lualine screen span does not match the rendered component: {result}")
+    cache_transition = result.get("cache_transition")
+    if cache_transition is not None:
+        cache_position = cache_transition.get("position") or {}
+        expected_cache_index = 3 if laststatus == 3 else 2
+        if cache_position.get("index") != expected_cache_index:
+            raise AssertionError(f"lualine position cache kept the active infoview layout: {result}")
     if result.get("anchor", {}).get("col") != result.get("expected_col"):
         raise AssertionError(f"anchor did not use lualine screen geometry: {result}")
     if result.get("popup_screen", [None, None])[1] != result.get("expected_col") + 1:

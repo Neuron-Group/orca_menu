@@ -69,9 +69,8 @@ function M.refresh(opts)
     local winid = opts.winid
     opts.winid = nil
     if winid and vim.api.nvim_win_is_valid(winid) then
-      pcall(vim.api.nvim_win_call, winid, function()
-        lualine.refresh(opts)
-      end)
+      opts.winid = winid
+      pcall(lualine.refresh, opts)
     else
       pcall(lualine.refresh, opts)
     end

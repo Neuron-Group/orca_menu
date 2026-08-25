@@ -491,8 +491,9 @@ function M.install_mouse()
       local layout = require("orca_menu.layout")
       local bar_index = layout.label_hit_at_col(math.max((mouse.screencol or 1), 1), mouse)
       if bar_index then
+        local hit_context = layout.last_topbar_hit(bar_index)
         mode.run_after_editor_mode(function()
-          popup.open_top(bar_index)
+          popup.open_top(bar_index, hit_context)
           trace_mouse(event, { phase = "opened_top", keys = keys, bar_index = bar_index })
         end)
       else

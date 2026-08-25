@@ -310,6 +310,7 @@ end
 
 function M.refresh_label_positions(winid)
   winid = position_window(winid)
+  state.last_topbar_hit = nil
   state.label_positions = {}
   state.component_positions = {}
   state.visible_labels = {}
@@ -329,6 +330,14 @@ function M.refresh_label_positions(winid)
       state.visible_labels[index] = true
     end
   end
+end
+
+function M.last_topbar_hit(index)
+  local hit = state.last_topbar_hit
+  if not hit or (index and hit.index ~= index) then
+    return nil
+  end
+  return vim.deepcopy(hit)
 end
 
 function M.is_top_visible(index)
@@ -406,11 +415,19 @@ function M.label_hit_at_col(col, mouse)
     candidates = candidates,
   }, mouse)
 
+  if hit then
+    local position = state.component_positions[hit]
+    state.last_topbar_hit = {
+      index = hit,
+      winid = position and position.winid or nil,
+    }
+  end
+
   return hit
 end
 
-function M.resolve_anchor(index, items)
-  M.refresh_label_positions()
+function M.resolve_anchor(index, items, winid)
+  M.refresh_label_positions(winid)
   local component_position = state.component_positions[index]
   local popup_width = M.submenu_width(items)
   local col

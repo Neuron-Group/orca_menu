@@ -193,7 +193,8 @@ end
 function M.click(index, mouse)
   local target = index or state.active_top
   mouse = mouse or vim.fn.getmousepos()
-  local hit = require("orca_menu.layout").label_hit_at_col(
+  local layout = require("orca_menu.layout")
+  local hit = layout.label_hit_at_col(
     math.max((mouse.screencol or 1), 1),
     mouse
   )
@@ -205,11 +206,13 @@ function M.click(index, mouse)
     return
   end
 
+  local hit_context = layout.last_topbar_hit(target)
+
   mode.run_after_editor_mode(function()
     if popup.is_open() and state.active_top == target then
       popup.close_all()
     else
-      popup.open_top(target)
+      popup.open_top(target, hit_context)
     end
   end, { preserve_visual = true })
 end
