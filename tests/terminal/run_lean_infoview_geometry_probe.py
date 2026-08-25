@@ -28,6 +28,9 @@ def run_case(repo_root, lean_root, lean_file, laststatus, section, owner_kind):
                 "ORCA_LASTSTATUS": str(laststatus),
                 "ORCA_LUALINE_SECTION": section,
                 "ORCA_OWNER": owner_kind,
+                "ORCA_REAL_MOUSE": os.environ.get("ORCA_REAL_MOUSE", "0"),
+                "ORCA_MOUSE_COL": os.environ.get("ORCA_MOUSE_COL", ""),
+                "ORCA_MOUSE_ROW": os.environ.get("ORCA_MOUSE_ROW", ""),
             }
         )
         for key in ("HOME", "XDG_STATE_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME"):
@@ -53,9 +56,16 @@ def run_case(repo_root, lean_root, lean_file, laststatus, section, owner_kind):
 
         output = bytearray()
         end = time.time() + 15
+        mouse_col = env.get("ORCA_MOUSE_COL")
+        mouse_row = env.get("ORCA_MOUSE_ROW")
+        mouse_sent = False
+        mouse_send_at = time.time() + 2 if mouse_col and mouse_row else None
         while time.time() < end and not os.path.exists(result_path):
             if proc.poll() is not None:
                 break
+            if mouse_send_at and not mouse_sent and time.time() >= mouse_send_at:
+                os.write(master_fd, f"\x1b[<0;{mouse_col};{mouse_row}M".encode())
+                mouse_sent = True
             ready, _, _ = select.select([master_fd], [], [], 0.05)
             if master_fd in ready:
                 try:
@@ -73,12 +83,31 @@ def run_case(repo_root, lean_root, lean_file, laststatus, section, owner_kind):
             raise AssertionError("result file missing\n" + output.decode("utf-8", errors="replace"))
 
         with open(result_path, encoding="utf-8") as handle:
-            return json.load(handle)
+            result = json.load(handle)
+        trace_path = result_path + ".trace"
+        if os.path.exists(trace_path):
+            with open(trace_path, encoding="utf-8") as handle:
+                result["trace"] = [json.loads(line) for line in handle if line.strip()]
+        return result
 
 
 def validate(result, laststatus, section, owner_kind):
     if result.get("status") != "ok":
         raise AssertionError(f"unexpected probe status: {result}")
+    if "real_mouse" in result:
+        real_mouse = result["real_mouse"]
+        item = real_mouse.get("item", {})
+        col = real_mouse.get("mouse", {}).get("screencol")
+        expected_hit = (
+            isinstance(col, int)
+            and isinstance(item.get("start_col"), int)
+            and isinstance(item.get("end_col"), int)
+            and item["start_col"] <= col <= item["end_col"]
+        )
+        actual_hit = real_mouse.get("hit") is not None
+        if actual_hit != expected_hit:
+            raise AssertionError(f"real mouse hit did not follow lualine item geometry: {result}")
+        return
     if result.get("laststatus") != laststatus or result.get("section") != section:
         raise AssertionError(f"probe configuration did not reach Neovim: {result}")
     if result.get("infoview_config", {}).get("relative") != "":

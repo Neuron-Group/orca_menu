@@ -110,7 +110,7 @@ state.config = config.normalize({
   },
 })
 
-H.eq(require("orca_menu.lualine").component_at(1), "  File  ", "disabled top menu should keep the same trailing padding as other top menus")
+H.eq(require("orca_menu.lualine").component_at(1), "File", "lualine should receive the unpadded top-menu label")
 local topbar_disabled_hl = require("orca_menu.lualine").topbar_disabled_color()
 local comment_hl = vim.api.nvim_get_hl(0, { name = "Comment", link = false })
 H.eq(topbar_disabled_hl.fg, string.format("#%06x", comment_hl.fg), "topbar disabled highlight should reuse the configured disabled foreground")

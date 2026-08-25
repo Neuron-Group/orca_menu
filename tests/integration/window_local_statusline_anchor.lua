@@ -49,7 +49,7 @@ local positions = lualine.get_component_positions({ winid = left_win })
 local position = assert(positions["orca_menu:2"], "expected Search component position in left split statusline")
 H.truthy(position.screen, "expected Search component to be visible in the left split statusline")
 
-H.eq(state.label_positions[2], position.screen.start_col, "label positions should follow lualine's component geometry")
+H.eq(state.label_positions[2], position.screen.item.start_col, "label positions should follow lualine's item geometry")
 
 local popup_width = layout.submenu_width(state.config.menus[2].items)
 local anchor = layout.resolve_anchor(2, state.config.menus[2].items)

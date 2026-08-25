@@ -61,7 +61,9 @@ local disabled_text = disabled_component[1]()
 local disabled_color = disabled_component.color()
 local comment_hl = vim.api.nvim_get_hl(0, { name = "Comment", link = false })
 
-H.eq(disabled_text, " p->LSP ", "disabled top menu should keep the same right padding as other top menus")
+H.eq(disabled_text, "p->LSP", "disabled top menu should hand lualine the unpadded label")
+H.eq(disabled_component.padding.left, 1, "lualine should own disabled top-menu left padding")
+H.eq(disabled_component.padding.right, 1, "lualine should own disabled top-menu right padding")
 H.eq(disabled_color.fg, string.format("#%06x", comment_hl.fg), "disabled top menu should hand lualine the configured foreground color")
 H.eq(disabled_color.bg, nil, "disabled top menu color should leave background unset so lualine keeps its own section background")
 

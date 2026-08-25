@@ -117,6 +117,40 @@ vim.api.nvim_set_current_win(owner_win)
 lualine.refresh({ force = true, scope = "all", place = { "statusline" } })
 layout.refresh_label_positions(owner_win)
 
+if vim.env.ORCA_REAL_MOUSE == "1" then
+  local trace_path = outfile .. ".trace"
+  vim.fn.writefile({}, trace_path)
+  state.mouse_trace_path = trace_path
+  if vim.env.ORCA_MOUSE_COL and vim.env.ORCA_MOUSE_ROW then
+    vim.fn.writefile({ vim.json.encode({
+      event = "real_mouse_expected",
+      screencol = tonumber(vim.env.ORCA_MOUSE_COL),
+      screenrow = tonumber(vim.env.ORCA_MOUSE_ROW),
+    }) }, trace_path, "a")
+  end
+  vim.defer_fn(function()
+    local position = current_component_position(owner_win)
+    local item_position = position.screen.item or position.screen
+    local mouse = vim.fn.getmousepos()
+    local hit = layout.label_hit_at_col(math.max(mouse.screencol or 1, 1), mouse)
+    vim.fn.writefile({ vim.json.encode({
+      status = "ok",
+      position = position,
+      screen = screen_line(position.screen.row, 58, vim.o.columns),
+      owner_win = owner_win,
+      current_win = vim.api.nvim_get_current_win(),
+      popup_open = popup.is_open(),
+      real_mouse = {
+        mouse = mouse,
+        item = item_position,
+        hit = hit,
+      },
+    }) }, outfile)
+    vim.cmd("qa!")
+  end, 2500)
+  return
+end
+
 local positions = lualine.get_component_positions({
   place = "statusline",
   winid = owner_win,
@@ -131,10 +165,11 @@ assert(
 )
 local border_size = state.config.submenu.border and 1 or 0
 local frame_width = popup_width + (border_size * 2)
+local item_position = position.screen.item or position.screen
 local min_frame_col = 1
 local max_frame_col = math.max(vim.o.columns - frame_width + 1, 1)
 local expected_frame_col = math.min(
-  math.max(position.screen.end_col - frame_width + 1, min_frame_col),
+  math.max(item_position.end_col + border_size - frame_width + 1, min_frame_col),
   max_frame_col
 )
 local expected_col = math.max(
@@ -158,7 +193,7 @@ assert(
 local original_getmousepos = vim.fn.getmousepos
 local event_mouse = {
   screenrow = position.screen.row,
-  screencol = position.screen.start_col,
+  screencol = item_position.start_col,
   winid = owner_win,
   win = owner_win,
 }
@@ -185,7 +220,7 @@ popup.close_all()
 vim.api.nvim_set_current_win(owner_win)
 local click_mouse = {
   screenrow = position.screen.row,
-  screencol = position.screen.start_col,
+  screencol = item_position.start_col,
   winid = owner_win,
   win = owner_win,
 }

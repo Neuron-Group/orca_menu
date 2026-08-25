@@ -53,7 +53,8 @@ H.falsy(popup.is_open(), "clicking the same top label should close the popup tre
 restore()
 
 for index, position in pairs(state.component_positions) do
-  local content_end = position.screen.end_col
+  local item = position.screen.item or position.screen
+  local content_end = item.end_col
   local restore_component_edge = H.stub_mouse({
     screenrow = statusline_row,
     screencol = content_end,
@@ -66,8 +67,9 @@ for index, position in pairs(state.component_positions) do
 end
 
 for index, position in pairs(state.component_positions) do
-  local content_end = position.screen.end_col
-  for col = position.screen.start_col, content_end do
+  local item = position.screen.item or position.screen
+  local content_end = item.end_col
+  for col = item.start_col, content_end do
     local restore_component_cell = H.stub_mouse({
       screenrow = statusline_row,
       screencol = col,
@@ -81,7 +83,8 @@ for index, position in pairs(state.component_positions) do
 end
 
 local first_position = state.component_positions[1]
-local first_content_end = first_position.screen.end_col
+local first_item = first_position.screen.item or first_position.screen
+local first_content_end = first_item.end_col
 if first_content_end < vim.o.columns then
   local restore_separator_mouse = H.stub_mouse({
     screenrow = statusline_row,
@@ -102,9 +105,7 @@ end, { buffer = 0 })
 
 local restore_statusline_mouse = H.stub_mouse({
   screenrow = statusline_row,
-  screencol = state.component_positions[1].screen.start_col
-    + vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(1))
-    - 1,
+  screencol = (state.component_positions[1].screen.item or state.component_positions[1].screen).end_col,
 })
 vim.fn.feedkeys(vim.keycode("<LeftMouse>"), "xt")
 H.flush()
@@ -147,9 +148,9 @@ H.eq(native_clicks, 1, "non-Orca clicks should reach the existing local mapping"
 restore_native_mouse()
 
 for index, position in pairs(state.component_positions) do
-  local content_width = vim.fn.strdisplaywidth(require("orca_menu.lualine").visible_component_at(index))
-  local content_end = math.min(position.screen.end_col, position.screen.start_col + content_width - 1)
-  for col = position.screen.start_col, content_end do
+  local item = position.screen.item or position.screen
+  local content_end = item.end_col
+  for col = item.start_col, content_end do
     local restore_component_cell = H.stub_mouse({
       screenrow = statusline_row,
       screencol = col,

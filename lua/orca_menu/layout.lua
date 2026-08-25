@@ -323,7 +323,8 @@ function M.refresh_label_positions(winid)
   for index, _ in ipairs(state.config.menus or {}) do
     local position = positions[position_id(index)]
     if position and position.visible and position.screen then
-      state.label_positions[index] = position.screen.start_col
+      local item_position = position.screen.item or position.screen
+      state.label_positions[index] = item_position.start_col
       state.component_positions[index] = position
       state.visible_labels[index] = true
     end
@@ -355,13 +356,12 @@ function M.label_hit_at_col(col, mouse)
   for index, _ in ipairs(state.config.menus) do
     local start_col = state.label_positions[index]
     local position = state.component_positions[index]
-    local end_col = position and position.screen and position.screen.end_col or nil
+    local item_position = position and position.screen and (position.screen.item or position.screen)
+    local end_col = item_position and item_position.end_col or nil
     local row_match = position and position.screen and position.screen.row == mouse.screenrow or false
-    local component_start_col = position and position.screen and position.screen.start_col
-    local component_end_col = position and position.screen and position.screen.end_col
-    local hit_start_col = component_start_col
-    local content_width = position and position.screen and position.screen.width or 0
-    local hit_end_col = component_end_col
+    local hit_start_col = item_position and item_position.start_col
+    local content_width = item_position and item_position.width or 0
+    local hit_end_col = item_position and item_position.end_col
     local col_match = hit_start_col
       and hit_end_col
       and col >= hit_start_col
@@ -384,6 +384,8 @@ function M.label_hit_at_col(col, mouse)
       candidate.component_row = position.screen.row
       candidate.component_start_col = position.screen.start_col
       candidate.component_end_col = position.screen.end_col
+      candidate.item_start_col = hit_start_col
+      candidate.item_end_col = hit_end_col
     end
     table.insert(candidates, candidate)
 
@@ -418,7 +420,9 @@ function M.resolve_anchor(index, items)
     -- anchor is a 0-based column at the outer frame's left edge.
     local border_size = popup_border_size()
     local frame_width = popup_width + (border_size * 2)
-    local frame_left = component_position.screen.end_col - frame_width + 1
+    local item_position = component_position.screen.item or component_position.screen
+    local frame_right = item_position.end_col + border_size
+    local frame_left = frame_right - frame_width + 1
     local min_frame_left = 1
     local max_frame_left = math.max(vim.o.columns - frame_width + 1, 1)
     frame_left = math.min(math.max(frame_left, min_frame_left), max_frame_left)

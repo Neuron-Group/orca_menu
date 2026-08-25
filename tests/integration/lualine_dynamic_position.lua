@@ -55,7 +55,7 @@ for index, menu in ipairs(state.config.menus) do
   local label_start = evaluated.str:find(label, 1, true)
   if label_start then
     visible_count = visible_count + 1
-    H.eq(state.label_positions[index], position.screen.start_col, "visible labels should use lualine component geometry")
+    H.eq(state.label_positions[index], position.screen.item.start_col, "visible labels should use lualine item geometry")
   else
     H.falsy(position.visible, "clipped components should not be reported as visible")
     H.falsy(position.screen, "clipped components should not expose screen geometry")

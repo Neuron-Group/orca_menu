@@ -83,8 +83,7 @@ end
 
 local function component_parts(menu, index)
   local label = layout.top_bar_display_label(menu, index)
-  local spacing = state.config.lualine.spacing or " "
-  return label, spacing, spacing
+  return label
 end
 
 function M.visible_component_at(index)
@@ -96,15 +95,21 @@ function M.visible_component_at(index)
     return ""
   end
 
-  local label, spacing, right_spacing = component_parts(menu, index)
-  return string.format("%s%s%s", spacing, label, right_spacing)
+  local label = component_parts(menu, index)
+  local spacing = state.config.lualine.spacing or " "
+  return string.format("%s%s%s", spacing, label, spacing)
 end
 
-local function make_component(fn, color_fn, component_id)
+local function component_padding()
+  local spacing = state.config and state.config.lualine and state.config.lualine.spacing or " "
+  return vim.fn.strdisplaywidth(spacing)
+end
+
+local function make_component(fn, color_fn, component_id, padding)
   return {
     fn,
     color = color_fn,
-    padding = { left = 0, right = 0 },
+    padding = padding or { left = 0, right = 0 },
     orca_menu_component = true,
     component_id = component_id,
   }
@@ -115,6 +120,7 @@ local function register_signature()
     section = state.config and state.config.lualine and state.config.lualine.section or "y",
     enable_mouse = state.config and state.config.enable_mouse ~= false or false,
     menu_count = state.config and state.config.menus and #state.config.menus or 0,
+    spacing = state.config and state.config.lualine and state.config.lualine.spacing or " ",
   })
 end
 
@@ -126,11 +132,7 @@ function M.component_at(index)
   if not menu then
     return ""
   end
-  local label, spacing, right_spacing = component_parts(menu, index)
-  -- Mouse dispatch is owned by input.lua, which uses lualine's screen
-  -- position metadata. Native %@ regions end before lualine separators and
-  -- can therefore disagree with the component span used for hit testing.
-  return string.format("%s%s%s", spacing, label, right_spacing)
+  return component_parts(menu, index)
 end
 
 function M.anchor_component()
@@ -193,7 +195,10 @@ function M.register()
           return require("orca_menu.lualine").topbar_disabled_color()
         end
         return nil
-      end, "orca_menu:" .. index))
+      end, "orca_menu:" .. index, {
+        left = component_padding(),
+        right = component_padding(),
+      }))
     end
   end
 
