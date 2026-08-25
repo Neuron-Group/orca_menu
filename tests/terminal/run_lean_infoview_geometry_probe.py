@@ -88,6 +88,14 @@ def validate(result, laststatus, section):
         raise AssertionError(f"anchor did not use lualine screen geometry: {result}")
     if result.get("popup_screen", [None, None])[1] != result.get("expected_col") + 1:
         raise AssertionError(f"popup is not at the expected editor screen column: {result}")
+    popup_entry = result.get("popup_entry", {})
+    if popup_entry.get("frame_col") != result.get("expected_frame_col"):
+        raise AssertionError(f"popup frame does not follow lualine's host geometry: {result}")
+    window_screen = result["component"]["screen"].get("window")
+    if window_screen:
+        frame_end = popup_entry["frame_col"] + popup_entry["frame_width"] - 1
+        if popup_entry["frame_col"] < window_screen["start_col"] or frame_end > window_screen["end_col"]:
+            raise AssertionError(f"popup frame escaped lualine's host window: {result}")
 
 
 def main():

@@ -11,6 +11,10 @@ local function has_popup_border()
   return border ~= nil and border ~= false
 end
 
+local function popup_border_size()
+  return has_popup_border() and 1 or 0
+end
+
 local function truncate_display(text, max_width)
   if max_width <= 0 then
     return ""
@@ -421,14 +425,27 @@ function M.resolve_anchor(index, items)
   local col
 
   if component_position and component_position.screen then
-    -- Lualine reports final screen coordinates. Popup windows below are editor
-    -- relative, so converting this span through the rendering window would
-    -- move the popup into that window's local coordinate space.
-    local right_anchor = component_position.screen.end_col
-    local right_aligned_col = right_anchor - popup_width + 1
-    col = math.max(math.min(right_aligned_col - 3, vim.o.columns - popup_width + 1), 1)
+    -- Lualine reports a 1-based, inclusive screen span. A popup's editor
+    -- anchor is a 0-based column at the outer frame's left edge, so include
+    -- both border cells when converting the component's right edge.
+    local border_size = popup_border_size()
+    local frame_width = popup_width + (border_size * 2)
+    local frame_left = component_position.screen.end_col - frame_width + 1
+    local min_frame_left = 1
+    local max_frame_left = math.max(vim.o.columns - frame_width + 1, 1)
+    local window_screen = component_position.screen.window
+    if window_screen
+      and type(window_screen.start_col) == "number"
+      and type(window_screen.end_col) == "number"
+      and window_screen.end_col - window_screen.start_col + 1 >= frame_width
+    then
+      min_frame_left = math.max(min_frame_left, window_screen.start_col)
+      max_frame_left = math.min(max_frame_left, window_screen.end_col - frame_width + 1)
+    end
+    frame_left = math.min(math.max(frame_left, min_frame_left), max_frame_left)
+    col = frame_left - 1
   else
-    col = math.max(state.anchor.col or 1, 1)
+    col = math.max(state.anchor.col or 0, 0)
   end
 
   local height = M.popup_height(items)

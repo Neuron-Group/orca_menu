@@ -88,13 +88,12 @@ H.eq(layout.label_hit_at_col(local_mouse.screencol, local_mouse), 1, "local topb
 
 local anchor = layout.resolve_anchor(1, state.config.menus[1].items)
 H.truthy(anchor.col <= vim.o.columns, "anchor should stay within the editor screen")
-local right_anchor = host_position.screen.end_col
 local popup_width = layout.submenu_width(state.config.menus[1].items)
-local expected_col = math.max(
-  math.min(right_anchor - popup_width + 1 - 3, vim.o.columns - popup_width + 1),
-  1
+H.eq(
+  anchor.col,
+  H.expected_popup_anchor(host_position, popup_width, state.config.submenu.border),
+  "anchor should use lualine's screen and host geometry"
 )
-H.eq(anchor.col, expected_col, "anchor should use lualine's editor-screen component geometry")
 
 vim.api.nvim_win_close(local_float, true)
 vim.api.nvim_buf_delete(local_buf, { force = true })

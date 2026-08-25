@@ -23,6 +23,8 @@ local iv = infoview.open()
 iv:reposition()
 iv:enter()
 
+local submenu_border = vim.env.ORCA_SUBMENU_BORDER or "rounded"
+
 local lualine = require("lualine")
 lualine.setup({
   options = {
@@ -43,6 +45,9 @@ require("orca_menu").setup({
   lualine = {
     section = vim.env.ORCA_LUALINE_SECTION or "a",
     spacing = " ",
+  },
+  submenu = {
+    border = submenu_border,
   },
   menus = {
     {
@@ -72,14 +77,28 @@ local positions = lualine.get_component_positions({
 local position = assert(positions["orca_menu:1"])
 assert(position.screen, "lualine should expose a screen span for the rendered menu")
 local popup_width = layout.submenu_width(state.config.menus[1].items)
+local border_size = state.config.submenu.border and 1 or 0
+local frame_width = popup_width + (border_size * 2)
+local min_frame_col = 1
+local max_frame_col = math.max(vim.o.columns - frame_width + 1, 1)
+local window_screen = position.screen.window
+if window_screen and window_screen.end_col - window_screen.start_col + 1 >= frame_width then
+  min_frame_col = math.max(min_frame_col, window_screen.start_col)
+  max_frame_col = math.min(max_frame_col, window_screen.end_col - frame_width + 1)
+end
+local expected_frame_col = math.min(
+  math.max(position.screen.end_col - frame_width + 1, min_frame_col),
+  max_frame_col
+)
 local expected_col = math.max(
-  math.min(position.screen.end_col - popup_width + 1 - 3, vim.o.columns - popup_width + 1),
-  1
+  expected_frame_col - 1,
+  0
 )
 
 popup.open_top(1)
 local popup_win = state.windows[1]
 local actual_screen = vim.fn.win_screenpos(popup_win)
+local popup_entry = state.menu_stack[1]
 local actual = {
   status = "ok",
   main_win = main_win,
@@ -90,11 +109,26 @@ local actual = {
   infoview_screen = vim.fn.win_screenpos(infoview_win),
   component = position,
   popup_width = popup_width,
+  frame_width = frame_width,
   laststatus = vim.o.laststatus,
   section = vim.env.ORCA_LUALINE_SECTION or "a",
   anchor = vim.deepcopy(state.anchor),
   popup_screen = actual_screen,
+  popup_window_position = vim.api.nvim_win_get_position(popup_win),
+  popup_cell_screen = vim.fn.screenpos(popup_win, 1, 1),
+  popup_config = vim.api.nvim_win_get_config(popup_win),
+  popup_entry = {
+    row = popup_entry.row,
+    col = popup_entry.col,
+    frame_row = popup_entry.frame_row,
+    frame_col = popup_entry.frame_col,
+    content_row = popup_entry.content_row,
+    content_col = popup_entry.content_col,
+    frame_width = popup_entry.frame_width,
+    content_width = popup_entry.content_width,
+  },
   expected_col = expected_col,
+  expected_frame_col = expected_frame_col,
 }
 vim.fn.writefile({ vim.json.encode(actual) }, outfile)
 vim.cmd("qa!")

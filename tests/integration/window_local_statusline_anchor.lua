@@ -56,8 +56,8 @@ local anchor = layout.resolve_anchor(2, state.config.menus[2].items)
 H.truthy(anchor.col <= vim.o.columns, "popup anchor should stay within the editor screen")
 H.eq(
   anchor.col,
-  math.max(math.min(position.screen.end_col - popup_width + 1 - 3, vim.o.columns - popup_width + 1), 1),
-  "popup anchor should follow lualine's screen geometry"
+  H.expected_popup_anchor(position, popup_width, state.config.submenu.border),
+  "popup anchor should follow lualine's screen and host geometry"
 )
 
 H.finish()

@@ -70,13 +70,12 @@ popup.open_top(target)
 H.truthy(popup.is_open(), "opening a measured top menu should create its popup")
 
 local target_position = lualine.get_component_positions({ place = "statusline" })["orca_menu:" .. target]
-local target_right = target_position.screen.end_col
 local popup_width = layout.submenu_width(state.config.menus[target].items)
-local expected_col = math.max(
-  math.min(target_right - popup_width + 1 - 3, vim.api.nvim_win_get_width(0) - popup_width + 1),
-  1
+H.eq(
+  state.anchor.col,
+  H.expected_popup_anchor(target_position, popup_width, state.config.submenu.border),
+  "opening should anchor from the freshly measured component and host"
 )
-H.eq(state.anchor.col, expected_col, "opening should anchor from the freshly measured component")
 
 H.finish()
 print("ok - tests/integration/lualine_dynamic_position.lua")
