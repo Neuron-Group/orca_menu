@@ -29,7 +29,18 @@ local mouse_key_lookup = {}
 for _, key in ipairs(mouse_keys) do
   mouse_key_lookup[key] = true
 end
-local left_mouse_keycode = vim.keycode("<LeftMouse>")
+local mouse_press_keys = {
+  "<LeftMouse>",
+  "<2-LeftMouse>",
+  "<3-LeftMouse>",
+  "<4-LeftMouse>",
+}
+local mouse_press_keycode_lookup = {}
+local mouse_press_keytrans_lookup = {}
+for _, key in ipairs(mouse_press_keys) do
+  mouse_press_keycode_lookup[vim.keycode(key)] = true
+  mouse_press_keytrans_lookup[key] = true
+end
 local special_key_prefix = string.char(128)
 local mouse_key_hook_ns = vim.api.nvim_create_namespace("orca_menu_mouse_key_hook")
 
@@ -114,8 +125,12 @@ end
 
 local trace_mouse = state.trace_mouse
 
-local function is_left_mouse(typed)
-  if typed == left_mouse_keycode then
+local function is_mouse_press(typed)
+  if type(typed) ~= "string" then
+    return false
+  end
+
+  if mouse_press_keycode_lookup[typed] then
     return true
   end
 
@@ -123,7 +138,7 @@ local function is_left_mouse(typed)
     return false
   end
 
-  return vim.fn.keytrans(typed) == "<LeftMouse>"
+  return mouse_press_keytrans_lookup[vim.fn.keytrans(typed)] == true
 end
 
 local function install_mouse_key_hook()
@@ -132,7 +147,7 @@ local function install_mouse_key_hook()
   end
 
   vim.on_key(function(_, typed)
-    if not is_left_mouse(typed) then
+    if not is_mouse_press(typed) then
       return
     end
 

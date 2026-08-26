@@ -45,6 +45,10 @@ H.truthy(click_file, "top-bar click handler for File should exist")
 H.truthy(click_edit, "top-bar click handler for Edit should exist")
 H.eq(vim.fn.maparg("<LeftRelease>", "n", false, true), {}, "release should stay native while popup is inactive")
 
+local function feed_mouse_press(key)
+  vim.fn.feedkeys(vim.keycode(key), "xt")
+end
+
 mouse.screencol = top_col(1)
 click_file()
 H.truthy(popup.is_open(), "top-bar press should open popup")
@@ -60,6 +64,18 @@ click_file()
 H.falsy(popup.is_open(), "second top-bar press on same menu should close popup tree")
 H.falsy(state.menu_mode, "second top-bar press on same menu should leave menu mode")
 H.eq(vim.fn.maparg("<LeftRelease>", "n", false, true), {}, "release should return native after close")
+
+feed_mouse_press("<2-LeftMouse>")
+H.truthy(popup.is_open(), "counted repeat top-bar press should reopen popup immediately after close")
+H.truthy(state.menu_mode, "counted repeat top-bar press should re-enable menu mode")
+click_file()
+H.falsy(popup.is_open(), "top-bar should close again after counted-repeat reopen")
+
+for attempt, key in ipairs({ "<3-LeftMouse>", "<4-LeftMouse>", "<4-LeftMouse>", "<LeftMouse>" }) do
+  mouse.screencol = top_col(1)
+  feed_mouse_press(key)
+  H.eq(popup.is_open(), attempt % 2 == 1, "fast counted top-bar presses should keep alternating popup state")
+end
 
 mouse.screencol = top_col(1)
 click_file()
