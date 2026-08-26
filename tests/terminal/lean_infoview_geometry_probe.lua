@@ -33,6 +33,144 @@ if vim.env.ORCA_INFOVIEW_GUTTER == "1" then
 end
 
 local submenu_border = vim.env.ORCA_SUBMENU_BORDER or "rounded"
+local target_index = tonumber(vim.env.ORCA_TARGET_INDEX or "1") or 1
+local hint_format = vim.env.ORCA_TOPBAR_HINT_FORMAT
+if hint_format == "" then
+  hint_format = nil
+end
+
+local function noop()
+end
+
+local function item(label, key)
+  return { label = label, key = key, action = noop }
+end
+
+local function submenu(label, key, items)
+  return { label = label, key = key, items = items }
+end
+
+local default_menus = {
+  submenu("&Search", "s", {
+    item("&Search", "s"),
+  }),
+}
+
+local lean_menus = {
+  submenu("&Help", "?", {
+    item("&Keymaps", "k"),
+    item("&Help Tags", "t"),
+    item("&Messages", "m"),
+    item("&Check Health", "c"),
+  }),
+  submenu("&Tools", "t", {
+    submenu("&Git", "g", {
+      item("&Status", "s"),
+      item("&Branches", "b"),
+      item("&Commits", "c"),
+      item("&Files", "f"),
+    }),
+    submenu("&Codex", "c", {
+      item("&Toggle Thread", "t"),
+      item("&New Thread", "n"),
+      item("&List Threads", "i"),
+      item("&Delete Thread", "d"),
+      item("Send &Buffer", "b"),
+      item("Send &Selection", "s"),
+    }),
+    item("&Projects", "p"),
+    item("&LazyGit", "l"),
+    submenu("&Diff", "d", {
+      item("&Open View", "o"),
+      item("&File History", "h"),
+    }),
+  }),
+  submenu("&LSP", "p", {
+    item("&Definition", "d"),
+    item("&References", "r"),
+    item("&Implementation", "i"),
+    submenu("More &Go To", "g", {
+      item("Type &Definition", "t"),
+      item("D&eclaration", "e"),
+    }),
+    { label = "-" },
+    item("Re&name Symbol", "n"),
+    item("Code &Actions", "a"),
+    item("&Hover Docs", "h"),
+    item("&Format Buffer", "f"),
+  }),
+  submenu("&View", "v", {
+    item("&Explorer", "e"),
+    item("&Outline", "o"),
+    item("&Terminal", "t"),
+    item("&Undo Tree", "u"),
+    item("Diagnostics &List", "d"),
+    { label = "-" },
+    submenu("&Appearance", "a", {
+      item("Toggle &Wrap", "w"),
+      item("Toggle &Line Numbers", "n"),
+      item("Toggle Relative Nu&mber", "r"),
+      item("Toggle &Spell", "s"),
+      item("Toggle &Paste Mode", "p"),
+    }),
+  }),
+  submenu("&Search", "s", {
+    item("&Find in Buffer", "f"),
+    item("&Grep in Project", "g"),
+    item("&Buffers", "b"),
+    submenu("Go &To", "t", {
+      item("&Commands", "c"),
+      item("&Help", "h"),
+      item("&Keymaps", "k"),
+    }),
+    submenu("&Diagnostics", "d", {
+      item("&Document Diagnostics", "d"),
+      item("&Workspace Diagnostics", "w"),
+      item("&Todo Comments", "t"),
+    }),
+  }),
+  submenu("&∀", "m", {
+    item("&Info View", "i"),
+    item("&Loogle", "lg"),
+    item("&Goal", "g"),
+    item("&Term Goal", "t"),
+    item("&Restart File", "r"),
+  }),
+  submenu("&Edit", "e", {
+    item("&Undo", "u"),
+    item("&Redo", "r"),
+    { label = "-" },
+    item("Cu&t", "t"),
+    item("&Copy", "c"),
+    item("&Paste", "p"),
+    item("Select &All", "a"),
+    { label = "-" },
+    item("&Find", "f"),
+    item("Rep&lace", "g"),
+    submenu("Tab C&olumns", "o", {
+      item("&2", "2"),
+      item("&4", "4"),
+      item("&8", "8"),
+    }),
+  }),
+  submenu("&File", "f", {
+    item("&New Buffer", "n"),
+    item("&Open File", "o"),
+    item("&Recent Files", "r"),
+    { label = "-" },
+    item("&Write", "w"),
+    item("Write &As", "a"),
+    item("Save A&ll", "s"),
+    { label = "-" },
+    item("&Close Buffer", "c"),
+    item("Close A&ll Buffers", "b"),
+    { label = "-" },
+    item("&Quit Window", "q"),
+    item("Quit A&ll", "u"),
+  }),
+}
+
+local menus = vim.env.ORCA_MENU_SHAPE == "lean" and lean_menus or default_menus
 
 local lualine = require("lualine")
 local lualine_options = {
@@ -41,7 +179,7 @@ local lualine_options = {
 if vim.env.ORCA_IGNORE_INFOVIEW == "1" then
   lualine_options.ignore_focus = { "leaninfo" }
 end
-lualine.setup({
+local lualine_config = {
   options = lualine_options,
   sections = {
     lualine_a = { "mode" },
@@ -51,7 +189,48 @@ lualine.setup({
     lualine_y = { "progress" },
     lualine_z = { "location" },
   },
-})
+}
+if vim.env.ORCA_LUALINE_SHAPE == "nvf" then
+  lualine_config.sections = {
+    lualine_a = {
+      { "mode", icons_enabled = true, separator = { left = "▎", right = "" } },
+      { "", draw_empty = true, separator = { left = "", right = "" } },
+    },
+    lualine_b = {
+      { "filetype", colored = true, icon = { align = "left" }, icon_only = true },
+      {
+        "filename",
+        separator = { right = "" },
+        symbols = { modified = " ", readonly = " " },
+      },
+      { "", draw_empty = true, separator = { left = "", right = "" } },
+    },
+    lualine_c = {
+      {
+        "diff",
+        colored = false,
+        separator = { right = "" },
+        symbols = { added = "+", modified = "~", removed = "-" },
+      },
+    },
+    lualine_x = {
+      { function() return "" end, icon = " ", separator = { left = "" } },
+      { "diagnostics", always_visible = false, update_in_insert = false },
+    },
+    lualine_y = {
+      { "", draw_empty = true, separator = { left = "", right = "" } },
+      { "searchcount", maxcount = 999, separator = { left = "" }, timeout = 120 },
+      { "branch", icon = " •", separator = { left = "" } },
+    },
+    lualine_z = {
+      { "", draw_empty = true, separator = { left = "", right = "" } },
+      { "progress", separator = { left = "" } },
+      "location",
+      { "fileformat", color = { fg = "black" }, symbols = { dos = "", mac = "", unix = "" } },
+    },
+  }
+end
+lualine.setup(lualine_config)
 
 require("orca_menu").setup({
   enable_mouse = vim.env.ORCA_ENABLE_MOUSE ~= "0",
@@ -62,15 +241,10 @@ require("orca_menu").setup({
   submenu = {
     border = submenu_border,
   },
-  menus = {
-    {
-      label = "&Search",
-      key = "s",
-      items = {
-        { label = "&Search", key = "s", action = function() end },
-      },
-    },
+  topbar = {
+    hint_format = hint_format or "{label}({hint})",
   },
+  menus = menus,
 })
 
 if vim.env.ORCA_SWITCH_LASTSTATUS and vim.env.ORCA_SWITCH_LASTSTATUS ~= "" then
@@ -126,11 +300,11 @@ local function rendered_range(row, text, first_col, last_col)
   }
 end
 
-local function current_component_position(winid)
+local function current_component_position(winid, index)
   return vim.deepcopy(lualine.get_component_positions({
     place = "statusline",
     winid = winid,
-  })["orca_menu:1"])
+  })["orca_menu:" .. (index or target_index)])
 end
 
 local function position_snapshot(winid)
@@ -141,9 +315,10 @@ local function position_snapshot(winid)
   local last_col = screen and math.min(screen.end_col + 4, vim.o.columns) or vim.o.columns
   local info = vim.fn.getwininfo(winid)[1] or {}
   local statusline = vim.api.nvim_win_get_option(winid, "statusline")
+  local eval_width = vim.o.laststatus == 3 and vim.o.columns or vim.api.nvim_win_get_width(winid)
   local evaluated = vim.api.nvim_eval_statusline(statusline, {
     winid = winid,
-    maxwidth = vim.api.nvim_win_get_width(winid),
+    maxwidth = eval_width,
     highlights = true,
   })
   return {
@@ -159,6 +334,7 @@ local function position_snapshot(winid)
     evaluated_statusline = {
       str = evaluated.str,
       width = evaluated.width,
+      highlights = evaluated.highlights,
     },
     component = position,
   }
@@ -300,7 +476,7 @@ if vim.env.ORCA_REAL_MOUSE == "1" then
     local mouse = vim.fn.getmousepos()
     local position = current_component_position(mouse.winid or owner_win)
     local item_position = position.screen.item or position.screen
-    local component_text = require("orca_menu.lualine").visible_component_at(1)
+    local component_text = require("orca_menu.lualine").visible_component_at(target_index)
     local rendered_component = rendered_range(
       position.screen.row,
       component_text,
@@ -348,8 +524,8 @@ local positions = lualine.get_component_positions({
   place = "statusline",
   winid = owner_win,
 })
-local position = assert(positions["orca_menu:1"])
-local component_text = require("orca_menu.lualine").visible_component_at(1)
+local position = assert(positions["orca_menu:" .. target_index])
+local component_text = require("orca_menu.lualine").visible_component_at(target_index)
 if not position.screen then
   local owner_snapshot = position_snapshot(owner_win)
   local component_range = rendered_range(
@@ -371,9 +547,10 @@ if not position.screen then
   }
   for col = 1, vim.o.columns do
     mouse.screencol = col
+    local hit = layout.label_hit_at_col(col, mouse)
     assert(
-      layout.label_hit_at_col(col, mouse) == nil,
-      "clipped menu components should not retain stale topbar hitboxes"
+      hit ~= target_index,
+      "clipped menu components should not retain stale topbar hitboxes for the clipped target"
     )
   end
 
@@ -398,7 +575,7 @@ if not position.screen then
   vim.cmd("qa!")
   return
 end
-local popup_width = layout.submenu_width(state.config.menus[1].items)
+local popup_width = layout.submenu_width(state.config.menus[target_index].items)
 local component_width = vim.fn.strdisplaywidth(component_text)
 assert(
   position.screen.width == component_width,
@@ -426,6 +603,37 @@ local rendered_component = {}
 for col = position.screen.start_col, position.screen.end_col do
   table.insert(rendered_component, vim.fn.screenstring(screen_row, col))
 end
+if table.concat(rendered_component) ~= component_text and vim.env.ORCA_CAPTURE_GEOMETRY_MISMATCH == "1" then
+  local owner_snapshot = position_snapshot(owner_win)
+  vim.fn.writefile({ vim.json.encode({
+    status = "geometry_mismatch",
+    main_win = main_win,
+    infoview_win = infoview_win,
+    owner_kind = owner_kind,
+    infoview_config = vim.api.nvim_win_get_config(infoview_win),
+    infoview_geometry = infoview_geometry,
+    component = position,
+    component_text = component_text,
+    rendered_component = table.concat(rendered_component),
+    rendered_range = rendered_range(
+      screen_row,
+      component_text,
+      math.max(position.screen.start_col - 12, 1),
+      math.min(position.screen.end_col + 12, vim.o.columns)
+    ),
+    laststatus = vim.o.laststatus,
+    section = vim.env.ORCA_LUALINE_SECTION or "a",
+    owner_win = owner_win,
+    current_win = vim.api.nvim_get_current_win(),
+    screen_row = screen_row,
+    screen_before = screen_before,
+    owner_snapshot = owner_snapshot,
+    geometry = geometry_before_mouse,
+    cache_transition = cache_transition,
+  }) }, outfile)
+  vim.cmd("qa!")
+  return
+end
 assert(
   table.concat(rendered_component) == component_text,
   "lualine component geometry should address the rendered topbar component"
@@ -451,7 +659,7 @@ event.component = current_component_position(owner_win)
 vim.fn.getmousepos = original_getmousepos
 
 popup.close_all()
-popup.open_top(1)
+popup.open_top(target_index)
 local direct = popup_summary()
 direct.component = current_component_position(owner_win)
 vim.cmd("redraw")
@@ -465,7 +673,7 @@ local click_mouse = {
   winid = owner_win,
   win = owner_win,
 }
-orca.click(1, click_mouse)
+orca.click(target_index, click_mouse)
 assert(popup.is_open(), "click path should open the menu")
 local click = popup_summary()
 click.component = current_component_position(owner_win)
@@ -483,6 +691,8 @@ local actual = {
   component_width = component_width,
   popup_width = popup_width,
   frame_width = frame_width,
+  target_index = target_index,
+  component_text = component_text,
   laststatus = vim.o.laststatus,
   section = vim.env.ORCA_LUALINE_SECTION or "a",
   screen_row = screen_row,

@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 
 import json
+import fcntl
 import os
 import pty
 import select
 import subprocess
+import struct
 import sys
 import tempfile
 import time
+import termios
 
 
-def run_case(repo_root, lean_root, lean_file, laststatus, section, owner_kind):
+def run_case(repo_root, lean_root, lean_file, laststatus, section, owner_kind, env_overrides=None):
     with tempfile.TemporaryDirectory(prefix="orca-menu-lean-geometry-") as tmpdir:
         result_path = os.path.join(tmpdir, "result.json")
         env = os.environ.copy()
@@ -43,10 +46,15 @@ def run_case(repo_root, lean_root, lean_file, laststatus, section, owner_kind):
                 "ORCA_MOUSE_ROW": os.environ.get("ORCA_MOUSE_ROW", ""),
             }
         )
+        env.update({key: str(value) for key, value in (env_overrides or {}).items()})
         for key in ("HOME", "XDG_STATE_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME"):
             os.makedirs(env[key], exist_ok=True)
 
         master_fd, slave_fd = pty.openpty()
+        columns = int(env.get("ORCA_TERMINAL_COLUMNS", "80"))
+        lines = int(env.get("ORCA_TERMINAL_LINES", "24"))
+        size = struct.pack("HHHH", lines, columns, 0, 0)
+        fcntl.ioctl(slave_fd, termios.TIOCSWINSZ, size)
         proc = subprocess.Popen(
             [
                 "nvim",
@@ -196,25 +204,53 @@ def main():
     requested_section = os.environ.get("ORCA_LUALINE_SECTION")
     requested_owner = os.environ.get("ORCA_OWNER")
     if requested_laststatus or requested_section:
-        cases = [(int(requested_laststatus or "2"), requested_section or "a", requested_owner or "infoview")]
+        cases = [
+            {
+                "name": "requested",
+                "laststatus": int(requested_laststatus or "2"),
+                "section": requested_section or "a",
+                "owner": requested_owner or "infoview",
+                "env": {},
+            }
+        ]
     else:
         cases = [
-            (2, "a", "infoview"),
-            (2, "a", "main"),
-            (2, "y", "infoview"),
-            (3, "y", "infoview"),
-            (3, "y", "main"),
+            {"name": "local_a_infoview", "laststatus": 2, "section": "a", "owner": "infoview", "env": {}},
+            {"name": "local_a_main", "laststatus": 2, "section": "a", "owner": "main", "env": {}},
+            {"name": "local_y_infoview", "laststatus": 2, "section": "y", "owner": "infoview", "env": {}},
+            {"name": "global_y_infoview", "laststatus": 3, "section": "y", "owner": "infoview", "env": {}},
+            {"name": "global_y_main", "laststatus": 3, "section": "y", "owner": "main", "env": {}},
+            {
+                "name": "lean_nvf_global_y_infoview",
+                "laststatus": 3,
+                "section": "y",
+                "owner": "infoview",
+                "env": {
+                    "ORCA_TERMINAL_COLUMNS": "140",
+                    "ORCA_INFOVIEW_GUTTER": "1",
+                    "ORCA_SUBMENU_BORDER": "none",
+                    "ORCA_MENU_SHAPE": "lean",
+                    "ORCA_LUALINE_SHAPE": "nvf",
+                    "ORCA_TARGET_INDEX": "4",
+                    "ORCA_TOPBAR_HINT_FORMAT": "{hint}→{label}",
+                },
+            },
         ]
 
     results = []
-    for laststatus, section, owner_kind in cases:
-        result = run_case(repo_root, lean_root, lean_file, laststatus, section, owner_kind)
+    case_results = {}
+    for case in cases:
+        laststatus = case["laststatus"]
+        section = case["section"]
+        owner_kind = case["owner"]
+        result = run_case(repo_root, lean_root, lean_file, laststatus, section, owner_kind, case["env"])
         validate(result, laststatus, section, owner_kind)
         results.append(result)
+        case_results[case["name"]] = result
 
-    global_results = [result for result in results if result.get("laststatus") == 3]
-    if len(global_results) == 2:
-        first, second = global_results
+    if "global_y_infoview" in case_results and "global_y_main" in case_results:
+        first = case_results["global_y_infoview"]
+        second = case_results["global_y_main"]
         if first.get("component", {}).get("screen") != second.get("component", {}).get("screen"):
             raise AssertionError(f"global lualine geometry changed with the owner window: {results}")
         if first.get("anchor", {}).get("col") != second.get("anchor", {}).get("col"):
