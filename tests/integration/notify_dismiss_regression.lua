@@ -42,11 +42,6 @@ require("orca_menu").setup({
 
             vim.g.orca_notify_win = notify_win
 
-            vim.defer_fn(function()
-              if vim.api.nvim_win_is_valid(notify_win) then
-                vim.api.nvim_win_close(notify_win, true)
-              end
-            end, 60)
           end,
         },
       },
@@ -68,7 +63,7 @@ H.flush()
 H.eq(vim.g.orca_notify_regression_count, 1, "notify-like action should run once")
 H.falsy(popup.is_open(), "action execution should close the original menu")
 
-vim.wait(200, function()
+vim.wait(1000, function()
   local notify_win = vim.g.orca_notify_win
   return notify_win ~= nil and vim.api.nvim_win_is_valid(notify_win)
 end, 5)
@@ -85,9 +80,8 @@ H.flush()
 H.truthy(popup.is_open(), "unrelated WinResized should not close a newly opened menu")
 H.eq(#state.menu_stack, 1, "menu stack should stay intact after unrelated WinResized")
 
-vim.wait(120, function()
-  return false
-end, 5)
+vim.api.nvim_win_close(vim.g.orca_notify_win, true)
+H.flush()
 
 H.truthy(popup.is_open(), "notify dismissal should not close a newly opened menu")
 H.eq(#state.menu_stack, 1, "menu stack should stay intact after notify dismissal")
