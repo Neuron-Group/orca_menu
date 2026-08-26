@@ -43,6 +43,7 @@ for _, key in ipairs(mouse_press_keys) do
 end
 local special_key_prefix = string.char(128)
 local mouse_key_hook_ns = vim.api.nvim_create_namespace("orca_menu_mouse_key_hook")
+local mouse_mapping_desc = "Orca menu mouse handling"
 
 local function current_map_mode()
   local current = vim.fn.mode()
@@ -73,6 +74,10 @@ local function mouse_mapping_summary(mode_name)
     nowait = mapping.nowait == 1,
     desc = mapping.desc,
   }
+end
+
+local function mouse_mapping_owned_by_orca(mapping)
+  return type(mapping) == "table" and mapping.desc == mouse_mapping_desc
 end
 
 local function position_summary(position)
@@ -203,8 +208,8 @@ local function install_mouse_key_hook()
     trace_mouse("<LeftMouse>", trace_extra, mouse)
 
     -- Popup mappings already own this event. The hook only needs to take over
-    -- when a buffer-local mapping would otherwise steal it from Orca.
-    if popup_open and mapping and mapping.buffer == 0 then
+    -- when another buffer-local mapping would otherwise steal it from Orca.
+    if popup_open and mouse_mapping_owned_by_orca(mapping) then
       return
     end
 
@@ -488,7 +493,92 @@ function M.disable_keys(owner_buf)
   state.keymaps_installed = false
 end
 
-function M.disable_mouse()
+local function valid_buffer(bufnr)
+  return type(bufnr) == "number" and vim.api.nvim_buf_is_valid(bufnr)
+end
+
+local function buffer_mapping(bufnr, mode_name, lhs)
+  if not valid_buffer(bufnr) then
+    return nil
+  end
+
+  for _, mapping in ipairs(vim.api.nvim_buf_get_keymap(bufnr, mode_name)) do
+    if mapping.lhs == lhs then
+      return mapping
+    end
+  end
+
+  return nil
+end
+
+local function mapping_bool(value)
+  return value == true or value == 1
+end
+
+local function restore_buffer_mapping(bufnr, mapping)
+  if not valid_buffer(bufnr) or type(mapping) ~= "table" then
+    return
+  end
+
+  local rhs = mapping.callback or mapping.rhs
+  if rhs == nil then
+    return
+  end
+
+  local opts = {
+    buffer = bufnr,
+    expr = mapping_bool(mapping.expr),
+    nowait = mapping_bool(mapping.nowait),
+    remap = not mapping_bool(mapping.noremap),
+    silent = mapping_bool(mapping.silent),
+  }
+  if mapping.desc and mapping.desc ~= "" then
+    opts.desc = mapping.desc
+  end
+
+  pcall(vim.keymap.set, mapping.mode, mapping.lhs, rhs, opts)
+end
+
+local function owner_mapping_key(mode_name, lhs)
+  return mode_name .. "\n" .. lhs
+end
+
+local function remember_owner_mapping(bufnr, mode_name, lhs)
+  if not valid_buffer(bufnr) then
+    return
+  end
+
+  state.mouse_owner_mappings = state.mouse_owner_mappings or {}
+  local key = owner_mapping_key(mode_name, lhs)
+  if state.mouse_owner_mappings[key] ~= nil then
+    return
+  end
+
+  state.mouse_owner_mappings[key] = buffer_mapping(bufnr, mode_name, lhs) or false
+end
+
+local function restore_owner_mouse_mappings(bufnr)
+  local saved = state.mouse_owner_mappings
+  state.mouse_owner_mappings = nil
+  if not saved or not valid_buffer(bufnr) then
+    return
+  end
+
+  for key, mapping in pairs(saved) do
+    local mode_name, lhs = key:match("^(.-)\n(.+)$")
+    if mode_name and lhs then
+      pcall(vim.keymap.del, mode_name, lhs, { buffer = bufnr })
+      if mapping then
+        restore_buffer_mapping(bufnr, mapping)
+      end
+    end
+  end
+end
+
+function M.disable_mouse(owner_buf)
+  restore_owner_mouse_mappings(owner_buf or state.mouse_owner_buf)
+  state.mouse_owner_buf = nil
+
   for _, key in ipairs(mouse_keys) do
     pcall(vim.keymap.del, "n", key)
     pcall(vim.keymap.del, "x", key)
@@ -510,17 +600,17 @@ function M.install_mouse()
   refresh_mousemove_binding()
 
   if not popup.is_open() then
-    for _, key in ipairs(mouse_keys) do
-      pcall(vim.keymap.del, "n", key)
-      pcall(vim.keymap.del, "x", key)
-      pcall(vim.keymap.del, "i", key)
-    end
-    state.global_mouse_installed = false
+    M.disable_mouse()
     return
   end
 
-  if state.global_mouse_installed then
+  local owner_buf = valid_buffer(state.menu_owner_buf) and state.menu_owner_buf or nil
+  if state.global_mouse_installed and state.mouse_owner_buf == owner_buf then
     return
+  end
+
+  if state.global_mouse_installed or state.mouse_owner_buf then
+    M.disable_mouse()
   end
 
   local function fallback_mouse(keys)
@@ -562,75 +652,99 @@ function M.install_mouse()
     end
   end
 
-  vim.keymap.set(entry_modes, "<LeftMouse>", function()
-    handle_left_mouse("<LeftMouse>", "<LeftMouse>", true)
-  end, { silent = true })
+  local function mouse_opts(opts)
+    return vim.tbl_extend("force", {
+      desc = mouse_mapping_desc,
+      silent = true,
+    }, opts or {})
+  end
 
-  vim.keymap.set(nonvisual_entry_modes, "<2-LeftMouse>", function()
-    handle_left_mouse("<2-LeftMouse>", "<2-LeftMouse>", true)
-  end, { silent = true })
-
-  vim.keymap.set(nonvisual_entry_modes, "<3-LeftMouse>", function()
-    handle_left_mouse("<3-LeftMouse>", "<3-LeftMouse>", true)
-  end, { silent = true })
-
-  vim.keymap.set(nonvisual_entry_modes, "<4-LeftMouse>", function()
-    handle_left_mouse("<4-LeftMouse>", "<4-LeftMouse>", true)
-  end, { silent = true })
-
-  vim.keymap.set(nonvisual_entry_modes, "<LeftRelease>", function()
-    handle_left_mouse("<LeftRelease>", "<LeftRelease>", false)
-  end, { silent = true })
-
-  vim.keymap.set(nonvisual_entry_modes, "<2-LeftRelease>", function()
-    handle_left_mouse("<2-LeftRelease>", "<2-LeftRelease>", false)
-  end, { silent = true })
-
-  vim.keymap.set(nonvisual_entry_modes, "<3-LeftRelease>", function()
-    handle_left_mouse("<3-LeftRelease>", "<3-LeftRelease>", false)
-  end, { silent = true })
-
-  vim.keymap.set(nonvisual_entry_modes, "<4-LeftRelease>", function()
-    handle_left_mouse("<4-LeftRelease>", "<4-LeftRelease>", false)
-  end, { silent = true })
-
-  vim.keymap.set(nonvisual_entry_modes, "<LeftDrag>", function()
-    handle_left_mouse("<LeftDrag>", "<LeftDrag>", false)
-  end, { silent = true })
-
-  vim.keymap.set(nonvisual_entry_modes, "<2-LeftDrag>", function()
-    handle_left_mouse("<2-LeftDrag>", "<2-LeftDrag>", false)
-  end, { silent = true })
-
-  vim.keymap.set(nonvisual_entry_modes, "<3-LeftDrag>", function()
-    handle_left_mouse("<3-LeftDrag>", "<3-LeftDrag>", false)
-  end, { silent = true })
-
-  vim.keymap.set(nonvisual_entry_modes, "<4-LeftDrag>", function()
-    handle_left_mouse("<4-LeftDrag>", "<4-LeftDrag>", false)
-  end, { silent = true })
-
-  vim.keymap.set(nonvisual_entry_modes, "<ScrollWheelUp>", function()
-    trace_mouse("<ScrollWheelUp>", { phase = "start" })
-    mode.run_after_editor_mode(function()
-      if not popup.scroll_at_mouse(-1) then
-        fallback_mouse("<ScrollWheelUp>")
-      else
-        trace_mouse("<ScrollWheelUp>", { phase = "handled_popup" })
+  local function set_mouse_map(modes, lhs, callback, opts)
+    if opts and opts.buffer then
+      for _, mode_name in ipairs(modes) do
+        remember_owner_mapping(opts.buffer, mode_name, lhs)
       end
-    end)
-  end, { silent = true })
+    end
 
-  vim.keymap.set(nonvisual_entry_modes, "<ScrollWheelDown>", function()
-    trace_mouse("<ScrollWheelDown>", { phase = "start" })
-    mode.run_after_editor_mode(function()
-      if not popup.scroll_at_mouse(1) then
-        fallback_mouse("<ScrollWheelDown>")
-      else
-        trace_mouse("<ScrollWheelDown>", { phase = "handled_popup" })
-      end
-    end)
-  end, { silent = true })
+    vim.keymap.set(modes, lhs, callback, mouse_opts(opts))
+  end
+
+  local function install_mouse_maps(opts)
+    set_mouse_map(entry_modes, "<LeftMouse>", function()
+      handle_left_mouse("<LeftMouse>", "<LeftMouse>", true)
+    end, opts)
+
+    set_mouse_map(nonvisual_entry_modes, "<2-LeftMouse>", function()
+      handle_left_mouse("<2-LeftMouse>", "<2-LeftMouse>", true)
+    end, opts)
+
+    set_mouse_map(nonvisual_entry_modes, "<3-LeftMouse>", function()
+      handle_left_mouse("<3-LeftMouse>", "<3-LeftMouse>", true)
+    end, opts)
+
+    set_mouse_map(nonvisual_entry_modes, "<4-LeftMouse>", function()
+      handle_left_mouse("<4-LeftMouse>", "<4-LeftMouse>", true)
+    end, opts)
+
+    set_mouse_map(nonvisual_entry_modes, "<LeftRelease>", function()
+      handle_left_mouse("<LeftRelease>", "<LeftRelease>", false)
+    end, opts)
+
+    set_mouse_map(nonvisual_entry_modes, "<2-LeftRelease>", function()
+      handle_left_mouse("<2-LeftRelease>", "<2-LeftRelease>", false)
+    end, opts)
+
+    set_mouse_map(nonvisual_entry_modes, "<3-LeftRelease>", function()
+      handle_left_mouse("<3-LeftRelease>", "<3-LeftRelease>", false)
+    end, opts)
+
+    set_mouse_map(nonvisual_entry_modes, "<4-LeftRelease>", function()
+      handle_left_mouse("<4-LeftRelease>", "<4-LeftRelease>", false)
+    end, opts)
+
+    set_mouse_map(nonvisual_entry_modes, "<LeftDrag>", function()
+      handle_left_mouse("<LeftDrag>", "<LeftDrag>", false)
+    end, opts)
+
+    set_mouse_map(nonvisual_entry_modes, "<2-LeftDrag>", function()
+      handle_left_mouse("<2-LeftDrag>", "<2-LeftDrag>", false)
+    end, opts)
+
+    set_mouse_map(nonvisual_entry_modes, "<3-LeftDrag>", function()
+      handle_left_mouse("<3-LeftDrag>", "<3-LeftDrag>", false)
+    end, opts)
+
+    set_mouse_map(nonvisual_entry_modes, "<4-LeftDrag>", function()
+      handle_left_mouse("<4-LeftDrag>", "<4-LeftDrag>", false)
+    end, opts)
+
+    set_mouse_map(nonvisual_entry_modes, "<ScrollWheelUp>", function()
+      trace_mouse("<ScrollWheelUp>", { phase = "start" })
+      mode.run_after_editor_mode(function()
+        if not popup.scroll_at_mouse(-1) then
+          fallback_mouse("<ScrollWheelUp>")
+        else
+          trace_mouse("<ScrollWheelUp>", { phase = "handled_popup" })
+        end
+      end)
+    end, opts)
+
+    set_mouse_map(nonvisual_entry_modes, "<ScrollWheelDown>", function()
+      trace_mouse("<ScrollWheelDown>", { phase = "start" })
+      mode.run_after_editor_mode(function()
+        if not popup.scroll_at_mouse(1) then
+          fallback_mouse("<ScrollWheelDown>")
+        else
+          trace_mouse("<ScrollWheelDown>", { phase = "handled_popup" })
+        end
+      end)
+    end, opts)
+  end
+
+  install_mouse_maps()
+  if owner_buf then
+    install_mouse_maps({ buffer = owner_buf })
+  end
 
   for _, key in ipairs({ "<2-LeftMouse>", "<3-LeftMouse>", "<4-LeftMouse>" }) do
     pcall(vim.keymap.del, "x", key)
@@ -652,6 +766,7 @@ function M.install_mouse()
   end
 
   state.global_mouse_installed = true
+  state.mouse_owner_buf = owner_buf
 end
 
 return M

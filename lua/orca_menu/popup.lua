@@ -409,7 +409,7 @@ function M.close_all()
   state.menu_owner_buf = nil
   state.last_topbar_hit = nil
   require("orca_menu.input").disable_keys(owner_buf)
-  require("orca_menu.input").disable_mouse()
+  require("orca_menu.input").disable_mouse(owner_buf)
   require("orca_menu.selection").clear()
   sync_hydra_exit_if_needed()
   refresh_topbar(owner_valid and owner_win or nil, true)

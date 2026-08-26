@@ -27,10 +27,17 @@ vim.api.nvim_buf_set_lines(0, 0, -1, false, {
 })
 vim.api.nvim_win_set_cursor(0, { 5, 3 })
 
+vim.g.orca_terminal_action = 0
 vim.g.orca_terminal_local_mouse = 0
-vim.keymap.set("n", "<LeftMouse>", function()
+vim.keymap.set("n", "<Plug>(OrcaTerminalOriginalMouse)", function()
   vim.g.orca_terminal_local_mouse = vim.g.orca_terminal_local_mouse + 1
-end, { buffer = 0 })
+end, { buffer = 0, desc = "Original buffer-local mouse mapping" })
+vim.keymap.set(
+  "n",
+  "<LeftMouse>",
+  "<Plug>(OrcaTerminalOriginalMouse)",
+  { buffer = 0, desc = "Original buffer-local mouse mapping", remap = true }
+)
 
 local lualine = require("lualine")
 lualine.setup({
@@ -57,7 +64,14 @@ require("orca_menu").setup({
       label = "&File",
       key = "f",
       items = {
-        { label = "&Open", key = "o", action = function() end },
+        {
+          label = "&Open",
+          key = "o",
+          action = function()
+            vim.g.orca_terminal_action = vim.g.orca_terminal_action + 1
+            vim.api.nvim_win_set_cursor(0, { 3, 2 })
+          end,
+        },
       },
     },
   },
@@ -79,13 +93,37 @@ vim.fn.writefile({ vim.json.encode({
   col = item.start_col,
 }) }, readyfile)
 
+local popup_readyfile = readyfile .. ".popup"
+local function write_popup_ready()
+  local entry = state.menu_stack[1]
+  if popup.is_open() and entry then
+    vim.fn.writefile({ vim.json.encode({
+      row = entry.content_row,
+      col = entry.content_col,
+    }) }, popup_readyfile)
+    return
+  end
+
+  vim.defer_fn(write_popup_ready, 50)
+end
+
+write_popup_ready()
+
 vim.defer_fn(function()
+  local restored_mapping = vim.fn.maparg("<LeftMouse>", "n", false, true)
   vim.fn.writefile({ vim.json.encode({
+    action = vim.g.orca_terminal_action,
     popup_open = popup.is_open(),
     local_mouse = vim.g.orca_terminal_local_mouse,
     cursor = vim.api.nvim_win_get_cursor(0),
     current_win = vim.api.nvim_get_current_win(),
     mouse = vim.fn.getmousepos(),
+    restored_mapping = {
+      desc = restored_mapping.desc,
+      rhs = restored_mapping.rhs,
+      buffer = restored_mapping.buffer,
+      noremap = restored_mapping.noremap,
+    },
   }) }, outfile)
   vim.cmd("qa!")
-end, 1000)
+end, 1500)

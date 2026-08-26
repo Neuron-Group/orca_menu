@@ -17,6 +17,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="orca-menu-statusline-mouse-") as tmpdir:
         result_path = os.path.join(tmpdir, "result.json")
         ready_path = result_path + ".ready"
+        popup_ready_path = ready_path + ".popup"
         env = os.environ.copy()
         env.update(
             {
@@ -52,15 +53,21 @@ def main():
         )
         os.close(slave_fd)
 
-        sent = False
+        sent_topbar = False
+        sent_popup = False
         output = bytearray()
         deadline = time.time() + 5
         while time.time() < deadline and not os.path.exists(result_path):
-            if not sent and os.path.exists(ready_path):
+            if not sent_topbar and os.path.exists(ready_path):
                 with open(ready_path, encoding="utf-8") as handle:
                     target = json.load(handle)
                 os.write(master_fd, f"\x1b[<0;{target['col']};{target['row']}M".encode())
-                sent = True
+                sent_topbar = True
+            if sent_topbar and not sent_popup and os.path.exists(popup_ready_path):
+                with open(popup_ready_path, encoding="utf-8") as handle:
+                    target = json.load(handle)
+                os.write(master_fd, f"\x1b[<0;{target['col']};{target['row']}M".encode())
+                sent_popup = True
 
             ready, _, _ = select.select([master_fd], [], [], 0.05)
             if master_fd in ready:
@@ -81,14 +88,26 @@ def main():
         with open(result_path, encoding="utf-8") as handle:
             result = json.load(handle)
 
-        if not sent:
-            raise AssertionError(f"mouse event was not sent: {result}")
-        if not result.get("popup_open"):
-            raise AssertionError(f"statusline click did not open Orca: {result}")
+        if not sent_topbar:
+            raise AssertionError(f"topbar mouse event was not sent: {result}")
+        if not sent_popup:
+            raise AssertionError(f"popup mouse event was not sent: {result}")
+        if result.get("popup_open"):
+            raise AssertionError(f"popup item click did not close Orca: {result}")
+        if result.get("action") != 1:
+            raise AssertionError(f"popup item action did not run exactly once: {result}")
         if result.get("local_mouse") != 0:
             raise AssertionError(f"buffer-local mouse mapping ran after Orca intercept: {result}")
-        if result.get("cursor") != [5, 3]:
-            raise AssertionError(f"statusline click moved the editor cursor: {result}")
+        if result.get("cursor") != [3, 2]:
+            raise AssertionError(f"popup item action cursor move was lost: {result}")
+        restored = result.get("restored_mapping") or {}
+        if (
+            restored.get("desc") != "Original buffer-local mouse mapping"
+            or restored.get("buffer") != 1
+            or restored.get("rhs") != "<Plug>(OrcaTerminalOriginalMouse)"
+            or restored.get("noremap") != 0
+        ):
+            raise AssertionError(f"original buffer-local mouse mapping was not restored: {result}")
 
         print("ok - tests/terminal/run_statusline_mouse_cursor_guard.py")
 
