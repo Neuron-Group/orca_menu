@@ -6,7 +6,9 @@ local last_register_signature = nil
 
 local function active_top_is_open(index, menu)
   local popup = require("orca_menu.popup")
-  return popup.is_open() and state.active_top == index and layout.top_menu_enabled(menu)
+  return (popup.is_open() or state.opening_top_popup)
+    and state.active_top == index
+    and layout.top_menu_enabled(menu)
 end
 
 local function to_hex(color)

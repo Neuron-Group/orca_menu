@@ -395,16 +395,20 @@ local function remember_menu_owner_win(winid)
 end
 
 function M.close_all()
+  local owner_win = state.menu_owner_win
+  local owner_valid = owner_win and vim.api.nvim_win_is_valid(owner_win)
   destroy_windows_only()
   state.menu_stack = {}
   state.menu_mode = false
+  state.opening_top_popup = false
   state.menu_owner_win = nil
   state.last_topbar_hit = nil
   require("orca_menu.input").disable_keys()
   require("orca_menu.input").disable_mouse()
   require("orca_menu.selection").clear()
   sync_hydra_exit_if_needed()
-  refresh_topbar()
+  refresh_topbar(owner_valid and owner_win or nil, true)
+  layout.refresh_label_positions(owner_valid and owner_win or nil)
 end
 
 function M.is_open()
@@ -604,18 +608,25 @@ function M.open_top(index, hit)
   state.active_top = resolved
   state.menu_mode = true
   local owner_win = remember_menu_owner_win(hit and hit.winid)
-  -- Menu colors and lualine's truncation can change the final component
-  -- layout. Measure the statusline after activation and before anchoring.
-  refresh_topbar(owner_win, true)
-  layout.refresh_label_positions(owner_win)
-  local items = actions.current_items()
-  state.anchor = layout.resolve_anchor(state.active_top, items, owner_win)
-  require("orca_menu.input").enable_keys()
-  state.menu_stack = {
-    { items = items, selected = 1, scroll_top = 1 },
-  }
-  M.redraw_all()
-  require("orca_menu.input").install_mouse()
+  state.opening_top_popup = true
+  local ok, err = xpcall(function()
+    -- Menu colors and lualine's truncation can change the final component
+    -- layout. Measure the statusline after activation and before anchoring.
+    refresh_topbar(owner_win, true)
+    layout.refresh_label_positions(owner_win)
+    local items = actions.current_items()
+    state.anchor = layout.resolve_anchor(state.active_top, items, owner_win)
+    require("orca_menu.input").enable_keys()
+    state.menu_stack = {
+      { items = items, selected = 1, scroll_top = 1 },
+    }
+    M.redraw_all()
+    require("orca_menu.input").install_mouse()
+  end, debug.traceback)
+  state.opening_top_popup = false
+  if not ok then
+    error(err, 0)
+  end
 end
 
 function M.move_top(delta)

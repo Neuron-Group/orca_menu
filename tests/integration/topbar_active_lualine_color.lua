@@ -41,6 +41,7 @@ local orca = require("orca_menu")
 local popup = require("orca_menu.popup")
 local layout = require("orca_menu.layout")
 local state = require("orca_menu.state")
+local orca_lualine = require("orca_menu.lualine")
 local lualine = require("lualine")
 local config = lualine.get_config()
 local section = config.sections.lualine_y
@@ -64,7 +65,27 @@ popup.enter_menu_mode(1)
 H.falsy(popup.is_open(), "entering menu mode alone should not open popup")
 H.eq(tools_component.color(), nil, "top menu should not highlight until its popup is actually open")
 
-orca.open_menu(1)
+local original_refresh = orca_lualine.refresh
+local opening_refresh_saw_active = false
+orca_lualine.refresh = function(opts)
+  if not popup.is_open() and state.menu_mode and state.active_top == 1 then
+    local color = tools_component.color()
+    opening_refresh_saw_active = color
+      and color.fg == string.format("#%06x", active_hl.fg)
+      and color.bg == string.format("#%06x", active_hl.bg)
+      and color.gui == "bold"
+  end
+  return original_refresh(opts)
+end
+local ok, err = pcall(function()
+  orca.open_menu(1)
+end)
+orca_lualine.refresh = original_refresh
+if not ok then
+  error(err, 0)
+end
+H.truthy(opening_refresh_saw_active, "opening refresh should render the clicked lualine item active before popup window exists")
+
 H.truthy(popup.is_open(), "opening a top menu should show popup")
 H.eq(tools_component.color().fg, string.format("#%06x", active_hl.fg), "active top menu should expose the configured active foreground to lualine")
 H.eq(tools_component.color().bg, string.format("#%06x", active_hl.bg), "active top menu should reuse the configured background when requested")

@@ -18,6 +18,7 @@ local M = {
   label_positions = {},
   component_positions = {},
   menu_mode = false,
+  opening_top_popup = false,
   global_mouse_installed = false,
   keymaps_installed = false,
   current_open_key = nil,
