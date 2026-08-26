@@ -70,6 +70,8 @@ run_suite tests/integration/mode_shift.lua
 run_suite tests/integration/lua_action.lua
 echo "==> tests/terminal/run_open_hotkey_terminal.py"
 python3 tests/terminal/run_open_hotkey_terminal.py
+echo "==> tests/terminal/run_statusline_mouse_cursor_guard.py"
+python3 tests/terminal/run_statusline_mouse_cursor_guard.py
 echo "==> tests/terminal/run_runtime_reindex_terminal.py"
 python3 tests/terminal/run_runtime_reindex_terminal.py
 echo "==> tests/terminal/run_lsp_runtime_terminal.py"

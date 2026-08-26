@@ -125,6 +125,37 @@ end
 
 local trace_mouse = state.trace_mouse
 
+local function capture_cursor_restore()
+  local winid = vim.api.nvim_get_current_win()
+  if not vim.api.nvim_win_is_valid(winid) then
+    return nil
+  end
+
+  local ok, cursor = pcall(vim.api.nvim_win_get_cursor, winid)
+  if not ok or type(cursor) ~= "table" then
+    return nil
+  end
+
+  return {
+    winid = winid,
+    cursor = { cursor[1], cursor[2] },
+  }
+end
+
+local function restore_cursor_after_mouse(snapshot)
+  if not snapshot then
+    return
+  end
+
+  vim.schedule(function()
+    if not vim.api.nvim_win_is_valid(snapshot.winid) then
+      return
+    end
+
+    pcall(vim.api.nvim_win_set_cursor, snapshot.winid, snapshot.cursor)
+  end)
+end
+
 local function is_mouse_press(typed)
   if type(typed) ~= "string" then
     return false
@@ -178,11 +209,13 @@ local function install_mouse_key_hook()
     end
 
     if popup_open then
+      local cursor_restore = bar_index and capture_cursor_restore() or nil
       mode.run_after_editor_mode(function()
         popup.handle_mouse(mouse)
         trace_extra.phase = "intercepted_popup"
         trace_mouse("<LeftMouse>", trace_extra, mouse)
       end)
+      restore_cursor_after_mouse(cursor_restore)
       return ""
     end
 
@@ -190,7 +223,9 @@ local function install_mouse_key_hook()
       return
     end
 
+    local cursor_restore = capture_cursor_restore()
     require("orca_menu").click(bar_index, mouse)
+    restore_cursor_after_mouse(cursor_restore)
     trace_extra.phase = "intercepted_statusline"
     trace_mouse("<LeftMouse>", trace_extra, mouse)
     return ""
