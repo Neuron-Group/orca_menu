@@ -388,22 +388,27 @@ local function remember_menu_owner_win(winid)
   end
   local config = vim.api.nvim_win_get_config(current_win)
   if config and config.relative and config.relative ~= "" then
+    state.menu_owner_win = nil
+    state.menu_owner_buf = nil
     return nil
   end
   state.menu_owner_win = current_win
+  state.menu_owner_buf = vim.api.nvim_win_get_buf(current_win)
   return current_win
 end
 
 function M.close_all()
   local owner_win = state.menu_owner_win
+  local owner_buf = state.menu_owner_buf
   local owner_valid = owner_win and vim.api.nvim_win_is_valid(owner_win)
   destroy_windows_only()
   state.menu_stack = {}
   state.menu_mode = false
   state.opening_top_popup = false
   state.menu_owner_win = nil
+  state.menu_owner_buf = nil
   state.last_topbar_hit = nil
-  require("orca_menu.input").disable_keys()
+  require("orca_menu.input").disable_keys(owner_buf)
   require("orca_menu.input").disable_mouse()
   require("orca_menu.selection").clear()
   sync_hydra_exit_if_needed()

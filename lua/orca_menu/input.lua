@@ -208,8 +208,8 @@ local function disable_mouse_key_hook()
   state.mouse_key_hook_installed = false
 end
 
-local function bind(keys, fn)
-  local opts = { silent = true, noremap = true }
+local function bind(keys, fn, opts)
+  opts = vim.tbl_extend("force", { silent = true, noremap = true }, opts or {})
   for _, key in ipairs(keys or {}) do
     vim.keymap.set(keymap_modes, key, function()
       fn()
@@ -404,13 +404,18 @@ function M.enable_keys()
   end
   refresh_dynamic_top_keys()
   refresh_dynamic_item_keys()
-  bind(state.config.keys.next, function() popup.move_top(1) end)
-  bind(state.config.keys.prev, function() popup.move_top(-1) end)
-  bind(state.config.keys.down, function() popup.select_row(1) end)
-  bind(state.config.keys.up, function() popup.select_row(-1) end)
-  bind(state.config.keys.select, popup.activate_selected)
-  bind(state.config.keys.back, popup.go_back)
-  bind(state.config.keys.close, popup.close_all)
+  local keymap_opts = { silent = true, noremap = true }
+  local owner_buf = state.menu_owner_buf
+  if owner_buf then
+    keymap_opts.buffer = owner_buf
+  end
+  bind(state.config.keys.next, function() popup.move_top(1) end, keymap_opts)
+  bind(state.config.keys.prev, function() popup.move_top(-1) end, keymap_opts)
+  bind(state.config.keys.down, function() popup.select_row(1) end, keymap_opts)
+  bind(state.config.keys.up, function() popup.select_row(-1) end, keymap_opts)
+  bind(state.config.keys.select, popup.activate_selected, keymap_opts)
+  bind(state.config.keys.back, popup.go_back, keymap_opts)
+  bind(state.config.keys.close, popup.close_all, keymap_opts)
   for _, key in ipairs(dynamic_top_keys) do
     vim.keymap.set(keymap_modes, key, function()
       mode.run_after_editor_mode(function()
@@ -418,7 +423,7 @@ function M.enable_keys()
           replay_key(key)
         end
       end)
-    end, { silent = true, noremap = true })
+    end, keymap_opts)
   end
   for _, key in ipairs(dynamic_item_keys) do
     vim.keymap.set(keymap_modes, key, function()
@@ -427,18 +432,23 @@ function M.enable_keys()
           replay_key(key)
         end
       end)
-    end, { silent = true, noremap = true })
+    end, keymap_opts)
   end
   state.keymaps_installed = true
 end
 
-function M.disable_keys()
+function M.disable_keys(owner_buf)
   if not state.keymaps_installed then
     return
   end
+  local keymap_opts = { }
+  local buffer = owner_buf or state.menu_owner_buf
+  if buffer then
+    keymap_opts.buffer = buffer
+  end
   for _, key in ipairs(all_keys()) do
-    pcall(vim.keymap.del, "n", key)
-    pcall(vim.keymap.del, "x", key)
+    pcall(vim.keymap.del, "n", key, keymap_opts)
+    pcall(vim.keymap.del, "x", key, keymap_opts)
   end
   state.keymaps_installed = false
 end
