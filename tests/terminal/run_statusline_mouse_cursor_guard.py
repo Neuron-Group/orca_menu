@@ -26,7 +26,8 @@ def main():
                 "XDG_DATA_HOME": os.path.join(tmpdir, "data"),
                 "XDG_CACHE_HOME": os.path.join(tmpdir, "cache"),
                 "TERM": "xterm-256color",
-                "ORCA_TEST_EXTRA_RTP": os.path.join(repo_root, "lualine.nvim"),
+                "ORCA_TEST_EXTRA_RTP": os.environ.get("ORCA_TEST_EXTRA_RTP")
+                or os.path.join(repo_root, "lualine.nvim"),
                 "ORCA_TERMINAL_RESULT": result_path,
                 "ORCA_TERMINAL_READY": ready_path,
             }
